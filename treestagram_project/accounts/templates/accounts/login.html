@@ -1,0 +1,56 @@
+{% extends "accounts/base.html" %}
+{% block title %}Log in – Treestagram{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-logo">
+      <span class="logo-icon">🌳</span>
+      <h1>Treestagram</h1>
+      <p>Log in to explore NYC's urban forest</p>
+    </div>
+
+    <hr class="auth-divider" />
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <ul class="field-errors">
+            {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        {% if form.password.errors %}
+          <ul class="field-errors">
+            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <ul class="field-errors" style="margin-bottom:0.8rem;">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <button type="submit" class="btn-primary">Log in 🌿</button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="{% url 'signup' %}">Sign up free</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

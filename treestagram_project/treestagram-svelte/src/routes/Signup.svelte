@@ -10,6 +10,7 @@
   let error = ''
   let focused = ''
   let shake = false
+  let showPassword = false;
 
   // Form fields
   let firstName = '', lastName = '', email = ''
@@ -128,7 +129,7 @@
 
       <!-- Step 1: Identity -->
       {#if step === 1}
-        <div class="form-step" on:keydown={handleKey}>
+        <div class="form-step" role="group" on:keydown={handleKey}>
           <div class="row-2">
             <div class="field" class:focused={focused==='firstName'}>
               <label>🌿 First name</label>
@@ -153,7 +154,7 @@
 
       <!-- Step 2: Profile -->
       {:else if step === 2}
-        <div class="form-step" on:keydown={handleKey}>
+        <div class="form-step" role="group" on:keydown={handleKey}>
           <div class="field" class:focused={focused==='username'}>
             <label>🪵 Username</label>
             <input type="text" placeholder="tree_guardian" bind:value={username}
@@ -180,23 +181,58 @@
 
       <!-- Step 3: Security -->
       {:else}
-        <div class="form-step" on:keydown={handleKey}>
+        <div class="form-step" role="group" on:keydown={handleKey}>
           <div class="field" class:focused={focused==='pass'}>
             <label>🔑 Password</label>
-            <input type="password" placeholder="min 8 characters" bind:value={password}
-              on:focus={()=>focused='pass'} on:blur={()=>focused=''} />
+            <div class="input-container">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="min 8 characters" 
+                value={password}
+                on:input={(e) => password = e.target.value}
+                on:focus={()=>focused='pass'} 
+                on:blur={()=>focused=''} 
+              />
+              <button 
+                type="button" 
+                class="toggle-visibility" 
+                on:click={() => showPassword = !showPassword}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             <div class="field-line"></div>
           </div>
+
           <div class="strength-bar">
             <div class="strength-fill" style="width:{Math.min(100,(password.length/12)*100)}%;
               background:{password.length < 6 ? '#e74c3c' : password.length < 10 ? '#f39c12' : '#52b788'}">
             </div>
           </div>
+
           <div class="field" class:focused={focused==='confirm'}>
             <label>🔒 Confirm password</label>
-            <input type="password" placeholder="••••••••" bind:value={confirmPassword}
-              on:focus={()=>focused='confirm'} on:blur={()=>focused=''} />
+            <div class="input-container">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="••••••••" 
+                value={confirmPassword}
+                on:input={(e) => confirmPassword = e.target.value}
+                on:focus={()=>focused='confirm'} 
+                on:blur={()=>focused=''} 
+              />
+              <button 
+                type="button" 
+                class="toggle-visibility" 
+                on:click={() => showPassword = !showPassword}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
             <div class="field-line"></div>
+            
             {#if confirmPassword && password !== confirmPassword}
               <span class="match-hint mismatch">✗ Passwords don't match</span>
             {:else if confirmPassword && password === confirmPassword}
@@ -292,6 +328,37 @@
     opacity: 0; transform: translateY(24px);
     transition: opacity .5s, transform .5s;
   }
+
+  .input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-container input {
+    width: 100%;
+    padding-right: 2.5rem; 
+  }
+
+  .toggle-visibility {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .toggle-visibility:hover {
+    opacity: 1;
+  }
+
   .page.mounted .card { opacity: 1; transform: translateY(0); }
   .card.shake { animation: shake .5s; }
   @keyframes shake {

@@ -10,6 +10,7 @@
   let shake = false
   let focused = ''
   let mounted = false
+  let showPassword = false;
 
   import { onMount } from 'svelte'
   onMount(() => setTimeout(() => mounted = true, 50))
@@ -100,20 +101,45 @@
           <div class="field-line"></div>
         </div>
 
-        <div class="field" class:focused={focused === 'password'}>
+        <div class="field password-field" class:focused={focused === 'password'}>
           <label for="password">
             <span class="label-icon">🔑</span> Password
           </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            bind:value={password}
-            on:focus={() => focused = 'password'}
-            on:blur={() => focused = ''}
-            on:keydown={handleKeydown}
-            autocomplete="current-password"
-          />
+          
+          <div class="input-container">
+          {#if showPassword}
+            <input
+              id="password"
+              type="text"
+              placeholder="••••••••"
+              bind:value={password}
+              on:focus={() => focused = 'password'}
+              on:blur={() => focused = ''}
+              on:keydown={handleKeydown}
+              autocomplete="current-password"
+            />
+          {:else}
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              bind:value={password}
+              on:focus={() => focused = 'password'}
+              on:blur={() => focused = ''}
+              on:keydown={handleKeydown}
+              autocomplete="current-password"
+            />
+          {/if}
+          <button
+            type="button"
+            class="toggle-visibility"
+            on:click={() => showPassword = !showPassword}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? '🙈' : '👁️'}
+          </button>
+        </div>
+          
           <div class="field-line"></div>
         </div>
 
@@ -155,6 +181,36 @@
     overflow: hidden;
     padding: 2rem 1rem;
     background: linear-gradient(160deg, #071410 0%, #0d2318 40%, #0a1c12 100%);
+  }
+
+  .input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-container input {
+    width: 100%;
+    padding-right: 2.5rem; 
+  }
+
+  .toggle-visibility {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .toggle-visibility:hover {
+    opacity: 1;
   }
 
   .forest-bg { position: absolute; inset: 0; pointer-events: none; }

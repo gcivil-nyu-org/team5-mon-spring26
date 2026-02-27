@@ -71,3 +71,4 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+treestagram_project/treestagram-svelte/node_modules/

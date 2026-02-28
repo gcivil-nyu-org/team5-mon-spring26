@@ -11,7 +11,7 @@ from .forms import SignupForm, LoginForm
 def signup_view(request):
     """Handle user registration."""
     if request.user.is_authenticated:
-        return redirect('home')
+        return redirect('svelte_app')
 
     if request.method == 'POST':
         form = SignupForm(request.POST)
@@ -22,7 +22,8 @@ def signup_view(request):
                 request,
                 f"Welcome to Treestagram, {user.username}! 🌳 Start exploring NYC trees."
             )
-            return redirect('home')
+            # FIX: Redirect to svelte_app after successful signup
+            return redirect('svelte_app') 
         else:
             messages.error(request, "Please fix the errors below.")
     else:
@@ -35,7 +36,8 @@ def signup_view(request):
 def login_view(request):
     """Handle user login."""
     if request.user.is_authenticated:
-        return redirect('home')
+        # FIX: Redirect authenticated users to svelte_app
+        return redirect('svelte_app') 
 
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
@@ -43,8 +45,9 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             messages.success(request, f"Welcome back, {user.username}! 🌿")
-            # Redirect to 'next' param if provided, else home
-            next_url = request.GET.get('next', 'home')
+            
+            # FIX: Default fallback is now 'svelte_app'
+            next_url = request.GET.get('next', 'svelte_app') 
             return redirect(next_url)
         else:
             messages.error(request, "Invalid username or password.")
@@ -55,14 +58,13 @@ def login_view(request):
 
 
 @login_required
+def app_view(request):
+    return render(request, 'index.html')
+
+
+@login_required
 def logout_view(request):
     """Handle user logout."""
     logout(request)
     messages.info(request, "You've been logged out. See you soon! 🍃")
     return redirect('login')
-
-
-@login_required
-def home_view(request):
-    """Placeholder home view — replace with real feed later."""
-    return render(request, 'accounts/home.html', {'user': request.user})

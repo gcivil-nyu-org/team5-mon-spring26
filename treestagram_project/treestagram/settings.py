@@ -53,7 +53,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'treestagram.urls'
-svelte_build_path = os.path.join(BASE_DIR, 'treestagram-svelte', 'build')
+svelte_build_path = os.path.join(BASE_DIR, 'treestagram-svelte', 'dist')
 
 TEMPLATES = [
     {

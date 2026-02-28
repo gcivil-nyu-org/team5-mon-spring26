@@ -1,0 +1,41 @@
+{% extends "accounts/base.html" %}
+{% block title %}Home – Treestagram{% endblock %}
+
+{% block content %}
+<div class="home-container">
+  <div class="welcome-card">
+    <div class="big-tree">🌳</div>
+    <h2>Welcome, {{ user.username }}!</h2>
+    <p>You're now part of NYC's tree-loving community.<br>The feed is coming soon — stay tuned!</p>
+
+    <span class="badge badge-{{ user.role }}">{{ user.get_role_display }}</span>
+
+    <br><br>
+
+    <div style="
+      background: #f0f7f4;
+      border-radius: 10px;
+      padding: 1.2rem 1.5rem;
+      text-align: left;
+      font-size: 0.88rem;
+      color: #5a7a65;
+      display: inline-block;
+      min-width: 220px;
+    ">
+      <strong style="color:#1a3a2a;">Your stats</strong><br><br>
+      🍃 Leaves (credits): <strong>{{ user.leaves }}</strong><br>
+      📝 Posts: <strong>{{ user.post_count }}</strong><br>
+      ❤️ Total likes received: <strong>{{ user.total_likes_received }}</strong><br>
+      📍 Borough: <strong>{{ user.borough|default:"Not set" }}</strong>
+    </div>
+
+    <br><br>
+    <a href="{% url 'logout' %}" style="
+      color: #2d6a4f;
+      font-size: 0.88rem;
+      text-decoration: none;
+      font-weight: 600;
+    ">Log out →</a>
+  </div>
+</div>
+{% endblock %}

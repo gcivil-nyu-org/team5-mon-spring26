@@ -1,22 +1,19 @@
-# treestagram/urls.py (Main folder)
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-
-# Import views so we can use your protected app_view
-from accounts import views 
+from accounts.views import svelte_app
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # JSON API — consumed by the Svelte frontend
+    # JSON API — Svelte uses these to log in and fetch data
     path('api/', include('accounts.api_urls')),
 
-    # Django template views (login, signup, logout)
-    path('', include('accounts.urls')),
-    
-    # THE FIX: Point directly to your protected view, and name it 'svelte_app'
-    re_path(r'^.*$', views.app_view, name='svelte_app'),
+    # THE SPA CATCH-ALL
+    # Every single URL that isn't /admin or /api gets sent to Svelte.
+    # If the user goes to /login, /signup, or /home, Django serves Svelte,
+    # and Svelte's App.svelte router decides which component to show.
+    re_path(r'^.*$', svelte_app, name='svelte_app'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

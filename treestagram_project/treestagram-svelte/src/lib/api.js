@@ -56,3 +56,8 @@ export async function apiMe() {
   if (res.ok) return res.json()
   return null
 }
+
+export async function apiCheckUsername(username) {
+  const res = await apiFetch(`/api/check-username/?username=${encodeURIComponent(username)}`)
+  return res.json()
+}

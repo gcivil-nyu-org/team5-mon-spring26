@@ -76,6 +76,15 @@ def api_logout(request):
     return JsonResponse({'success': True})
 
 
+def api_check_username(request):
+    """Check if a username is already taken."""
+    username = request.GET.get('username', '').strip()
+    if len(username) < 3:
+        return JsonResponse({'available': False, 'error': 'Too short'})
+    taken = User.objects.filter(username__iexact=username).exists()
+    return JsonResponse({'available': not taken})
+
+
 def api_me(request):
     """Return current user info if logged in."""
     if request.user.is_authenticated:

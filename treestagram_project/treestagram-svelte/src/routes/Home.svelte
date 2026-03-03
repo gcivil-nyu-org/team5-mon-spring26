@@ -1,43 +1,179 @@
 <script>
-  import { onMount } from 'svelte'
-  import { user, apiLogout } from '../lib/api.js'
-  import { theme, toggleTheme, cycleTheme } from '../theme.js'
+  import { onMount } from "svelte";
+  import { user, apiLogout } from "../lib/api.js";
+  import { theme, toggleTheme, cycleTheme } from "../theme.js";
 
-  export let navigate
+  export let navigate;
 
-  let mounted = false
-  onMount(() => setTimeout(() => mounted = true, 50))
+  let mounted = false;
+  onMount(() => setTimeout(() => (mounted = true), 50));
 
   async function logout() {
-    await apiLogout()
-    user.set(null)
-    navigate('/login')
+    await apiLogout();
+    user.set(null);
+    navigate("/login");
   }
 
   const roleColors = {
-    standard:  { bg: 'var(--t-role-standard-bg)',  text: 'var(--t-role-standard-text)',  label: '🌱 Standard'  },
-    credible:  { bg: 'var(--t-role-credible-bg)',  text: 'var(--t-role-credible-text)',  label: '⭐ Credible'  },
-    caretaker: { bg: 'var(--t-role-caretaker-bg)', text: 'var(--t-role-caretaker-text)', label: '🌳 Caretaker' },
-    admin:     { bg: 'var(--t-role-admin-bg)',      text: 'var(--t-role-admin-text)',      label: '👑 Admin'     },
-  }
+    standard: {
+      bg: "var(--t-role-standard-bg)",
+      text: "var(--t-role-standard-text)",
+      label: "🌱 Standard",
+    },
+    credible: {
+      bg: "var(--t-role-credible-bg)",
+      text: "var(--t-role-credible-text)",
+      label: "⭐ Credible",
+    },
+    caretaker: {
+      bg: "var(--t-role-caretaker-bg)",
+      text: "var(--t-role-caretaker-text)",
+      label: "🌳 Caretaker",
+    },
+    admin: {
+      bg: "var(--t-role-admin-bg)",
+      text: "var(--t-role-admin-text)",
+      label: "👑 Admin",
+    },
+  };
 
-  $: role = roleColors[$user?.role] || roleColors.standard
+  $: role = roleColors[$user?.role] || roleColors.standard;
 
   const placeholderPosts = [
-    { tree: 'London Planetree #4821', borough: 'Brooklyn', health: 'Good', img: '🌳', likes: 24, comment: 'Looking healthy after the rain!' },
-    { tree: 'Ginkgo #2047',           borough: 'Manhattan', health: 'Fair', img: '🍂', likes: 11, comment: 'Some leaf discoloration noted.' },
-    { tree: 'Red Oak #7732',          borough: 'Queens',    health: 'Good', img: '🌲', likes: 38, comment: 'Beautiful canopy this season!' },
-  ]
+    {
+      tree: "London Planetree #4821",
+      borough: "Brooklyn",
+      health: "Good",
+      img: "🌳",
+      likes: 24,
+      comment: "Looking healthy after the rain!",
+    },
+    {
+      tree: "Ginkgo #2047",
+      borough: "Manhattan",
+      health: "Fair",
+      img: "🍂",
+      likes: 11,
+      comment: "Some leaf discoloration noted.",
+    },
+    {
+      tree: "Red Oak #7732",
+      borough: "Queens",
+      health: "Good",
+      img: "🌲",
+      likes: 38,
+      comment: "Beautiful canopy this season!",
+    },
+  ];
 
-  $: isDark = $theme === 'dark'
+  $: isDark = $theme === "dark";
 </script>
 
 <div class="page" class:mounted>
+  <!-- Gold fireflies -->
+  <div class="fireflies">
+    <div
+      class="firefly"
+      style="left:8%;top:20%;animation-delay:0s;animation-duration:6s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:22%;top:55%;animation-delay:1.2s;animation-duration:7s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:45%;top:15%;animation-delay:2.5s;animation-duration:5.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:60%;top:65%;animation-delay:0.8s;animation-duration:8s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:75%;top:30%;animation-delay:3.1s;animation-duration:6.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:88%;top:75%;animation-delay:1.7s;animation-duration:7.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:35%;top:80%;animation-delay:4s;animation-duration:5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:15%;top:40%;animation-delay:2s;animation-duration:9s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:5%;top:70%;animation-delay:0.3s;animation-duration:7s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:42%;top:90%;animation-delay:1.5s;animation-duration:6s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:68%;top:10%;animation-delay:3.8s;animation-duration:8.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:82%;top:45%;animation-delay:2.2s;animation-duration:5.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:55%;top:35%;animation-delay:4.5s;animation-duration:7s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:18%;top:85%;animation-delay:0.6s;animation-duration:6.5s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:95%;top:55%;animation-delay:3.3s;animation-duration:8s"
+    ></div>
+    <div
+      class="firefly"
+      style="left:28%;top:10%;animation-delay:1.8s;animation-duration:9s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:50%;top:45%;animation-delay:0.5s;animation-duration:6s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:70%;top:50%;animation-delay:3.5s;animation-duration:7s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:30%;top:35%;animation-delay:1s;animation-duration:8s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:92%;top:20%;animation-delay:2.8s;animation-duration:5.5s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:12%;top:60%;animation-delay:4.2s;animation-duration:6.5s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:63%;top:85%;animation-delay:0.9s;animation-duration:7.5s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:40%;top:25%;animation-delay:2.4s;animation-duration:5s"
+    ></div>
+    <div
+      class="firefly sm"
+      style="left:78%;top:70%;animation-delay:1.6s;animation-duration:8.5s"
+    ></div>
+  </div>
   <!-- Top nav -->
   <nav class="navbar">
     <div class="nav-brand">
       <span class="nav-tree">🌳</span>
-      <span class="nav-title">Treestagram</span>
+      <span class="nav-title">Tree<span class="gold">stagram</span></span>
     </div>
     <div class="nav-actions">
       <button class="nav-btn" title="Search trees">🔍</button>
@@ -47,9 +183,10 @@
         {isDark ? '☀️' : '🌙'}
       </button> -->
       <button class="nav-btn theme-toggle" on:click={cycleTheme}>
-        {$theme === 'dark' ? '☀️' : $theme === 'light' ? '👾' : '🌙'}
+        {$theme === "dark" ? "☀️" : $theme === "light" ? "👾" : "🌙"}
       </button>
-      <button class="nav-btn logout" on:click={logout} title="Logout">↩</button>
+      <button class="nav-btn logout" on:click={logout} title="Logout">↩</button
+      >
     </div>
   </nav>
 
@@ -62,9 +199,12 @@
           <div class="avatar-ring"></div>
         </div>
         <div class="profile-info">
-          <div class="profile-name">{$user?.username || 'Treelover'}</div>
-          <div class="profile-email">{$user?.email || ''}</div>
-          <span class="role-badge" style="background:{role.bg}; color:{role.text}">
+          <div class="profile-name">{$user?.username || "Treelover"}</div>
+          <div class="profile-email">{$user?.email || ""}</div>
+          <span
+            class="role-badge"
+            style="background:{role.bg}; color:{role.text}"
+          >
             {role.label}
           </span>
         </div>
@@ -104,16 +244,28 @@
           <span class="banner-emoji">🌿</span>
           <div>
             <h2>Welcome back, {$user?.username}!</h2>
-            <p>NYC's urban forest has <strong>683,788 trees</strong> waiting for your care.</p>
+            <p>
+              NYC's urban forest has <strong>683,788 trees</strong> waiting for your
+              care.
+            </p>
           </div>
         </div>
         <div class="banner-cred">
           {#if ($user?.post_count ?? 0) < 30}
             <div class="progress-label">Progress to Credible User</div>
             <div class="progress-track">
-              <div class="progress-fill" style="width:{Math.min(100,(($user?.post_count??0)/30)*100)}%"></div>
+              <div
+                class="progress-fill"
+                style="width:{Math.min(
+                  100,
+                  (($user?.post_count ?? 0) / 30) * 100,
+                )}%"
+              ></div>
             </div>
-            <div class="progress-hint">{$user?.post_count ?? 0}/30 posts · {$user?.total_likes_received ?? 0}/100 likes</div>
+            <div class="progress-hint">
+              {$user?.post_count ?? 0}/30 posts · {$user?.total_likes_received ??
+                0}/100 likes
+            </div>
           {:else}
             <div class="credible-unlocked">⭐ Credible status unlocked!</div>
           {/if}
@@ -124,7 +276,11 @@
       <div class="create-post">
         <span class="create-avatar">🧑‍🌾</span>
         <div class="create-input">
-          <input type="text" placeholder="Share an observation about a tree…" readonly />
+          <input
+            type="text"
+            placeholder="Share an observation about a tree…"
+            readonly
+          />
         </div>
         <button class="create-btn">📸 Post</button>
       </div>
@@ -132,14 +288,16 @@
       <!-- Post cards -->
       <div class="posts">
         {#each placeholderPosts as post, i}
-          <div class="post-card" style="animation-delay:{i*0.1}s">
+          <div class="post-card" style="animation-delay:{i * 0.1}s">
             <div class="post-header">
               <span class="post-tree-icon">{post.img}</span>
               <div>
                 <div class="post-tree-name">{post.tree}</div>
                 <div class="post-meta">
                   📍 {post.borough} ·
-                  <span class="health health-{post.health.toLowerCase()}">{post.health}</span>
+                  <span class="health health-{post.health.toLowerCase()}"
+                    >{post.health}</span
+                  >
                 </div>
               </div>
               <button class="follow-btn">+ Follow</button>
@@ -172,6 +330,70 @@
     background: var(--t-gradient-page);
     font-family: var(--t-font-body);
     color: var(--t-text-body);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── Fireflies ──────────────────────────────────────────────────── */
+  .fireflies {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .firefly {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #d4a853;
+    box-shadow:
+      0 0 6px 2px rgba(212, 168, 83, 0.6),
+      0 0 12px 4px rgba(212, 168, 83, 0.3);
+    animation:
+      fireflyFloat linear infinite,
+      fireflyGlow ease-in-out infinite;
+    opacity: 0;
+  }
+  .firefly.sm {
+    width: 3px;
+    height: 3px;
+    box-shadow:
+      0 0 4px 1px rgba(212, 168, 83, 0.5),
+      0 0 8px 3px rgba(212, 168, 83, 0.2);
+  }
+  @keyframes fireflyFloat {
+    0% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(15px, -25px);
+    }
+    50% {
+      transform: translate(-10px, -40px);
+    }
+    75% {
+      transform: translate(20px, -15px);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+  @keyframes fireflyGlow {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    85% {
+      opacity: 0.8;
+    }
   }
 
   /* ─── Navbar ─────────────────────────────────────────────────────── */
@@ -181,29 +403,51 @@
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--t-border);
     box-shadow: var(--t-shadow-nav);
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 0 1.5rem;
-    position: sticky; top: 0; z-index: 50;
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
-  .nav-brand { display: flex; align-items: center; gap: 8px; }
-  .nav-tree  { font-size: 1.5rem; filter: drop-shadow(0 0 8px var(--t-brand-glow)); }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .nav-title {
-    font-family: var(--t-font-display);
-    font-size: 1.3rem; font-weight: 900;
-    color: var(--t-text-heading);
+    font-family: "Playfair Display", serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: #8fbc8f;
+    letter-spacing: 0.02em;
   }
-  .nav-actions { display: flex; gap: 8px; }
+  .nav-title .gold {
+    color: #d4a853;
+    font-style: normal;
+  }
+  .nav-actions {
+    display: flex;
+    gap: 8px;
+  }
   .nav-btn {
     background: var(--t-bg-elevated);
     border: 1px solid var(--t-border);
     border-radius: var(--t-radius-sm);
-    width: 36px; height: 36px;
+    width: 36px;
+    height: 36px;
     color: var(--t-text-muted);
-    cursor: pointer; font-size: 1rem;
+    cursor: pointer;
+    font-size: 1rem;
     transition: background var(--t-transition);
   }
-  .nav-btn:hover  { background: var(--t-bg-hover); }
-  .nav-btn.logout { color: var(--t-status-poor); }
+  .nav-btn:hover {
+    background: var(--t-bg-hover);
+  }
+  .nav-btn.logout {
+    color: var(--t-status-poor);
+  }
 
   /* ─── Layout Grid ────────────────────────────────────────────────── */
   .layout {
@@ -213,14 +457,23 @@
     grid-template-columns: var(--t-sidebar-width) 1fr;
     gap: 1.5rem;
     padding: 1.5rem;
-    opacity: 0; transform: translateY(16px);
-    transition: opacity var(--t-transition-slow) .1s,
-                transform var(--t-transition-slow) .1s;
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity var(--t-transition-slow) 0.1s,
+      transform var(--t-transition-slow) 0.1s;
   }
-  .page.mounted .layout { opacity: 1; transform: translateY(0); }
+  .page.mounted .layout {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
   /* ─── Sidebar ────────────────────────────────────────────────────── */
-  .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
   .profile-card {
     background: var(--t-bg-elevated);
@@ -228,53 +481,109 @@
     border-radius: var(--t-radius-lg);
     box-shadow: var(--t-shadow-card);
     padding: 1.4rem;
-    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
   }
   .avatar {
-    position: relative; width: 70px; height: 70px;
-    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .avatar-emoji { font-size: 2.6rem; position: relative; z-index: 2; }
+  .avatar-emoji {
+    font-size: 2.6rem;
+    position: relative;
+    z-index: 2;
+  }
   .avatar-ring {
-    position: absolute; inset: -4px; border-radius: 50%;
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
     border: 2px solid var(--t-brand-muted);
     animation: ringPulse 3s ease-out infinite;
   }
   @keyframes ringPulse {
-    0%   { transform: scale(1);   opacity: .8; }
-    100% { transform: scale(1.4); opacity: 0;  }
+    0% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1.4);
+      opacity: 0;
+    }
   }
-  .profile-info  { text-align: center; }
-  .profile-name  { font-size: 1rem; font-weight: 700; color: var(--t-text-heading); }
-  .profile-email { font-size: .75rem; color: var(--t-text-faint); margin: 2px 0 8px; }
-  .role-badge    {
-    display: inline-block; padding: 3px 10px;
+  .profile-info {
+    text-align: center;
+  }
+  .profile-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--t-text-heading);
+  }
+  .profile-email {
+    font-size: 0.75rem;
+    color: var(--t-text-faint);
+    margin: 2px 0 8px;
+  }
+  .role-badge {
+    display: inline-block;
+    padding: 3px 10px;
     border-radius: var(--t-radius-pill);
-    font-size: .72rem; font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   .stats-grid {
-    display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 6px; width: 100%; margin-top: 4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
   }
   .stat {
     background: var(--t-bg-hover);
     border-radius: var(--t-radius-md);
-    padding: 8px 4px; text-align: center;
+    padding: 8px 4px;
+    text-align: center;
   }
-  .stat-val { display: block; font-size: .95rem; font-weight: 700; color: var(--t-text-brand); }
-  .stat-lbl { font-size: .65rem; color: var(--t-text-faint); }
-  .borough-tag { font-size: .78rem; color: var(--t-text-muted); margin-top: 2px; }
+  .stat-val {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--t-text-brand);
+  }
+  .stat-lbl {
+    font-size: 0.65rem;
+    color: var(--t-text-faint);
+  }
+  .borough-tag {
+    font-size: 0.78rem;
+    color: var(--t-text-muted);
+    margin-top: 2px;
+  }
 
-  .quick-links { display: flex; flex-direction: column; gap: 4px; }
+  .quick-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .quick-btn {
-    background: none; border: none;
+    background: none;
+    border: none;
     border-radius: var(--t-radius-md);
     padding: 10px 14px;
     color: var(--t-text-muted);
-    font-size: .88rem; font-family: var(--t-font-body);
-    cursor: pointer; text-align: left;
-    transition: background var(--t-transition), color var(--t-transition);
+    font-size: 0.88rem;
+    font-family: var(--t-font-body);
+    cursor: pointer;
+    text-align: left;
+    transition:
+      background var(--t-transition),
+      color var(--t-transition);
   }
   .quick-btn:hover,
   .quick-btn.active {
@@ -283,36 +592,71 @@
   }
 
   /* ─── Feed ───────────────────────────────────────────────────────── */
-  .feed { display: flex; flex-direction: column; gap: 1rem; }
+  .feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
   .welcome-banner {
     background: var(--t-gradient-banner);
     border: 1px solid var(--t-border-strong);
     border-radius: var(--t-radius-lg);
     padding: 1.4rem 1.6rem;
-    display: flex; flex-direction: column; gap: .8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
   }
-  .banner-text  { display: flex; align-items: center; gap: 12px; }
-  .banner-emoji { font-size: 2rem; }
-  .banner-text h2 { font-size: 1.1rem; color: var(--t-text-heading); margin-bottom: 2px; }
-  .banner-text p  { font-size: .84rem; color: var(--t-text-muted); }
-  .banner-text strong { color: var(--t-brand); }
+  .banner-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .banner-emoji {
+    font-size: 2rem;
+  }
+  .banner-text h2 {
+    font-size: 1.1rem;
+    color: var(--t-text-heading);
+    margin-bottom: 2px;
+  }
+  .banner-text p {
+    font-size: 0.84rem;
+    color: var(--t-text-muted);
+  }
+  .banner-text strong {
+    color: var(--t-brand);
+  }
 
   .progress-label {
-    font-size: .73rem; color: var(--t-text-faint);
-    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px;
+    font-size: 0.73rem;
+    color: var(--t-text-faint);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
   }
   .progress-track {
-    height: 5px; background: var(--t-bg-elevated);
-    border-radius: var(--t-radius-pill); overflow: hidden;
+    height: 5px;
+    background: var(--t-bg-elevated);
+    border-radius: var(--t-radius-pill);
+    overflow: hidden;
   }
   .progress-fill {
-    height: 100%; border-radius: var(--t-radius-pill);
+    height: 100%;
+    border-radius: var(--t-radius-pill);
     background: var(--t-gradient-bar);
-    transition: width .6s;
+    transition: width 0.6s;
   }
-  .progress-hint { font-size: .72rem; color: var(--t-text-faint); margin-top: 4px; }
-  .credible-unlocked { font-size: .84rem; color: var(--t-status-fair); font-weight: 600; }
+  .progress-hint {
+    font-size: 0.72rem;
+    color: var(--t-text-faint);
+    margin-top: 4px;
+  }
+  .credible-unlocked {
+    font-size: 0.84rem;
+    color: var(--t-status-fair);
+    font-weight: 600;
+  }
 
   /* ─── Create Post ────────────────────────────────────────────────── */
   .create-post {
@@ -320,10 +664,16 @@
     border: 1px solid var(--t-border);
     border-radius: var(--t-radius-lg);
     padding: 14px 16px;
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
-  .create-avatar { font-size: 1.6rem; }
-  .create-input  { flex: 1; }
+  .create-avatar {
+    font-size: 1.6rem;
+  }
+  .create-input {
+    flex: 1;
+  }
   .create-input input {
     width: 100%;
     background: var(--t-bg-input);
@@ -331,8 +681,10 @@
     border-radius: var(--t-radius-pill);
     padding: 9px 16px;
     color: var(--t-text-input);
-    font-size: .88rem; font-family: var(--t-font-body);
-    cursor: pointer; outline: none;
+    font-size: 0.88rem;
+    font-family: var(--t-font-body);
+    cursor: pointer;
+    outline: none;
   }
   .create-btn {
     background: var(--t-brand-dim);
@@ -340,14 +692,23 @@
     border-radius: var(--t-radius-pill);
     padding: 8px 16px;
     color: var(--t-brand);
-    font-size: .84rem; font-weight: 600; font-family: var(--t-font-body);
-    cursor: pointer; white-space: nowrap;
+    font-size: 0.84rem;
+    font-weight: 600;
+    font-family: var(--t-font-body);
+    cursor: pointer;
+    white-space: nowrap;
     transition: background var(--t-transition);
   }
-  .create-btn:hover { background: var(--t-bg-active); }
+  .create-btn:hover {
+    background: var(--t-bg-active);
+  }
 
   /* ─── Post Cards ─────────────────────────────────────────────────── */
-  .posts { display: flex; flex-direction: column; gap: .9rem; }
+  .posts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
 
   .post-card {
     background: var(--t-bg-elevated);
@@ -355,25 +716,51 @@
     border-radius: var(--t-radius-lg);
     box-shadow: var(--t-shadow-card);
     overflow: hidden;
-    animation: fadeUp .4s both;
+    animation: fadeUp 0.4s both;
   }
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .post-header {
-    display: flex; align-items: center; gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 14px 16px 10px;
   }
-  .post-tree-icon { font-size: 2rem; }
-  .post-tree-name { font-size: .92rem; font-weight: 600; color: var(--t-text-heading); }
-  .post-meta      { font-size: .76rem; color: var(--t-text-muted); margin-top: 1px; }
+  .post-tree-icon {
+    font-size: 2rem;
+  }
+  .post-tree-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--t-text-heading);
+  }
+  .post-meta {
+    font-size: 0.76rem;
+    color: var(--t-text-muted);
+    margin-top: 1px;
+  }
 
-  .health       { font-weight: 600; }
-  .health-good  { color: var(--t-status-good); }
-  .health-fair  { color: var(--t-status-fair); }
-  .health-poor  { color: var(--t-status-poor); }
+  .health {
+    font-weight: 600;
+  }
+  .health-good {
+    color: var(--t-status-good);
+  }
+  .health-fair {
+    color: var(--t-status-fair);
+  }
+  .health-poor {
+    color: var(--t-status-poor);
+  }
 
   .follow-btn {
     margin-left: auto;
@@ -382,34 +769,55 @@
     border-radius: var(--t-radius-pill);
     padding: 5px 13px;
     color: var(--t-brand);
-    font-size: .78rem; font-weight: 600; font-family: var(--t-font-body);
-    cursor: pointer; transition: background var(--t-transition);
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--t-font-body);
+    cursor: pointer;
+    transition: background var(--t-transition);
   }
-  .follow-btn:hover { background: var(--t-brand-dim); }
+  .follow-btn:hover {
+    background: var(--t-brand-dim);
+  }
 
-  .post-body { padding: 0 16px 10px; font-size: .88rem; color: var(--t-text-body); }
+  .post-body {
+    padding: 0 16px 10px;
+    font-size: 0.88rem;
+    color: var(--t-text-body);
+  }
 
   .post-photo-placeholder {
     background: var(--t-bg-photo);
     height: 160px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     border-top: 1px solid var(--t-border-soft);
     border-bottom: 1px solid var(--t-border-soft);
     gap: 8px;
   }
-  .photo-hint { font-size: .78rem; color: var(--t-text-faint); }
+  .photo-hint {
+    font-size: 0.78rem;
+    color: var(--t-text-faint);
+  }
 
   .post-actions {
-    display: flex; gap: 4px; padding: 10px 12px;
+    display: flex;
+    gap: 4px;
+    padding: 10px 12px;
   }
   .action-btn {
-    background: none; border: none;
+    background: none;
+    border: none;
     border-radius: var(--t-radius-sm);
     padding: 7px 12px;
     color: var(--t-text-muted);
-    font-size: .8rem; font-family: var(--t-font-body);
+    font-size: 0.8rem;
+    font-family: var(--t-font-body);
     cursor: pointer;
-    transition: background var(--t-transition), color var(--t-transition);
+    transition:
+      background var(--t-transition),
+      color var(--t-transition);
   }
   .action-btn:hover {
     background: var(--t-bg-hover);
@@ -417,8 +825,9 @@
   }
 
   .feed-hint {
-    text-align: center; font-size: .82rem;
+    text-align: center;
+    font-size: 0.82rem;
     color: var(--t-text-faint);
-    padding: .5rem 0 1rem;
+    padding: 0.5rem 0 1rem;
   }
 </style>

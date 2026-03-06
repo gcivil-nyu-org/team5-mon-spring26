@@ -14,6 +14,7 @@
   let error = "";
   let showPassword = false;
   let showConfirm = false;
+  let signupComplete = false;
 
   $: pwLong = password.length >= 8;
   $: pwUpper = /[A-Z]/.test(password);
@@ -82,8 +83,7 @@
         password2: confirmPassword,
       });
       if (data.success) {
-        user.set(data.user);
-        navigate("/home");
+        signupComplete = true;
       } else if (data.errors) {
         // Django form returns errors as { field: [messages] }
         const firstField = Object.keys(data.errors)[0];
@@ -139,200 +139,214 @@
       <h2>Plant your roots</h2>
       <p>Create your Treestagram account</p>
 
-      <div class="form-row-2">
-        <div class="form-group">
-          <label for="signup-first">First Name</label>
-          <input
-            id="signup-first"
-            type="text"
-            placeholder="Jane"
-            bind:value={firstName}
-            on:keydown={handleKeydown}
-          />
-        </div>
-        <div class="form-group">
-          <label for="signup-last">Last Name</label>
-          <input
-            id="signup-last"
-            type="text"
-            placeholder="Doe"
-            bind:value={lastName}
-            on:keydown={handleKeydown}
-          />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="signup-email">Email Address</label>
-        <input
-          id="signup-email"
-          type="email"
-          placeholder="you@example.com"
-          bind:value={email}
-          on:keydown={handleKeydown}
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="signup-username">Username</label>
-        <div class="input-wrapper">
-          <input
-            id="signup-username"
-            type="text"
-            placeholder="tree_guardian"
-            bind:value={username}
-            on:input={checkUsername}
-            on:keydown={handleKeydown}
-          />
-          {#if usernameStatus === "checking"}
-            <span class="username-indicator checking">⏳</span>
-          {:else if usernameStatus === "available"}
-            <span class="username-indicator available">✓</span>
-          {:else if usernameStatus === "taken"}
-            <span class="username-indicator taken">✗</span>
-          {/if}
-        </div>
-        {#if usernameStatus === "available"}
-          <small class="match-hint match">Username is available!</small>
-        {:else if usernameStatus === "taken"}
-          <small class="match-hint no-match">Username is already taken</small>
-        {:else if usernameStatus === "short"}
-          <small class="match-hint no-match"
-            >Must be at least 3 characters</small
-          >
-        {/if}
-      </div>
-
-      <div class="form-group">
-        <label for="signup-borough">Borough</label>
-        <div class="borough-grid">
-          {#each boroughs as b}
-            <button
-              class="borough-btn"
-              class:selected={borough === b}
-              on:click={() => (borough = b)}
-              type="button"
-            >
-              {b === "Manhattan"
-                ? "🏙️"
-                : b === "Brooklyn"
-                  ? "🌉"
-                  : b === "Queens"
-                    ? "🌳"
-                    : b === "The Bronx"
-                      ? "🌿"
-                      : "⛴️"}
-              {b}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="signup-password">Password</label>
-        <div class="input-wrapper">
-          {#if showPassword}
-            <input
-              id="signup-password"
-              type="text"
-              placeholder="min 8 characters"
-              bind:value={password}
-              on:keydown={handleKeydown}
-            />
-          {:else}
-            <input
-              id="signup-password"
-              type="password"
-              placeholder="min 8 characters"
-              bind:value={password}
-              on:keydown={handleKeydown}
-            />
-          {/if}
-          <button
-            type="button"
-            class="toggle-pw"
-            on:click={() => (showPassword = !showPassword)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? "🙈" : "👁️"}
+      {#if signupComplete}
+        <div class="success-panel">
+          <span class="success-icon">🌳</span>
+          <h3>Account Created!</h3>
+          <p>We've sent a confirmation email to <strong>{email}</strong>.</p>
+          <p>
+            Click the link in your email to activate your account, then sign in.
+          </p>
+          <button class="btn-form-submit" on:click={() => navigate("/login")}>
+            Go to Sign In
           </button>
         </div>
-        {#if password.length > 0}
-          <div class="pw-rules">
-            <div class="pw-rule" class:met={pwLong}>
-              {pwLong ? "✓" : "○"} At least 8 characters
-            </div>
-            <div class="pw-rule" class:met={pwUpper}>
-              {pwUpper ? "✓" : "○"} One uppercase letter
-            </div>
-            <div class="pw-rule" class:met={pwLower}>
-              {pwLower ? "✓" : "○"} One lowercase letter
-            </div>
-            <div class="pw-rule" class:met={pwDigit}>
-              {pwDigit ? "✓" : "○"} One number
-            </div>
+      {:else}
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="signup-first">First Name</label>
+            <input
+              id="signup-first"
+              type="text"
+              placeholder="Jane"
+              bind:value={firstName}
+              on:keydown={handleKeydown}
+            />
           </div>
-        {/if}
-      </div>
-
-      <div class="form-group">
-        <label for="signup-confirm">Confirm Password</label>
-        <div class="input-wrapper">
-          {#if showConfirm}
+          <div class="form-group">
+            <label for="signup-last">Last Name</label>
             <input
-              id="signup-confirm"
+              id="signup-last"
               type="text"
-              placeholder="••••••••"
-              bind:value={confirmPassword}
+              placeholder="Doe"
+              bind:value={lastName}
               on:keydown={handleKeydown}
             />
-          {:else}
-            <input
-              id="signup-confirm"
-              type="password"
-              placeholder="••••••••"
-              bind:value={confirmPassword}
-              on:keydown={handleKeydown}
-            />
-          {/if}
-          <button
-            type="button"
-            class="toggle-pw"
-            on:click={() => (showConfirm = !showConfirm)}
-            aria-label={showConfirm ? "Hide password" : "Show password"}
-          >
-            {showConfirm ? "🙈" : "👁️"}
-          </button>
+          </div>
         </div>
-        {#if confirmPassword && password !== confirmPassword}
-          <small class="match-hint no-match">✗ Passwords don't match</small>
-        {:else if confirmPassword && password === confirmPassword}
-          <small class="match-hint match">✓ Passwords match</small>
+
+        <div class="form-group">
+          <label for="signup-email">Email Address</label>
+          <input
+            id="signup-email"
+            type="email"
+            placeholder="you@example.com"
+            bind:value={email}
+            on:keydown={handleKeydown}
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="signup-username">Username</label>
+          <div class="input-wrapper">
+            <input
+              id="signup-username"
+              type="text"
+              placeholder="tree_guardian"
+              bind:value={username}
+              on:input={checkUsername}
+              on:keydown={handleKeydown}
+            />
+            {#if usernameStatus === "checking"}
+              <span class="username-indicator checking">⏳</span>
+            {:else if usernameStatus === "available"}
+              <span class="username-indicator available">✓</span>
+            {:else if usernameStatus === "taken"}
+              <span class="username-indicator taken">✗</span>
+            {/if}
+          </div>
+          {#if usernameStatus === "available"}
+            <small class="match-hint match">Username is available!</small>
+          {:else if usernameStatus === "taken"}
+            <small class="match-hint no-match">Username is already taken</small>
+          {:else if usernameStatus === "short"}
+            <small class="match-hint no-match"
+              >Must be at least 3 characters</small
+            >
+          {/if}
+        </div>
+
+        <div class="form-group">
+          <label for="signup-borough">Borough</label>
+          <div class="borough-grid">
+            {#each boroughs as b}
+              <button
+                class="borough-btn"
+                class:selected={borough === b}
+                on:click={() => (borough = b)}
+                type="button"
+              >
+                {b === "Manhattan"
+                  ? "🏙️"
+                  : b === "Brooklyn"
+                    ? "🌉"
+                    : b === "Queens"
+                      ? "🌳"
+                      : b === "The Bronx"
+                        ? "🌿"
+                        : "⛴️"}
+                {b}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <div class="input-wrapper">
+            {#if showPassword}
+              <input
+                id="signup-password"
+                type="text"
+                placeholder="min 8 characters"
+                bind:value={password}
+                on:keydown={handleKeydown}
+              />
+            {:else}
+              <input
+                id="signup-password"
+                type="password"
+                placeholder="min 8 characters"
+                bind:value={password}
+                on:keydown={handleKeydown}
+              />
+            {/if}
+            <button
+              type="button"
+              class="toggle-pw"
+              on:click={() => (showPassword = !showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
+          </div>
+          {#if password.length > 0}
+            <div class="pw-rules">
+              <div class="pw-rule" class:met={pwLong}>
+                {pwLong ? "✓" : "○"} At least 8 characters
+              </div>
+              <div class="pw-rule" class:met={pwUpper}>
+                {pwUpper ? "✓" : "○"} One uppercase letter
+              </div>
+              <div class="pw-rule" class:met={pwLower}>
+                {pwLower ? "✓" : "○"} One lowercase letter
+              </div>
+              <div class="pw-rule" class:met={pwDigit}>
+                {pwDigit ? "✓" : "○"} One number
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <div class="form-group">
+          <label for="signup-confirm">Confirm Password</label>
+          <div class="input-wrapper">
+            {#if showConfirm}
+              <input
+                id="signup-confirm"
+                type="text"
+                placeholder="••••••••"
+                bind:value={confirmPassword}
+                on:keydown={handleKeydown}
+              />
+            {:else}
+              <input
+                id="signup-confirm"
+                type="password"
+                placeholder="••••••••"
+                bind:value={confirmPassword}
+                on:keydown={handleKeydown}
+              />
+            {/if}
+            <button
+              type="button"
+              class="toggle-pw"
+              on:click={() => (showConfirm = !showConfirm)}
+              aria-label={showConfirm ? "Hide password" : "Show password"}
+            >
+              {showConfirm ? "🙈" : "👁️"}
+            </button>
+          </div>
+          {#if confirmPassword && password !== confirmPassword}
+            <small class="match-hint no-match">✗ Passwords don't match</small>
+          {:else if confirmPassword && password === confirmPassword}
+            <small class="match-hint match">✓ Passwords match</small>
+          {/if}
+        </div>
+
+        {#if error}
+          <div class="error-msg">⚠️ {error}</div>
         {/if}
-      </div>
 
-      {#if error}
-        <div class="error-msg">⚠️ {error}</div>
-      {/if}
-
-      <button
-        class="btn-form-submit"
-        on:click={handleSignup}
-        disabled={loading}
-      >
-        {#if loading}
-          Creating account…
-        {:else}
-          Create Account 🌿
-        {/if}
-      </button>
-
-      <div class="login-footer">
-        Already have an account? <button
-          class="link-btn"
-          on:click={() => navigate("/login")}>Sign in</button
+        <button
+          class="btn-form-submit"
+          on:click={handleSignup}
+          disabled={loading}
         >
-      </div>
+          {#if loading}
+            Creating account…
+          {:else}
+            Create Account 🌿
+          {/if}
+        </button>
+
+        <div class="login-footer">
+          Already have an account? <button
+            class="link-btn"
+            on:click={() => navigate("/login")}>Sign in</button
+          >
+        </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -597,6 +611,27 @@
     font-size: 0.85rem;
     color: #b91c1c;
     margin-bottom: 1rem;
+  }
+
+  .success-panel {
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+  .success-panel .success-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .success-panel h3 {
+    font-family: "Playfair Display", serif;
+    font-size: 1.5rem;
+    color: var(--moss);
+    margin-bottom: 0.5rem;
+  }
+  .success-panel p {
+    color: var(--sage);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
   }
 
   .btn-form-submit {

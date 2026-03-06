@@ -1,10 +1,26 @@
 <script>
-    import TopNav from "../components/TopNav.svelte";
+    import LeftNav from "../components/LeftNav.svelte";
+    import BackgroundRings from "../components/BackgroundRings.svelte";
     export let navigate;
 </script>
 
 <div class="page">
-    <TopNav {navigate} activePage="explore" />
+    <BackgroundRings />
+    <LeftNav {navigate} activePage="explore" />
+
+    <div class="dash-top-bar">
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input
+                type="text"
+                placeholder="Search trees, species, or locations..."
+                class="dash-search-input"
+            />
+        </div>
+        <button class="btn-filter">
+            <span class="filter-icon">🔘</span> Filter
+        </button>
+    </div>
 
     <div class="dashboard-hero">
         <div class="dash-breadcrumb">
@@ -106,28 +122,28 @@
                 <h3>Environmental Ratings</h3>
                 <div class="env-ratings">
                     <div class="env-item">
-                        <label>Soil Condition</label>
+                        <div class="env-label">Soil Condition</div>
                         <div class="env-bar-track">
                             <div class="env-bar-fill green-fill"></div>
                         </div>
                         <div class="env-score">Good · 8/10</div>
                     </div>
                     <div class="env-item">
-                        <label>Sidewalk Damage</label>
+                        <div class="env-label">Sidewalk Damage</div>
                         <div class="env-bar-track">
                             <div class="env-bar-fill yellow-fill"></div>
                         </div>
                         <div class="env-score">Moderate · 5/10</div>
                     </div>
                     <div class="env-item">
-                        <label>Root Space</label>
+                        <div class="env-label">Root Space</div>
                         <div class="env-bar-track">
                             <div class="env-bar-fill orange-fill"></div>
                         </div>
                         <div class="env-score">Limited · 7/10</div>
                     </div>
                     <div class="env-item">
-                        <label>Canopy Coverage</label>
+                        <div class="env-label">Canopy Coverage</div>
                         <div class="env-bar-track">
                             <div class="env-bar-fill green-fill wide"></div>
                         </div>
@@ -234,16 +250,82 @@
     }
 
     .page {
-        background: var(--mist);
+        background: #faf9f6; /* Warm White background */
         min-height: 100vh;
+        padding-left: 60px;
+        color: #4a4a4a;
+        position: relative;
+        z-index: 0;
+        overflow: hidden;
+    }
+    /* Dashboard Top Bar */
+    .dash-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 3rem;
+        background: #faf9f6;
+        border-bottom: 1px solid var(--mist);
+        gap: 1.5rem;
+    }
+    .search-container {
+        flex: 1;
+        position: relative;
+        max-width: 600px;
+    }
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+        opacity: 0.5;
+    }
+    .dash-search-input {
+        width: 100%;
+        padding: 0.6rem 1rem 0.6rem 2.8rem;
+        border-radius: 20px;
+        border: 1.5px solid var(--canopy);
+        background: white;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        color: var(--ink);
+    }
+    .dash-search-input:focus {
+        outline: none;
+        border-color: var(--sage);
+        box-shadow: 0 0 0 4px rgba(107, 143, 113, 0.1);
+    }
+    .btn-filter {
+        background: white;
+        border: 1.5px solid var(--canopy);
+        padding: 0.5rem 1.2rem;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--bark);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-filter:hover {
+        background: var(--mist);
+        border-color: var(--sage);
+    }
+    .filter-icon {
+        font-size: 0.8rem;
     }
 
     /* Dashboard Hero */
     .dashboard-hero {
-        background: var(--bark);
+        background: #8a9a5b; /* Sage Leaf Green hero */
         position: relative;
         overflow: hidden;
-        padding: 2rem 3rem 0;
+        padding: 1.5rem 3rem 0;
     }
     .dashboard-hero::before {
         content: "";
@@ -322,9 +404,9 @@
         gap: 0.3rem;
     }
     .chip-health-good {
-        background: rgba(143, 188, 143, 0.25);
-        color: var(--leaf);
-        border: 1px solid rgba(143, 188, 143, 0.4);
+        background: rgba(250, 249, 246, 0.2);
+        color: #faf9f6;
+        border: 1px solid rgba(250, 249, 246, 0.4);
     }
     .chip-borough {
         background: rgba(255, 255, 255, 0.1);
@@ -332,9 +414,9 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     .chip-id {
-        background: rgba(212, 168, 83, 0.2);
-        color: var(--sun);
-        border: 1px solid rgba(212, 168, 83, 0.3);
+        background: #a44a3f;
+        color: #faf9f6;
+        border: 1px solid rgba(164, 74, 63, 0.3);
         font-family: "DM Mono", monospace;
         font-size: 0.72rem;
     }
@@ -344,8 +426,8 @@
         gap: 0.6rem;
     }
     .btn-follow {
-        background: var(--leaf);
-        color: var(--bark);
+        background: #36454f; /* Charcoal Gray */
+        color: #faf9f6; /* Contrasting text */
         border: none;
         padding: 0.7rem 1.5rem;
         border-radius: 25px;
@@ -361,8 +443,8 @@
     }
     .btn-apply-ct {
         background: none;
-        color: var(--canopy);
-        border: 1.5px solid rgba(255, 255, 255, 0.25);
+        color: #faf9f6;
+        border: 1.5px solid rgba(250, 249, 246, 0.4);
         padding: 0.6rem 1.2rem;
         border-radius: 25px;
         font-family: "DM Sans", sans-serif;
@@ -371,8 +453,8 @@
         transition: all 0.2s;
     }
     .btn-apply-ct:hover {
-        border-color: var(--canopy);
-        color: white;
+        border-color: #36454f;
+        color: #36454f;
     }
     .dash-tab-bar {
         position: relative;
@@ -395,8 +477,8 @@
         color: white;
     }
     .dash-tab.active {
-        color: var(--ink);
-        background: var(--mist);
+        color: #2b2b2b;
+        background: #faf9f6;
         font-weight: 600;
     }
 
@@ -416,16 +498,16 @@
         margin-bottom: 1.5rem;
     }
     .stat-card {
-        background: white;
+        background: #cdd9af; /* Sage Mist */
         border-radius: 14px;
         padding: 1.2rem;
-        box-shadow: 0 2px 12px var(--shadow);
+        box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08);
     }
     .stat-card .s-label {
         font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust */
         margin-bottom: 0.5rem;
     }
     .stat-card .s-val {
@@ -448,17 +530,17 @@
     }
 
     .content-card {
-        background: white;
+        background: #cdd9af; /* Sage Mist */
         border-radius: 16px;
         padding: 1.4rem;
-        box-shadow: 0 2px 12px var(--shadow);
+        box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08);
         margin-bottom: 1.5rem;
     }
     .content-card h3 {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust */
         margin-bottom: 1rem;
     }
 
@@ -533,11 +615,11 @@
         border-radius: 10px;
         padding: 0.8rem;
     }
-    .env-item label {
+    .env-item .env-label {
         font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust */
         display: block;
         margin-bottom: 0.4rem;
     }

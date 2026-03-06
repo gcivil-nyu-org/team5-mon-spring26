@@ -1,10 +1,12 @@
 <script>
-    import TopNav from "../components/TopNav.svelte";
+    import LeftNav from "../components/LeftNav.svelte";
+    import BackgroundRings from "../components/BackgroundRings.svelte";
     export let navigate;
 </script>
 
 <div class="page">
-    <TopNav {navigate} activePage="chat" />
+    <BackgroundRings />
+    <LeftNav {navigate} activePage="chat" />
 
     <div class="chat-layout">
         <div class="chat-list">
@@ -216,18 +218,22 @@
     }
 
     .page {
-        background: var(--mist);
+        background: #faf9f6; /* Warm White background */
         min-height: 100vh;
+        padding-left: 60px;
+        color: #4a4a4a;
+        position: relative;
+        z-index: 0;
+        overflow: hidden;
     }
-
     .chat-layout {
         height: calc(100vh - 60px);
         display: grid;
         grid-template-columns: 300px 1fr;
     }
     .chat-list {
-        background: white;
-        border-right: 1px solid var(--canopy);
+        background: #cdd9af; /* Sage Mist sidebar */
+        border-right: 1px solid rgba(164, 74, 63, 0.15);
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -276,8 +282,12 @@
         background: var(--mist);
     }
     .chat-item.active {
-        background: rgba(61, 90, 62, 0.08);
-        border-left: 3px solid var(--moss);
+        background: #36454f; /* Charcoal Gray active */
+        color: #faf9f6; /* Contrasting text */
+        border-left: 3px solid #8a9a5b;
+    }
+    .chat-item.active strong {
+        color: #8a9a5b;
     }
     .chat-item-icon {
         width: 42px;
@@ -301,14 +311,14 @@
     .chat-item-info strong {
         display: block;
         font-size: 0.88rem;
-        color: var(--ink);
+        color: #2b2b2b;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     .chat-item-info small {
         font-size: 0.75rem;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust meta */
         display: block;
         white-space: nowrap;
         overflow: hidden;
@@ -342,8 +352,8 @@
         align-items: center;
         gap: 1rem;
         padding: 1rem 1.5rem;
-        background: white;
-        border-bottom: 1px solid var(--canopy);
+        background: #cdd9af; /* Sage Mist header */
+        border-bottom: 1px solid rgba(164, 74, 63, 0.15);
     }
     .chat-header-icon {
         width: 44px;
@@ -361,7 +371,7 @@
     .chat-header-info strong {
         display: block;
         font-size: 1rem;
-        color: var(--ink);
+        color: #a44a3f; /* Redwood Rust header */
     }
     .chat-header-info small {
         font-size: 0.78rem;
@@ -463,20 +473,23 @@
     }
     .msg-bubble {
         max-width: 65%;
-        background: white;
+        background: #faf9f6; /* Warm White received msg */
+        border: 1px solid #36454f;
         border-radius: 18px 18px 18px 4px;
         padding: 0.7rem 1rem;
-        box-shadow: 0 1px 6px var(--shadow);
+        box-shadow: 0 1px 6px rgba(138, 154, 91, 0.05);
+        color: #2b2b2b;
     }
     .msg-group.mine .msg-bubble {
-        background: var(--moss);
-        color: white;
+        background: #36454f; /* Charcoal Gray sent msg */
+        color: #faf9f6; /* Contrasting text */
         border-radius: 18px 18px 4px 18px;
+        border: none;
     }
     .msg-sender-name {
         font-size: 0.72rem;
         font-weight: 600;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust sender */
         margin-bottom: 0.2rem;
     }
     .msg-group.mine .msg-sender-name {

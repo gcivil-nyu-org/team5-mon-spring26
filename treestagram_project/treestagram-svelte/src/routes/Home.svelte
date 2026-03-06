@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import { user, apiLogout } from "../lib/api.js";
   import { theme, toggleTheme, cycleTheme } from "../theme.js";
+  import LeftNav from "../components/LeftNav.svelte";
+  import BackgroundRings from "../components/BackgroundRings.svelte";
 
   export let navigate;
 
@@ -70,211 +72,22 @@
 </script>
 
 <div class="page" class:mounted>
-  <!-- Gold fireflies -->
-  <div class="fireflies">
-    <div
-      class="firefly"
-      style="left:8%;top:20%;animation-delay:0s;animation-duration:6s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:22%;top:55%;animation-delay:1.2s;animation-duration:7s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:45%;top:15%;animation-delay:2.5s;animation-duration:5.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:60%;top:65%;animation-delay:0.8s;animation-duration:8s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:75%;top:30%;animation-delay:3.1s;animation-duration:6.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:88%;top:75%;animation-delay:1.7s;animation-duration:7.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:35%;top:80%;animation-delay:4s;animation-duration:5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:15%;top:40%;animation-delay:2s;animation-duration:9s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:5%;top:70%;animation-delay:0.3s;animation-duration:7s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:42%;top:90%;animation-delay:1.5s;animation-duration:6s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:68%;top:10%;animation-delay:3.8s;animation-duration:8.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:82%;top:45%;animation-delay:2.2s;animation-duration:5.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:55%;top:35%;animation-delay:4.5s;animation-duration:7s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:18%;top:85%;animation-delay:0.6s;animation-duration:6.5s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:95%;top:55%;animation-delay:3.3s;animation-duration:8s"
-    ></div>
-    <div
-      class="firefly"
-      style="left:28%;top:10%;animation-delay:1.8s;animation-duration:9s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:50%;top:45%;animation-delay:0.5s;animation-duration:6s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:70%;top:50%;animation-delay:3.5s;animation-duration:7s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:30%;top:35%;animation-delay:1s;animation-duration:8s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:92%;top:20%;animation-delay:2.8s;animation-duration:5.5s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:12%;top:60%;animation-delay:4.2s;animation-duration:6.5s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:63%;top:85%;animation-delay:0.9s;animation-duration:7.5s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:40%;top:25%;animation-delay:2.4s;animation-duration:5s"
-    ></div>
-    <div
-      class="firefly sm"
-      style="left:78%;top:70%;animation-delay:1.6s;animation-duration:8.5s"
-    ></div>
-  </div>
-  <!-- Top nav -->
-  <nav class="navbar">
-    <div class="nav-brand">
-      <span class="nav-tree">🌳</span>
-      <span class="nav-title">Tree<span class="gold">stagram</span></span>
-    </div>
-    <div class="nav-actions">
-      <button class="nav-btn" title="Search trees">🔍</button>
-      <button class="nav-btn" title="Notifications">🔔</button>
-      <!-- Theme toggle -->
-      <!-- <button class="nav-btn theme-toggle" on:click={toggleTheme} title="Toggle theme">
-        {isDark ? '☀️' : '🌙'}
-      </button> -->
-      <button class="nav-btn theme-toggle" on:click={cycleTheme}>
-        {$theme === "dark" ? "☀️" : $theme === "light" ? "👾" : "🌙"}
-      </button>
-      <button class="nav-btn logout" on:click={logout} title="Logout">↩</button
-      >
-    </div>
-  </nav>
+  <BackgroundRings />
+  <!-- Left Nav Sidebar -->
+  <LeftNav {navigate} activePage="home" />
 
   <div class="layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="profile-card">
-        <div class="avatar">
-          <span class="avatar-emoji">🧑‍🌾</span>
-          <div class="avatar-ring"></div>
-        </div>
-        <div class="profile-info">
-          <div class="profile-name">{$user?.username || "Treelover"}</div>
-          <div class="profile-email">{$user?.email || ""}</div>
-          <span
-            class="role-badge"
-            style="background:{role.bg}; color:{role.text}"
-          >
-            {role.label}
-          </span>
-        </div>
-        <div class="stats-grid">
-          <div class="stat">
-            <span class="stat-val">{$user?.post_count ?? 0}</span>
-            <span class="stat-lbl">Posts</span>
-          </div>
-          <div class="stat">
-            <span class="stat-val">{$user?.total_likes_received ?? 0}</span>
-            <span class="stat-lbl">Likes</span>
-          </div>
-          <div class="stat">
-            <span class="stat-val">{$user?.leaves ?? 0}</span>
-            <span class="stat-lbl">🍃 Leaves</span>
-          </div>
-        </div>
-        {#if $user?.borough}
-          <div class="borough-tag">📍 {$user.borough}</div>
-        {/if}
-      </div>
-
-      <div class="quick-links">
-        <button class="quick-btn active">🏡 Feed</button>
-        <button class="quick-btn">🗺 Explore Map</button>
-        <button class="quick-btn">🌳 My Trees</button>
-        <button class="quick-btn">💬 Group Chats</button>
-        <button class="quick-btn">⚙️ Settings</button>
-      </div>
-    </aside>
-
     <!-- Feed -->
     <main class="feed">
-      <!-- Welcome banner -->
-      <div class="welcome-banner">
-        <div class="banner-text">
-          <span class="banner-emoji">🌿</span>
-          <div>
-            <h2>Welcome back, {$user?.username}!</h2>
-            <p>
-              NYC's urban forest has <strong>683,788 trees</strong> waiting for your
-              care.
-            </p>
-          </div>
-        </div>
-        <div class="banner-cred">
-          {#if ($user?.post_count ?? 0) < 30}
-            <div class="progress-label">Progress to Credible User</div>
-            <div class="progress-track">
-              <div
-                class="progress-fill"
-                style="width:{Math.min(
-                  100,
-                  (($user?.post_count ?? 0) / 30) * 100,
-                )}%"
-              ></div>
-            </div>
-            <div class="progress-hint">
-              {$user?.post_count ?? 0}/30 posts · {$user?.total_likes_received ??
-                0}/100 likes
-            </div>
-          {:else}
-            <div class="credible-unlocked">⭐ Credible status unlocked!</div>
-          {/if}
-        </div>
-      </div>
-
       <!-- Create post -->
       <div class="create-post">
-        <span class="create-avatar">🧑‍🌾</span>
+        <div class="create-avatar">
+          {#if $user?.profile_picture}
+            <img src={$user.profile_picture} alt="Me" class="avatar-img-sm" />
+          {:else}
+            🧑‍🌾
+          {/if}
+        </div>
         <div class="create-input">
           <input
             type="text"
@@ -327,134 +140,20 @@
   /* ─── Page Shell ─────────────────────────────────────────────────── */
   .page {
     min-height: 100vh;
-    background: var(--t-gradient-page);
+    background: #faf9f6;
     font-family: var(--t-font-body);
-    color: var(--t-text-body);
+    color: #4a4a4a;
     position: relative;
-    overflow: hidden;
-  }
-
-  /* ─── Fireflies ──────────────────────────────────────────────────── */
-  .fireflies {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
     z-index: 0;
     overflow: hidden;
+    padding-left: 60px;
   }
-  .firefly {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #d4a853;
-    box-shadow:
-      0 0 6px 2px rgba(212, 168, 83, 0.6),
-      0 0 12px 4px rgba(212, 168, 83, 0.3);
-    animation:
-      fireflyFloat linear infinite,
-      fireflyGlow ease-in-out infinite;
-    opacity: 0;
-  }
-  .firefly.sm {
-    width: 3px;
-    height: 3px;
-    box-shadow:
-      0 0 4px 1px rgba(212, 168, 83, 0.5),
-      0 0 8px 3px rgba(212, 168, 83, 0.2);
-  }
-  @keyframes fireflyFloat {
-    0% {
-      transform: translate(0, 0);
-    }
-    25% {
-      transform: translate(15px, -25px);
-    }
-    50% {
-      transform: translate(-10px, -40px);
-    }
-    75% {
-      transform: translate(20px, -15px);
-    }
-    100% {
-      transform: translate(0, 0);
-    }
-  }
-  @keyframes fireflyGlow {
-    0%,
-    100% {
-      opacity: 0;
-    }
-    15% {
-      opacity: 0.9;
-    }
-    50% {
-      opacity: 0.4;
-    }
-    85% {
-      opacity: 0.8;
-    }
-  }
-
-  /* ─── Navbar ─────────────────────────────────────────────────────── */
-  .navbar {
-    height: var(--t-nav-height);
-    background: var(--t-bg-overlay);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--t-border);
-    box-shadow: var(--t-shadow-nav);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1.5rem;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-  .nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .nav-title {
-    font-family: "Playfair Display", serif;
-    font-size: 1.4rem;
-    font-style: italic;
-    color: #8fbc8f;
-    letter-spacing: 0.02em;
-  }
-  .nav-title .gold {
-    color: #d4a853;
-    font-style: normal;
-  }
-  .nav-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .nav-btn {
-    background: var(--t-bg-elevated);
-    border: 1px solid var(--t-border);
-    border-radius: var(--t-radius-sm);
-    width: 36px;
-    height: 36px;
-    color: var(--t-text-muted);
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background var(--t-transition);
-  }
-  .nav-btn:hover {
-    background: var(--t-bg-hover);
-  }
-  .nav-btn.logout {
-    color: var(--t-status-poor);
-  }
-
   /* ─── Layout Grid ────────────────────────────────────────────────── */
   .layout {
-    max-width: var(--t-content-max);
+    max-width: none;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: var(--t-sidebar-width) 1fr;
+    grid-template-columns: 1fr;
     gap: 1.5rem;
     padding: 1.5rem;
     opacity: 0;
@@ -595,103 +294,62 @@
   .feed {
     display: flex;
     flex-direction: column;
+    width: 40%;
+    margin: 0 auto;
     gap: 1rem;
-  }
-
-  .welcome-banner {
-    background: var(--t-gradient-banner);
-    border: 1px solid var(--t-border-strong);
-    border-radius: var(--t-radius-lg);
-    padding: 1.4rem 1.6rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-  }
-  .banner-text {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .banner-emoji {
-    font-size: 2rem;
-  }
-  .banner-text h2 {
-    font-size: 1.1rem;
-    color: var(--t-text-heading);
-    margin-bottom: 2px;
-  }
-  .banner-text p {
-    font-size: 0.84rem;
-    color: var(--t-text-muted);
-  }
-  .banner-text strong {
-    color: var(--t-brand);
-  }
-
-  .progress-label {
-    font-size: 0.73rem;
-    color: var(--t-text-faint);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-  }
-  .progress-track {
-    height: 5px;
-    background: var(--t-bg-elevated);
-    border-radius: var(--t-radius-pill);
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    border-radius: var(--t-radius-pill);
-    background: var(--t-gradient-bar);
-    transition: width 0.6s;
-  }
-  .progress-hint {
-    font-size: 0.72rem;
-    color: var(--t-text-faint);
-    margin-top: 4px;
-  }
-  .credible-unlocked {
-    font-size: 0.84rem;
-    color: var(--t-status-fair);
-    font-weight: 600;
   }
 
   /* ─── Create Post ────────────────────────────────────────────────── */
   .create-post {
-    background: var(--t-bg-elevated);
-    border: 1px solid var(--t-border);
+    background: #cdd9af; /* Sage Mist */
+    border: 1px solid rgba(164, 74, 63, 0.15);
     border-radius: var(--t-radius-lg);
     padding: 14px 16px;
     display: flex;
     align-items: center;
     gap: 10px;
+    box-shadow: 0 4px 20px rgba(138, 154, 91, 0.1);
   }
   .create-avatar {
-    font-size: 1.6rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #36454f; /* Charcoal Gray */
+    color: #faf9f6; /* Contrasting text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .avatar-img-sm {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .create-input {
     flex: 1;
   }
   .create-input input {
     width: 100%;
-    background: var(--t-bg-input);
-    border: 1px solid var(--t-border-input);
+    background: #faf9f6;
+    border: 1px solid #36454f;
     border-radius: var(--t-radius-pill);
     padding: 9px 16px;
-    color: var(--t-text-input);
+    color: #2b2b2b;
     font-size: 0.88rem;
     font-family: var(--t-font-body);
     cursor: pointer;
     outline: none;
   }
   .create-btn {
-    background: var(--t-brand-dim);
-    border: 1px solid var(--t-brand-muted);
+    background: #36454f; /* Charcoal Gray */
+    color: #faf9f6; /* Contrasting text */
+    border: 1px solid rgba(138, 154, 91, 0.2);
     border-radius: var(--t-radius-pill);
     padding: 8px 16px;
-    color: var(--t-brand);
+    color: #8a9a5b; /* Sage text */
     font-size: 0.84rem;
     font-weight: 600;
     font-family: var(--t-font-body);
@@ -711,10 +369,10 @@
   }
 
   .post-card {
-    background: var(--t-bg-elevated);
-    border: 1px solid var(--t-border);
+    background: #cdd9af; /* Sage Mist */
+    border: 1px solid rgba(164, 74, 63, 0.15);
     border-radius: var(--t-radius-lg);
-    box-shadow: var(--t-shadow-card);
+    box-shadow: 0 8px 32px rgba(138, 154, 91, 0.08);
     overflow: hidden;
     animation: fadeUp 0.4s both;
   }
@@ -741,11 +399,11 @@
   .post-tree-name {
     font-size: 0.92rem;
     font-weight: 600;
-    color: var(--t-text-heading);
+    color: #a44a3f; /* Redwood Rust titles */
   }
   .post-meta {
     font-size: 0.76rem;
-    color: var(--t-text-muted);
+    color: rgba(43, 43, 43, 0.7); /* Muted dark stone for meta */
     margin-top: 1px;
   }
 
@@ -764,11 +422,12 @@
 
   .follow-btn {
     margin-left: auto;
-    background: none;
-    border: 1px solid var(--t-brand-muted);
+    background: #36454f; /* Charcoal Gray */
+    color: #faf9f6; /* Contrasting text */
+    border: none;
     border-radius: var(--t-radius-pill);
     padding: 5px 13px;
-    color: var(--t-brand);
+    color: #8a9a5b;
     font-size: 0.78rem;
     font-weight: 600;
     font-family: var(--t-font-body);
@@ -782,7 +441,7 @@
   .post-body {
     padding: 0 16px 10px;
     font-size: 0.88rem;
-    color: var(--t-text-body);
+    color: #2b2b2b; /* Deep charcoal for legibility */
   }
 
   .post-photo-placeholder {
@@ -811,7 +470,7 @@
     border: none;
     border-radius: var(--t-radius-sm);
     padding: 7px 12px;
-    color: var(--t-text-muted);
+    color: rgba(43, 43, 43, 0.6);
     font-size: 0.8rem;
     font-family: var(--t-font-body);
     cursor: pointer;
@@ -827,7 +486,8 @@
   .feed-hint {
     text-align: center;
     font-size: 0.82rem;
-    color: var(--t-text-faint);
+    color: #a44a3f; /* Redwood Rust hint */
     padding: 0.5rem 0 1rem;
+    opacity: 0.8;
   }
 </style>

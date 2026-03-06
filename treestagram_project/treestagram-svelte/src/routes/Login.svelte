@@ -1,5 +1,6 @@
 <script>
-  import { user, apiLogin } from "../lib/api.js";
+  import { onMount } from "svelte";
+  import { user, apiLogin, apiGoogleLoginUrl } from "../lib/api.js";
 
   export let navigate;
 
@@ -8,6 +9,21 @@
   let loading = false;
   let error = "";
   let showPassword = false;
+  let requiresVerification = false;
+  let confirmationSuccess = false;
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("confirmed") === "true") {
+      confirmationSuccess = true;
+      // Clean the URL
+      window.history.replaceState({}, "", "/login");
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        confirmationSuccess = false;
+      }, 5000);
+    }
+  });
 
   async function handleLogin() {
     if (!username || !password) {
@@ -16,6 +32,7 @@
     }
     loading = true;
     error = "";
+    requiresVerification = false;
     try {
       const data = await apiLogin({ username, password });
       if (data.success) {
@@ -23,6 +40,9 @@
         navigate("/home");
       } else {
         error = data.error || "Invalid credentials.";
+        if (data.requires_verification) {
+          requiresVerification = true;
+        }
       }
     } catch {
       error = "Could not connect to server.";
@@ -30,10 +50,30 @@
     loading = false;
   }
 
+  async function handleGoogleLogin() {
+    try {
+      const data = await apiGoogleLoginUrl();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      error = "Could not connect to Google login.";
+    }
+  }
+
   function handleKeydown(e) {
     if (e.key === "Enter") handleLogin();
   }
 </script>
+
+{#if confirmationSuccess}
+  <div class="toast-success">
+    <span>🌿</span> Email confirmed! Your account is now active. Sign in below.
+    <button class="toast-close" on:click={() => (confirmationSuccess = false)}
+      >✕</button
+    >
+  </div>
+{/if}
 
 <div class="page">
   <div class="login-left">
@@ -114,11 +154,19 @@
       </div>
       <div class="form-row">
         <label><input type="checkbox" /> Remember me</label>
-        <a href="#forgot">Forgot password?</a>
+        <button class="link-btn" on:click={() => navigate("/forgot-password")}
+          >Forgot password?</button
+        >
       </div>
 
       {#if error}
         <div class="error-msg">⚠️ {error}</div>
+      {/if}
+
+      {#if requiresVerification}
+        <div class="info-msg">
+          📧 Check your inbox for a confirmation link to activate your account.
+        </div>
       {/if}
 
       <button class="btn-form-submit" on:click={handleLogin} disabled={loading}>
@@ -130,7 +178,7 @@
       </button>
 
       <div class="divider">or continue with</div>
-      <button class="btn-google">
+      <button class="btn-google" on:click={handleGoogleLogin}>
         <svg width="16" height="16" viewBox="0 0 24 24"
           ><path
             fill="#4285F4"
@@ -349,12 +397,12 @@
     color: var(--moss);
     cursor: pointer;
   }
-  .form-row a {
+  .form-row .link-btn {
     font-size: 0.85rem;
     color: var(--sage);
     text-decoration: none;
   }
-  .form-row a:hover {
+  .form-row .link-btn:hover {
     color: var(--moss);
     text-decoration: underline;
   }
@@ -366,6 +414,16 @@
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
     color: #b91c1c;
+    margin-bottom: 1rem;
+  }
+
+  .info-msg {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    color: #1d4ed8;
     margin-bottom: 1rem;
   }
 
@@ -445,5 +503,45 @@
   }
   .link-btn:hover {
     text-decoration: underline;
+  }
+
+  .toast-success {
+    position: fixed;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3d5a3e;
+    color: white;
+    padding: 0.85rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-family: "DM Sans", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 6px 24px rgba(44, 24, 16, 0.2);
+    z-index: 1000;
+    animation: slideDown 0.4s ease-out;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+  .toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 0 0 0.5rem;
+  }
+  .toast-close:hover {
+    color: white;
   }
 </style>

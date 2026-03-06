@@ -8,9 +8,15 @@
   import TreeDashboard from "./routes/TreeDashboard.svelte";
   import Chat from "./routes/Chat.svelte";
   import Profile from "./routes/Profile.svelte";
+  import ForgotPassword from "./routes/ForgotPassword.svelte";
+  import ResetPassword from "./routes/ResetPassword.svelte";
+  import Settings from "./routes/Settings.svelte";
 
   let route = window.location.pathname;
   let ready = false;
+
+  // Parse /reset-password/:uid/:token from the route
+  $: resetMatch = route.match(/^\/reset-password\/([^/]+)\/([^/]+)\/?$/);
 
   // Simple router
   function navigate(path) {
@@ -38,7 +44,7 @@
     // Unauthenticated user visiting protected pages → redirect to landing
     else if (
       !$user &&
-      ["/home", "/dashboard", "/chat", "/profile"].includes(route)
+      ["/home", "/dashboard", "/chat", "/profile", "/settings"].includes(route)
     ) {
       navigate("/");
     }
@@ -50,6 +56,10 @@
     <Signup {navigate} />
   {:else if route === "/login"}
     <Login {navigate} />
+  {:else if route === "/forgot-password"}
+    <ForgotPassword {navigate} />
+  {:else if resetMatch}
+    <ResetPassword {navigate} uid={resetMatch[1]} token={resetMatch[2]} />
   {:else if route === "/home"}
     <Home {navigate} />
   {:else if route === "/dashboard"}
@@ -58,6 +68,8 @@
     <Chat {navigate} />
   {:else if route === "/profile"}
     <Profile {navigate} />
+  {:else if route === "/settings"}
+    <Settings {navigate} />
   {:else}
     <Landing {navigate} />
   {/if}

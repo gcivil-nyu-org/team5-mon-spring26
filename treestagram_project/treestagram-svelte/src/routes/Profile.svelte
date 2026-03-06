@@ -1,11 +1,13 @@
 <script>
-    import TopNav from "../components/TopNav.svelte";
+    import LeftNav from "../components/LeftNav.svelte";
+    import BackgroundRings from "../components/BackgroundRings.svelte";
     import { user } from "../lib/api.js";
     export let navigate;
 </script>
 
 <div class="page">
-    <TopNav {navigate} activePage="profile" />
+    <BackgroundRings />
+    <LeftNav {navigate} activePage="profile" />
 
     <div class="profile-hero">
         <div class="profile-cover">
@@ -13,7 +15,17 @@
             🌳🌿🍃🌲🌳🌿🍃
         </div>
         <div class="profile-info-bar">
-            <div class="profile-pic">🌿</div>
+            <div class="profile-pic">
+                {#if $user?.profile_picture}
+                    <img
+                        src={$user.profile_picture}
+                        alt="Profile"
+                        class="profile-img-fluid"
+                    />
+                {:else}
+                    🌿
+                {/if}
+            </div>
             <div class="profile-text">
                 <h1>
                     {$user?.first_name || "Your"}
@@ -26,10 +38,6 @@
                         >📍 {$user?.borough || "Manhattan"}</span
                     >
                 </div>
-            </div>
-            <div class="profile-actions">
-                <button class="btn-edit-profile">Edit Profile</button>
-                <button class="btn-edit-profile">⚙️</button>
             </div>
         </div>
         <div class="profile-stats-tabs">
@@ -149,12 +157,16 @@
     }
 
     .page {
-        background: var(--mist);
+        background: #faf9f6; /* Warm White background */
         min-height: 100vh;
+        padding-left: 60px;
+        color: #4a4a4a;
+        position: relative;
+        z-index: 0;
+        overflow: hidden;
     }
-
     .profile-hero {
-        background: var(--bark);
+        background: #8a9a5b; /* Sage Leaf Green hero */
         padding: 0 3rem;
         position: relative;
         overflow: hidden;
@@ -210,13 +222,20 @@
         width: 90px;
         height: 90px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--moss), var(--sage));
-        border: 4px solid var(--bark);
+        background: linear-gradient(135deg, #8a9a5b, #cdd9af);
+        border: 4px solid #faf9f6;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 2.5rem;
         flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(138, 154, 91, 0.15);
+        overflow: hidden;
+    }
+    .profile-img-fluid {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
     .profile-text {
         flex: 1;
@@ -228,7 +247,8 @@
         line-height: 1.2;
     }
     .handle {
-        color: var(--sage);
+        color: #faf9f6;
+        opacity: 0.9;
         font-size: 0.9rem;
     }
     .profile-chips {
@@ -256,26 +276,6 @@
         color: var(--canopy);
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    .profile-actions {
-        display: flex;
-        gap: 0.6rem;
-        align-items: center;
-    }
-    .btn-edit-profile {
-        background: none;
-        border: 1.5px solid rgba(255, 255, 255, 0.3);
-        color: var(--canopy);
-        padding: 0.5rem 1.2rem;
-        border-radius: 20px;
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .btn-edit-profile:hover {
-        border-color: var(--canopy);
-        color: white;
-    }
 
     .profile-stats-tabs {
         position: relative;
@@ -292,12 +292,12 @@
     .p-stat .n {
         font-family: "Playfair Display", serif;
         font-size: 1.6rem;
-        color: var(--leaf);
+        color: #faf9f6;
         display: block;
     }
     .p-stat .l {
         font-size: 0.75rem;
-        color: var(--canopy);
+        color: rgba(250, 249, 246, 0.7);
     }
     .profile-tab-links {
         display: flex;
@@ -307,7 +307,7 @@
     .profile-tab {
         background: none;
         border: none;
-        color: var(--canopy);
+        color: rgba(250, 249, 246, 0.8);
         padding: 0.6rem 1.2rem;
         cursor: pointer;
         font-family: "DM Sans", sans-serif;
@@ -316,11 +316,12 @@
         transition: all 0.2s;
     }
     .profile-tab:hover {
-        color: var(--canopy);
+        color: #faf9f6;
     }
     .profile-tab.active {
-        color: var(--leaf);
-        border-bottom-color: var(--leaf);
+        color: #faf9f6;
+        border-bottom-color: #faf9f6;
+        font-weight: 600;
     }
 
     .profile-body {
@@ -400,17 +401,17 @@
     }
 
     .profile-right-card {
-        background: white;
+        background: #cdd9af; /* Sage Mist */
         border-radius: 16px;
         padding: 1.4rem;
-        box-shadow: 0 2px 12px var(--shadow);
+        box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08);
         margin-bottom: 1rem;
     }
     .profile-right-card h3 {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--sage);
+        color: #a44a3f; /* Redwood Rust */
         margin-bottom: 1rem;
     }
     .about-text {

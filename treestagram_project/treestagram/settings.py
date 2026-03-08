@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 from django.contrib.messages import constants as message_constants
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-^6mmku6r49r2@*(%p7(bys*c)35$swil%+)-u%jc2(724m-16g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -60,11 +61,13 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'treestagram.urls'
+svelte_build_path = os.path.join(BASE_DIR, 'treestagram-svelte', 'dist')
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'accounts' / 'templates'],
+#         'DIRS': [BASE_DIR / 'accounts' / 'templates'],
+        'DIRS': [svelte_build_path],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -76,6 +79,9 @@ TEMPLATES = [
         },
     },
 ]
+
+STATICFILES_DIRS = [ svelte_build_path ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 WSGI_APPLICATION = 'treestagram.wsgi.application'
 

@@ -31,8 +31,6 @@ staticfiles/
 !.env.example
 
 # Packaging
-dist/
-build/
 *.egg-info/
 .eggs/
 
@@ -54,8 +52,6 @@ pnpm-debug.log*
 
 # SvelteKit build output
 .svelte-kit/
-build/
-dist/
 
 # Environment files
 .env.local

@@ -8,6 +8,14 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.middleware.csrf import get_token
+from allauth.account.models import EmailAddress
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 from .forms import SignupForm
 from .models import User
 
@@ -21,6 +29,8 @@ def user_to_dict(user):
         'last_name': user.last_name,
         'borough': user.borough,
         'role': user.role,
+        'bio': user.bio,
+        'profile_picture': user.profile_picture.url if user.profile_picture else None,
         'post_count': user.post_count,
         'total_likes_received': user.total_likes_received,
         'leaves': user.leaves,
@@ -42,9 +52,24 @@ def api_signup(request):
 
     form = SignupForm(data)
     if form.is_valid():
-        user = form.save()
-        login(request, user)
-        return JsonResponse({'success': True, 'user': user_to_dict(user)})
+        user = form.save(commit=False)
+        user.is_active = False          # inactive until email is confirmed
+        user.save()
+
+        # Create an EmailAddress record and send the confirmation email
+        email_address = EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            primary=True,
+            verified=False,
+        )
+        email_address.send_confirmation(request)
+
+        return JsonResponse({
+            'success': True,
+            'requires_verification': True,
+            'message': 'Account created! Check your email for a confirmation link.',
+        })
     else:
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
@@ -62,8 +87,25 @@ def api_login(request):
     if not username or not password:
         return JsonResponse({'success': False, 'error': 'Username and password required.'}, status=400)
 
+    # Try authenticating by username first, then fall back to email
     user = authenticate(request, username=username, password=password)
+    if user is None:
+        # Try looking up by email
+        try:
+            user_obj = User.objects.get(email__iexact=username)
+            user = authenticate(request, username=user_obj.username, password=password)
+        except User.DoesNotExist:
+            pass
+
     if user:
+        # Check if user has verified their email
+        if not user.is_active:
+            return JsonResponse({
+                'success': False,
+                'error': 'Please verify your email before logging in. Check your inbox for a confirmation link.',
+                'requires_verification': True,
+            }, status=403)
+
         login(request, user)
         return JsonResponse({'success': True, 'user': user_to_dict(user)})
     else:
@@ -76,8 +118,278 @@ def api_logout(request):
     return JsonResponse({'success': True})
 
 
+def api_check_username(request):
+    """Check if a username is already taken."""
+    username = request.GET.get('username', '').strip()
+    if len(username) < 3:
+        return JsonResponse({'available': False, 'error': 'Too short'})
+    taken = User.objects.filter(username__iexact=username).exists()
+    return JsonResponse({'available': not taken})
+
+
 def api_me(request):
     """Return current user info if logged in."""
     if request.user.is_authenticated:
         return JsonResponse({'success': True, 'user': user_to_dict(request.user)} | user_to_dict(request.user))
     return JsonResponse({'success': False}, status=401)
+
+
+def api_google_login_url(request):
+    """Return the Google OAuth login URL for the Svelte frontend to redirect to."""
+    return JsonResponse({
+        'url': '/accounts/google/login/?process=login',
+    })
+
+
+@require_http_methods(["POST"])
+def api_resend_verification(request):
+    """Resend verification email for a given email address."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    email = data.get('email', '').strip()
+    if not email:
+        return JsonResponse({'success': False, 'error': 'Email is required.'}, status=400)
+
+    try:
+        email_address = EmailAddress.objects.get(email__iexact=email, verified=False)
+        email_address.send_confirmation(request)
+        return JsonResponse({'success': True, 'message': 'Verification email sent!'})
+    except EmailAddress.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'No unverified account found with this email.',
+        }, status=404)
+
+
+@require_http_methods(["POST"])
+def api_forgot_password(request):
+    """Send a password reset email for the given email address."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    email = data.get('email', '').strip()
+    if not email:
+        return JsonResponse({'success': False, 'error': 'Email address is required.'}, status=400)
+
+    form = PasswordResetForm({'email': email})
+    if form.is_valid():
+        form.save(
+            request=request,
+            use_https=request.is_secure(),
+            from_email=None,  # uses DEFAULT_FROM_EMAIL
+            email_template_name='registration/password_reset_email.html',
+            subject_template_name='registration/password_reset_subject.txt',
+        )
+
+    # Always return success to avoid leaking whether the email exists
+    return JsonResponse({
+        'success': True,
+        'message': 'If an account exists with this email, a password reset link has been sent.',
+    })
+
+
+def api_verify_reset_token(request, uidb64, token):
+    """Check whether a password-reset token is still valid (GET)."""
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return JsonResponse({'valid': False})
+
+    if default_token_generator.check_token(user, token):
+        return JsonResponse({'valid': True})
+    return JsonResponse({'valid': False})
+
+
+@require_http_methods(["POST"])
+def api_reset_password(request, uidb64, token):
+    """Validate token and set the new password."""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    password = data.get('password', '')
+    if not password:
+        return JsonResponse({'success': False, 'error': 'Password is required.'}, status=400)
+
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Invalid reset link.'}, status=400)
+
+    if not default_token_generator.check_token(user, token):
+        return JsonResponse({'success': False, 'error': 'This reset link has expired. Please request a new one.'}, status=400)
+
+    # Validate password using Django validators
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    try:
+        validate_password(password, user)
+    except ValidationError as e:
+        return JsonResponse({'success': False, 'error': ' '.join(e.messages)}, status=400)
+
+    user.set_password(password)
+    user.save()
+    return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
+@require_http_methods(["POST"])
+def api_update_profile(request):
+    """Update current user profile info and photo."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    user = request.user
+    
+    # Handle basic info (could be JSON or Form Data)
+    # If Content-Type is multipart/form-data, data is in request.POST
+    # If Content-Type is application/json, data is in request.body
+    
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    else:
+        # Fallback to POST for multipart/form-data
+        data = request.POST
+
+    # Fields allowed to be updated
+    allowed_fields = ['first_name', 'last_name', 'username', 'bio', 'borough']
+    
+    for field in allowed_fields:
+        if field in data:
+            val = data.get(field)
+            if field == 'username':
+                val = val.strip().lower()
+                if val != user.username and User.objects.filter(username=val).exists():
+                    return JsonResponse({'success': False, 'error': f'Username "{val}" is taken.'}, status=400)
+            setattr(user, field, val)
+
+    # Handle Photo Upload or Removal
+    if 'profile_picture' in request.FILES:
+        user.profile_picture = request.FILES['profile_picture']
+    elif data.get('remove_photo') == 'true':
+        user.profile_picture = None
+
+    try:
+        user.save()
+        return JsonResponse({
+            'success': True,
+            'user': user_to_dict(user),
+            'message': 'Profile updated successfully!'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+@require_http_methods(["POST"])
+def api_verify_password(request):
+    """Real-time validation of the current password."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    password = data.get('password')
+    if not password:
+        return JsonResponse({'success': False, 'error': 'Password required'}, status=400)
+
+    is_correct = request.user.check_password(password)
+    return JsonResponse({'success': True, 'is_correct': is_correct})
+
+
+@require_http_methods(["POST"])
+def api_change_password(request):
+    """Securely update the password for the current authenticated user."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+
+    if not current_password or not new_password or not confirm_password:
+        return JsonResponse({'success': False, 'error': 'All fields are required.'}, status=400)
+
+    if new_password != confirm_password:
+        return JsonResponse({'success': False, 'error': 'New passwords do not match.'}, status=400)
+
+    user = request.user
+
+    # Verify current password
+    if not user.check_password(current_password):
+        return JsonResponse({'success': False, 'error': 'Current password incorrect.'}, status=400)
+
+    # Validate new password
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    try:
+        validate_password(new_password, user)
+    except ValidationError as e:
+        return JsonResponse({'success': False, 'error': ' '.join(e.messages)}, status=400)
+
+    # Set new password and keep session alive
+    from django.contrib.auth import update_session_auth_hash
+    user.set_password(new_password)
+    user.save()
+    update_session_auth_hash(request, user)
+
+    return JsonResponse({'success': True, 'message': 'Password changed successfully.'})
+
+
+@require_http_methods(["POST"])
+def api_delete_account(request):
+    """
+    Deletes the current user's account after password verification.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Not authenticated.'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    password = data.get('password')
+    if not password:
+        return JsonResponse({'success': False, 'error': 'Password is required to confirm deletion.'}, status=400)
+
+    if not request.user.check_password(password):
+        return JsonResponse({'success': False, 'error': 'Incorrect password.'}, status=400)
+
+    user = request.user
+    user_email = user.email
+    first_name = user.first_name
+    username = user.username
+
+    # Send confirmation email
+    subject = 'Your Treestagram account has been deleted'
+    html_message = render_to_string('accounts/account_deleted_email.html', {
+        'user': {'first_name': first_name, 'username': username}
+    })
+    plain_message = strip_tags(html_message)
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@treestagram.nyc')
+
+    try:
+        send_mail(subject, plain_message, from_email, [user_email], html_message=html_message)
+    except Exception as e:
+        # We log the error but proceed with deletion
+        print(f"Error sending deletion email: {e}")
+
+    # Log out and delete
+    logout(request)
+    user.delete()
+
+    return JsonResponse({'success': True, 'message': 'Account deleted successfully.'})

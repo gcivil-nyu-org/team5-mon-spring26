@@ -39,6 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    # allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    # project
     'accounts',
 ]
 
@@ -50,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'treestagram.urls'
@@ -58,6 +66,7 @@ svelte_build_path = os.path.join(BASE_DIR, 'treestagram-svelte', 'dist')
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+#         'DIRS': [BASE_DIR / 'accounts' / 'templates'],
         'DIRS': [svelte_build_path],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -129,7 +138,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'accounts.User'   # ← Must be before first migration!
+AUTH_USER_MODEL = 'accounts.User'   # Must be before first migration!
 #INSTALLED_APPS = [..., 'accounts']
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
@@ -143,11 +152,32 @@ MESSAGE_TAGS = {
     message_constants.ERROR:   'error',
 }
 
-# ── Allow Svelte dev server to talk to Django ──
+# -- Allow Svelte dev server to talk to Django --
 CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 
-# ── Media files (profile pictures etc.) ──
+# -- Media files (profile pictures etc.) --
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# -- django-allauth --
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_ADAPTER = 'accounts.adapter.TreestagramAccountAdapter'
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+# Google OAuth -- skip email verification for social accounts (already verified)
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+

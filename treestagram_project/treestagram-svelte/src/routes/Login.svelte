@@ -1,494 +1,547 @@
 <script>
-  import { user, apiLogin } from '../lib/api.js'
+  import { onMount } from "svelte";
+  import { user, apiLogin, apiGoogleLoginUrl } from "../lib/api.js";
 
-  export let navigate
+  export let navigate;
 
-  let username = ''
-  let password = ''
-  let loading = false
-  let error = ''
-  let shake = false
-  let focused = ''
-  let mounted = false
+  let username = "";
+  let password = "";
+  let loading = false;
+  let error = "";
   let showPassword = false;
+  let requiresVerification = false;
+  let confirmationSuccess = false;
 
-  import { onMount } from 'svelte'
-  onMount(() => setTimeout(() => mounted = true, 50))
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("confirmed") === "true") {
+      confirmationSuccess = true;
+      // Clean the URL
+      window.history.replaceState({}, "", "/login");
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        confirmationSuccess = false;
+      }, 5000);
+    }
+  });
 
   async function handleLogin() {
     if (!username || !password) {
-      triggerShake('Please fill in all fields.')
-      return
+      error = "Please fill in all fields.";
+      return;
     }
-    loading = true
-    error = ''
+    loading = true;
+    error = "";
+    requiresVerification = false;
     try {
-      const data = await apiLogin({ username, password })
+      const data = await apiLogin({ username, password });
       if (data.success) {
-        user.set(data.user)
-        navigate('/home')
+        user.set(data.user);
+        navigate("/home");
       } else {
-        triggerShake(data.error || 'Invalid credentials.')
+        error = data.error || "Invalid credentials.";
+        if (data.requires_verification) {
+          requiresVerification = true;
+        }
       }
     } catch {
-      triggerShake('Could not connect to server.')
+      error = "Could not connect to server.";
     }
-    loading = false
+    loading = false;
   }
 
-  function triggerShake(msg) {
-    error = msg
-    shake = true
-    setTimeout(() => shake = false, 600)
+  async function handleGoogleLogin() {
+    try {
+      const data = await apiGoogleLoginUrl();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      error = "Could not connect to Google login.";
+    }
   }
 
   function handleKeydown(e) {
-    if (e.key === 'Enter') handleLogin()
+    if (e.key === "Enter") handleLogin();
   }
 </script>
 
-<div class="page" class:mounted>
-  <!-- Animated forest background -->
-  <div class="forest-bg">
-    <div class="layer layer-1"></div>
-    <div class="layer layer-2"></div>
-    <div class="layer layer-3"></div>
-    <div class="fireflies">
-      {#each Array(12) as _, i}
-        <span class="firefly" style="
-          --x: {10 + i * 7.5}%;
-          --y: {15 + (i % 5) * 15}%;
-          --delay: {i * 0.4}s;
-          --dur: {2.5 + (i % 3) * 0.8}s;
-        "></span>
-      {/each}
+{#if confirmationSuccess}
+  <div class="toast-success">
+    <span>🌿</span> Email confirmed! Your account is now active. Sign in below.
+    <button class="toast-close" on:click={() => (confirmationSuccess = false)}
+      >✕</button
+    >
+  </div>
+{/if}
+
+<div class="page">
+  <div class="login-left">
+    <div class="login-left-content">
+      <div
+        class="login-brand"
+        on:click={() => navigate("/")}
+        on:keydown={(e) => e.key === "Enter" && navigate("/")}
+        role="button"
+        tabindex="0"
+      >
+        Tree<span>stagram</span>
+      </div>
+      <p class="login-tagline">
+        New York City's community for urban tree stewardship. Follow trees.
+        Share observations. Protect the canopy.
+      </p>
+      <span class="tree-illustration">🌳</span>
+      <div class="login-feature">
+        <span class="icon">📸</span>
+        <span>Post photos and observations of NYC trees</span>
+      </div>
+      <div class="login-feature">
+        <span class="icon">💬</span>
+        <span>Join tree-specific group chats with fellow fans</span>
+      </div>
+      <div class="login-feature">
+        <span class="icon">🛡️</span>
+        <span>Become a Caretaker and steward your tree</span>
+      </div>
     </div>
   </div>
 
-  <!-- Card -->
-  <div class="card" class:shake>
-    <div class="card-inner">
+  <div class="login-right">
+    <div class="login-form">
+      <h2>Welcome back</h2>
+      <p>Sign in to your Treestagram account</p>
 
-      <!-- Brand -->
-      <div class="brand">
-        <div class="logo-wrap">
-          <span class="logo-tree">🌳</span>
-          <div class="logo-rings">
-            <div class="ring r1"></div>
-            <div class="ring r2"></div>
-          </div>
-        </div>
-        <h1>Treestagram</h1>
-        <p class="tagline">NYC's living urban forest</p>
+      <div class="form-group">
+        <label for="login-username">Email or Username</label>
+        <input
+          id="login-username"
+          type="text"
+          placeholder="you@example.com"
+          bind:value={username}
+          on:keydown={handleKeydown}
+        />
       </div>
-
-      <!-- Form -->
-      <div class="form">
-        <div class="field" class:focused={focused === 'username'}>
-          <label for="username">
-            <span class="label-icon">🪵</span> Username
-          </label>
-          <input
-            id="username"
-            type="text"
-            placeholder="your_username"
-            bind:value={username}
-            on:focus={() => focused = 'username'}
-            on:blur={() => focused = ''}
-            on:keydown={handleKeydown}
-            autocomplete="username"
-          />
-          <div class="field-line"></div>
-        </div>
-
-        <div class="field password-field" class:focused={focused === 'password'}>
-          <label for="password">
-            <span class="label-icon">🔑</span> Password
-          </label>
-          
-          <div class="input-container">
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <div class="input-wrapper">
           {#if showPassword}
             <input
-              id="password"
+              id="login-password"
               type="text"
               placeholder="••••••••"
               bind:value={password}
-              on:focus={() => focused = 'password'}
-              on:blur={() => focused = ''}
               on:keydown={handleKeydown}
-              autocomplete="current-password"
             />
           {:else}
             <input
-              id="password"
+              id="login-password"
               type="password"
               placeholder="••••••••"
               bind:value={password}
-              on:focus={() => focused = 'password'}
-              on:blur={() => focused = ''}
               on:keydown={handleKeydown}
-              autocomplete="current-password"
             />
           {/if}
           <button
             type="button"
-            class="toggle-visibility"
-            on:click={() => showPassword = !showPassword}
+            class="toggle-pw"
+            on:click={() => (showPassword = !showPassword)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? '🙈' : '👁️'}
+            {showPassword ? "🙈" : "👁️"}
           </button>
         </div>
-          
-          <div class="field-line"></div>
+      </div>
+      <div class="form-row">
+        <label><input type="checkbox" /> Remember me</label>
+        <button class="link-btn" on:click={() => navigate("/forgot-password")}
+          >Forgot password?</button
+        >
+      </div>
+
+      {#if error}
+        <div class="error-msg">⚠️ {error}</div>
+      {/if}
+
+      {#if requiresVerification}
+        <div class="info-msg">
+          📧 Check your inbox for a confirmation link to activate your account.
         </div>
+      {/if}
 
-        {#if error}
-          <div class="error-msg">
-            <span>⚠️</span> {error}
-          </div>
+      <button class="btn-form-submit" on:click={handleLogin} disabled={loading}>
+        {#if loading}
+          Signing in…
+        {:else}
+          Sign In
         {/if}
+      </button>
 
-        <button class="btn-login" on:click={handleLogin} disabled={loading}>
-          {#if loading}
-            <span class="btn-spinner"></span> Entering the forest…
-          {:else}
-            Enter the Forest 🌿
-          {/if}
-        </button>
+      <div class="divider">or continue with</div>
+      <button class="btn-google" on:click={handleGoogleLogin}>
+        <svg width="16" height="16" viewBox="0 0 24 24"
+          ><path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          /><path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          /><path
+            fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          /><path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          /></svg
+        >
+        Continue with Google
+      </button>
+      <div class="login-footer">
+        Don't have an account? <button
+          class="link-btn"
+          on:click={() => navigate("/signup")}>Sign up free</button
+        >
       </div>
-
-      <!-- Footer -->
-      <div class="footer">
-        <span>New to Treestagram?</span>
-        <button class="link-btn" on:click={() => navigate('/signup')}>
-          Plant your roots →
-        </button>
-      </div>
-
     </div>
   </div>
 </div>
 
 <style>
-  /* ── Page & background ───────────────────────────────────────────────────── */
+  :root {
+    --bark: #2c1810;
+    --moss: #3d5a3e;
+    --sage: #6b8f71;
+    --leaf: #8fbc8f;
+    --canopy: #c5d5c5;
+    --cream: #f5f0e8;
+    --sun: #d4a853;
+    --ink: #1a1108;
+  }
+
   .page {
     min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .login-left {
+    background: var(--bark);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .login-left::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-radial-gradient(
+      circle at 50% 50%,
+      transparent 0,
+      transparent 40px,
+      rgba(143, 188, 143, 0.04) 40px,
+      rgba(143, 188, 143, 0.04) 42px
+    );
+  }
+  .login-left-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 400px;
+  }
+  .login-brand {
+    font-family: "Playfair Display", serif;
+    font-size: 2.8rem;
+    font-style: italic;
+    color: var(--leaf);
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .login-brand:hover {
+    opacity: 0.8;
+  }
+  .login-brand span {
+    color: var(--sun);
+    font-style: normal;
+  }
+  .login-tagline {
+    color: var(--canopy);
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+  }
+  .tree-illustration {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 1rem;
+    animation: sway 4s ease-in-out infinite;
+  }
+  @keyframes sway {
+    0%,
+    100% {
+      transform: rotate(-2deg);
+    }
+    50% {
+      transform: rotate(2deg);
+    }
+  }
+  .login-feature {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(143, 188, 143, 0.2);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.6rem;
+    text-align: left;
+    color: var(--canopy);
+    font-size: 0.85rem;
+  }
+  .login-feature .icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .login-right {
+    background: var(--cream);
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    overflow: hidden;
-    padding: 2rem 1rem;
-    background: linear-gradient(160deg, #071410 0%, #0d2318 40%, #0a1c12 100%);
+    padding: 3rem;
   }
-
-  .input-container {
+  .login-form {
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-form h2 {
+    font-family: "Playfair Display", serif;
+    font-size: 2rem;
+    color: var(--bark);
+    margin-bottom: 0.5rem;
+  }
+  .login-form > p {
+    color: var(--sage);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+  .form-group {
+    margin-bottom: 1.2rem;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--moss);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+  }
+  .form-group input {
+    width: 100%;
+    background: white;
+    border: 1.5px solid var(--canopy);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.95rem;
+    color: var(--ink);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+    outline: none;
+  }
+  .form-group input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(107, 143, 113, 0.15);
+  }
+  .input-wrapper {
     position: relative;
     display: flex;
     align-items: center;
   }
-
-  .input-container input {
-    width: 100%;
-    padding-right: 2.5rem; 
+  .input-wrapper input {
+    padding-right: 2.8rem;
   }
-
-  .toggle-visibility {
+  .toggle-pw {
     position: absolute;
-    right: 0.5rem;
+    right: 0.6rem;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.7;
+    opacity: 0.6;
     transition: opacity 0.2s;
   }
-
-  .toggle-visibility:hover {
+  .toggle-pw:hover {
     opacity: 1;
   }
-
-  .forest-bg { position: absolute; inset: 0; pointer-events: none; }
-
-  .layer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    background-repeat: repeat-x;
-  }
-  .layer-1 {
-    height: 220px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 220'%3E%3Cpath d='M0,180 Q50,120 100,160 Q150,100 200,140 Q250,80 300,130 Q350,60 400,110 Q450,50 500,100 Q550,70 600,120 Q650,55 700,105 Q750,80 800,130 Q850,60 900,110 Q950,90 1000,140 Q1050,70 1100,120 Q1150,100 1200,150 L1200,220 L0,220Z' fill='%23122d1e' /%3E%3C/svg%3E");
-    background-size: 1200px 220px;
-    opacity: 0.9;
-    animation: sway1 18s ease-in-out infinite alternate;
-  }
-  .layer-2 {
-    height: 160px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 160'%3E%3Cpath d='M0,130 Q80,80 160,120 Q240,60 320,100 Q400,50 480,95 Q560,65 640,105 Q720,55 800,100 Q880,75 960,115 Q1040,60 1120,100 L1200,120 L1200,160 L0,160Z' fill='%231a3d27' /%3E%3C/svg%3E");
-    background-size: 1200px 160px;
-    opacity: 0.8;
-    animation: sway2 12s ease-in-out infinite alternate;
-  }
-  .layer-3 {
-    height: 100px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 100'%3E%3Cpath d='M0,80 Q100,40 200,70 Q300,30 400,65 Q500,35 600,60 Q700,40 800,70 Q900,35 1000,60 Q1100,45 1200,65 L1200,100 L0,100Z' fill='%23245c37' /%3E%3C/svg%3E");
-    background-size: 1200px 100px;
-    opacity: 0.7;
-    animation: sway1 8s ease-in-out infinite alternate-reverse;
-  }
-
-  @keyframes sway1 {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-30px); }
-  }
-  @keyframes sway2 {
-    from { transform: translateX(-15px); }
-    to   { transform: translateX(20px); }
-  }
-
-  /* Fireflies */
-  .fireflies { position: absolute; inset: 0; }
-  .firefly {
-    position: absolute;
-    left: var(--x);
-    top: var(--y);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #a8f5b0;
-    box-shadow: 0 0 6px 2px rgba(168, 245, 176, 0.6);
-    animation: float var(--dur) var(--delay) ease-in-out infinite alternate;
-  }
-  @keyframes float {
-    0%   { opacity: 0; transform: translate(0, 0); }
-    30%  { opacity: 1; }
-    70%  { opacity: 0.8; }
-    100% { opacity: 0; transform: translate(20px, -30px); }
-  }
-
-  /* ── Card ────────────────────────────────────────────────────────────────── */
-  .card {
-    position: relative;
-    z-index: 10;
-    width: 100%;
-    max-width: 420px;
-    background: rgba(10, 28, 18, 0.75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(82, 183, 136, 0.18);
-    border-radius: 24px;
-    box-shadow:
-      0 0 0 1px rgba(82, 183, 136, 0.06),
-      0 32px 64px rgba(0,0,0,0.5),
-      inset 0 1px 0 rgba(255,255,255,0.06);
-    transition: opacity 0.6s, transform 0.6s;
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  .page.mounted .card {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .card.shake {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97);
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    15%  { transform: translateX(-10px); }
-    30%  { transform: translateX(9px); }
-    45%  { transform: translateX(-7px); }
-    60%  { transform: translateX(5px); }
-    75%  { transform: translateX(-3px); }
-  }
-
-  .card-inner { padding: 2.8rem 2.6rem 2.2rem; }
-
-  /* ── Brand ───────────────────────────────────────────────────────────────── */
-  .brand {
-    text-align: center;
-    margin-bottom: 2.2rem;
-  }
-  .logo-wrap {
-    position: relative;
-    display: inline-flex;
+  .form-row {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
-  .logo-tree {
-    font-size: 3rem;
-    position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 0 12px rgba(82,183,136,0.5));
-    animation: treeBreathe 4s ease-in-out infinite;
-  }
-  @keyframes treeBreathe {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(82,183,136,0.5)); }
-    50%       { transform: scale(1.06); filter: drop-shadow(0 0 20px rgba(82,183,136,0.8)); }
-  }
-  .logo-rings { position: absolute; inset: -8px; }
-  .ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(82,183,136,0.25);
-    animation: ringPulse 3s ease-out infinite;
-  }
-  .r2 { animation-delay: 1.2s; }
-  @keyframes ringPulse {
-    0%   { transform: scale(0.9); opacity: 0.8; }
-    100% { transform: scale(2); opacity: 0; }
-  }
-  h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: #d4f5dd;
-    letter-spacing: -0.5px;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-  .tagline {
-    font-size: 0.82rem;
-    color: rgba(168, 220, 180, 0.55);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-
-  /* ── Form ────────────────────────────────────────────────────────────────── */
-  .form { display: flex; flex-direction: column; gap: 1.2rem; }
-
-  .field { position: relative; }
-  label {
+  .form-row label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(168, 220, 180, 0.5);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    transition: color 0.2s;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--moss);
+    cursor: pointer;
   }
-  .field.focused label { color: #52b788; }
-  .label-icon { font-size: 0.9rem; }
-
-  input {
-    width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(82, 183, 136, 0.15);
-    border-radius: 10px;
-    padding: 13px 16px;
-    font-size: 0.95rem;
-    font-family: 'DM Sans', sans-serif;
-    color: #d4f5dd;
-    outline: none;
-    transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  .form-row .link-btn {
+    font-size: 0.85rem;
+    color: var(--sage);
+    text-decoration: none;
   }
-  input::placeholder { color: rgba(255,255,255,0.18); }
-  input:focus {
-    border-color: rgba(82, 183, 136, 0.5);
-    background: rgba(82, 183, 136, 0.06);
-    box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.1);
+  .form-row .link-btn:hover {
+    color: var(--moss);
+    text-decoration: underline;
   }
-
-  .field-line {
-    position: absolute;
-    bottom: 0;
-    left: 16px;
-    right: 16px;
-    height: 1.5px;
-    background: #52b788;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-    border-radius: 1px;
-  }
-  .field.focused .field-line { transform: scaleX(1); }
 
   .error-msg {
-    background: rgba(220, 60, 60, 0.12);
+    background: rgba(220, 60, 60, 0.1);
     border: 1px solid rgba(220, 60, 60, 0.25);
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 0.6rem 1rem;
     font-size: 0.85rem;
-    color: #ff9999;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: #b91c1c;
+    margin-bottom: 1rem;
   }
 
-  /* ── Button ──────────────────────────────────────────────────────────────── */
-  .btn-login {
+  .info-msg {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    color: #1d4ed8;
+    margin-bottom: 1rem;
+  }
+
+  .btn-form-submit {
     width: 100%;
-    padding: 15px;
-    margin-top: 0.4rem;
-    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 50%, #52b788 100%);
-    background-size: 200% 200%;
+    padding: 0.85rem;
+    background: var(--moss);
+    color: white;
     border: none;
-    border-radius: 12px;
-    color: #fff;
+    border-radius: 10px;
+    font-family: "DM Sans", sans-serif;
     font-size: 1rem;
     font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.2s, background-position 0.4s;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 4px 20px rgba(82,183,136,0.25);
+    transition: all 0.25s;
+    margin-bottom: 1.5rem;
   }
-  .btn-login:hover:not(:disabled) {
-    background-position: right center;
+  .btn-form-submit:hover:not(:disabled) {
+    background: var(--bark);
     transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(82,183,136,0.38);
   }
-  .btn-login:active:not(:disabled) { transform: translateY(1px); }
-  .btn-login:disabled { opacity: 0.65; cursor: not-allowed; }
-
-  .btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: inline-block;
+  .btn-form-submit:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Footer ──────────────────────────────────────────────────────────────── */
-  .footer {
-    text-align: center;
-    margin-top: 1.6rem;
-    font-size: 0.87rem;
-    color: rgba(168, 220, 180, 0.45);
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--canopy);
+    font-size: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--canopy);
+  }
+  .btn-google {
+    width: 100%;
+    padding: 0.8rem;
+    background: white;
+    color: var(--ink);
+    border: 1.5px solid var(--canopy);
+    border-radius: 10px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .btn-google:hover {
+    border-color: var(--sage);
+    box-shadow: 0 2px 10px rgba(44, 24, 16, 0.12);
+  }
+  .login-footer {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--sage);
   }
   .link-btn {
     background: none;
     border: none;
-    color: #52b788;
-    font-size: 0.87rem;
+    color: var(--moss);
     font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
+    font-family: "DM Sans", sans-serif;
+    font-size: 0.85rem;
     cursor: pointer;
     padding: 0;
-    transition: color 0.2s, letter-spacing 0.2s;
+    text-decoration: none;
   }
-  .link-btn:hover { color: #95d5b2; letter-spacing: 0.3px; }
+  .link-btn:hover {
+    text-decoration: underline;
+  }
+
+  .toast-success {
+    position: fixed;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3d5a3e;
+    color: white;
+    padding: 0.85rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-family: "DM Sans", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 6px 24px rgba(44, 24, 16, 0.2);
+    z-index: 1000;
+    animation: slideDown 0.4s ease-out;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+  .toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 0 0 0.5rem;
+  }
+  .toast-close:hover {
+    color: white;
+  }
 </style>

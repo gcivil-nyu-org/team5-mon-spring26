@@ -31,172 +31,172 @@ const tokens = {
 
   // ── DARK ────────────────────────────────────────────────────────────────────
   dark: {
-    // Canvas / Backgrounds
-    '--t-bg-base':        '#071410',
-    '--t-bg-surface':     '#0a1c12',
-    '--t-bg-elevated':    'rgba(255,255,255,.04)',
-    '--t-bg-overlay':     'rgba(10,28,18,.90)',
-    '--t-bg-hover':       'rgba(82,183,136,.10)',
-    '--t-bg-active':      'rgba(82,183,136,.16)',
-    '--t-bg-input':       'rgba(255,255,255,.05)',
-    '--t-bg-photo':       'rgba(0,0,0,.15)',
-    '--t-bg-texture':     'none',
+    // Canvas / Backgrounds — warm bark-brown palette matching landing page
+    '--t-bg-base': '#2C1810',
+    '--t-bg-surface': '#332015',
+    '--t-bg-elevated': 'rgba(255,255,255,.06)',
+    '--t-bg-overlay': 'rgba(44,24,16,.92)',
+    '--t-bg-hover': 'rgba(143,188,143,.10)',
+    '--t-bg-active': 'rgba(143,188,143,.16)',
+    '--t-bg-input': 'rgba(255,255,255,.06)',
+    '--t-bg-photo': 'rgba(0,0,0,.20)',
+    '--t-bg-texture': 'none',
 
     // Gradients
-    '--t-gradient-page':  'linear-gradient(180deg,#071410 0%,#0a1c12 100%)',
-    '--t-gradient-banner':'linear-gradient(135deg,rgba(45,106,79,.3) 0%,rgba(82,183,136,.10) 100%)',
-    '--t-gradient-bar':   'linear-gradient(90deg,#2d6a4f,#52b788)',
+    '--t-gradient-page': 'linear-gradient(180deg,#2C1810 0%,#332015 100%)',
+    '--t-gradient-banner': 'linear-gradient(135deg,rgba(61,90,62,.35) 0%,rgba(143,188,143,.12) 100%)',
+    '--t-gradient-bar': 'linear-gradient(90deg,#3D5A3E,#8FBC8F)',
 
-    // Brand / Accent
-    '--t-brand':          '#52b788',
-    '--t-brand-dim':      'rgba(82,183,136,.15)',
-    '--t-brand-muted':    'rgba(82,183,136,.30)',
-    '--t-brand-glow':     'rgba(82,183,136,.50)',
+    // Brand / Accent — sage/leaf greens with gold
+    '--t-brand': '#8FBC8F',
+    '--t-brand-dim': 'rgba(143,188,143,.15)',
+    '--t-brand-muted': 'rgba(143,188,143,.30)',
+    '--t-brand-glow': 'rgba(143,188,143,.50)',
 
     // Borders
-    '--t-border':         'rgba(82,183,136,.12)',
-    '--t-border-soft':    'rgba(82,183,136,.08)',
-    '--t-border-strong':  'rgba(82,183,136,.20)',
-    '--t-border-input':   'rgba(82,183,136,.15)',
+    '--t-border': 'rgba(143,188,143,.14)',
+    '--t-border-soft': 'rgba(143,188,143,.08)',
+    '--t-border-strong': 'rgba(143,188,143,.22)',
+    '--t-border-input': 'rgba(143,188,143,.18)',
 
-    // Text
-    '--t-text-heading':   '#d4f5dd',
-    '--t-text-body':      'rgba(168,220,180,.70)',
-    '--t-text-muted':     'rgba(168,220,180,.45)',
-    '--t-text-faint':     'rgba(168,220,180,.28)',
-    '--t-text-brand':     '#95d5b2',
-    '--t-text-input':     'rgba(168,220,180,.50)',
+    // Text — cream/canopy tones
+    '--t-text-heading': '#F5F0E8',
+    '--t-text-body': 'rgba(197,213,197,.75)',
+    '--t-text-muted': 'rgba(197,213,197,.50)',
+    '--t-text-faint': 'rgba(197,213,197,.30)',
+    '--t-text-brand': '#8FBC8F',
+    '--t-text-input': 'rgba(197,213,197,.50)',
 
     // Status
-    '--t-status-good':    '#52b788',
-    '--t-status-fair':    '#f4c430',
-    '--t-status-poor':    '#f87171',
-    '--t-status-info':    '#60a5fa',
+    '--t-status-good': '#8FBC8F',
+    '--t-status-fair': '#D4A853',
+    '--t-status-poor': '#f87171',
+    '--t-status-info': '#60a5fa',
 
     // Role badges
-    '--t-role-standard-bg':    '#1a3d27',
-    '--t-role-standard-text':  '#52b788',
-    '--t-role-credible-bg':    '#3d3000',
-    '--t-role-credible-text':  '#f4c430',
-    '--t-role-caretaker-bg':   '#1a2a3d',
+    '--t-role-standard-bg': '#2a3d27',
+    '--t-role-standard-text': '#8FBC8F',
+    '--t-role-credible-bg': '#3d3418',
+    '--t-role-credible-text': '#D4A853',
+    '--t-role-caretaker-bg': '#1a2a3d',
     '--t-role-caretaker-text': '#60a5fa',
-    '--t-role-admin-bg':       '#3d1a1a',
-    '--t-role-admin-text':     '#f87171',
+    '--t-role-admin-bg': '#3d1a1a',
+    '--t-role-admin-text': '#f87171',
 
     // Radius
-    '--t-radius-sm':    '8px',
-    '--t-radius-md':    '12px',
-    '--t-radius-lg':    '16px',
-    '--t-radius-pill':  '9999px',
+    '--t-radius-sm': '8px',
+    '--t-radius-md': '12px',
+    '--t-radius-lg': '16px',
+    '--t-radius-pill': '9999px',
 
     // Shadows
-    '--t-shadow-card':        '0 4px 24px rgba(0,0,0,.35)',
-    '--t-shadow-nav':         '0 1px 0 rgba(82,183,136,.08)',
-    '--t-shadow-pixel':       'none',
-    '--t-shadow-pixel-btn':   'none',
+    '--t-shadow-card': '0 4px 24px rgba(0,0,0,.40)',
+    '--t-shadow-nav': '0 2px 20px rgba(0,0,0,.30)',
+    '--t-shadow-pixel': 'none',
+    '--t-shadow-pixel-btn': 'none',
     '--t-shadow-pixel-inset': 'none',
 
     // Motion
-    '--t-transition':       '0.2s ease',
-    '--t-transition-slow':  '0.5s ease',
+    '--t-transition': '0.2s ease',
+    '--t-transition-slow': '0.5s ease',
     '--t-transition-pixel': '0.2s ease',
 
     // Typography
     '--t-font-display': "'Playfair Display', Georgia, serif",
-    '--t-font-body':    "'DM Sans', system-ui, sans-serif",
-    '--t-font-mono':    "'JetBrains Mono', monospace",
-    '--t-font-pixel':   "'DM Sans', system-ui, sans-serif",
+    '--t-font-body': "'DM Sans', system-ui, sans-serif",
+    '--t-font-mono': "'JetBrains Mono', monospace",
+    '--t-font-pixel': "'DM Sans', system-ui, sans-serif",
 
     // Sizing
-    '--t-nav-height':    '58px',
+    '--t-nav-height': '58px',
     '--t-sidebar-width': '260px',
-    '--t-content-max':   '1000px',
-    '--t-border-width':  '1px',
+    '--t-content-max': '1000px',
+    '--t-border-width': '1px',
   },
 
   // ── LIGHT ───────────────────────────────────────────────────────────────────
   light: {
     // Canvas / Backgrounds
-    '--t-bg-base':        '#f4faf6',
-    '--t-bg-surface':     '#edf7f1',
-    '--t-bg-elevated':    'rgba(255,255,255,.90)',
-    '--t-bg-overlay':     'rgba(244,250,246,.92)',
-    '--t-bg-hover':       'rgba(45,106,79,.07)',
-    '--t-bg-active':      'rgba(45,106,79,.12)',
-    '--t-bg-input':       'rgba(255,255,255,.80)',
-    '--t-bg-photo':       'rgba(0,0,0,.05)',
-    '--t-bg-texture':     'none',
+    '--t-bg-base': '#f4faf6',
+    '--t-bg-surface': '#edf7f1',
+    '--t-bg-elevated': 'rgba(255,255,255,.90)',
+    '--t-bg-overlay': 'rgba(244,250,246,.92)',
+    '--t-bg-hover': 'rgba(45,106,79,.07)',
+    '--t-bg-active': 'rgba(45,106,79,.12)',
+    '--t-bg-input': 'rgba(255,255,255,.80)',
+    '--t-bg-photo': 'rgba(0,0,0,.05)',
+    '--t-bg-texture': 'none',
 
     // Gradients
-    '--t-gradient-page':  'linear-gradient(180deg,#edf7f1 0%,#f4faf6 100%)',
-    '--t-gradient-banner':'linear-gradient(135deg,rgba(45,106,79,.12) 0%,rgba(82,183,136,.06) 100%)',
-    '--t-gradient-bar':   'linear-gradient(90deg,#2d6a4f,#52b788)',
+    '--t-gradient-page': 'linear-gradient(180deg,#edf7f1 0%,#f4faf6 100%)',
+    '--t-gradient-banner': 'linear-gradient(135deg,rgba(45,106,79,.12) 0%,rgba(82,183,136,.06) 100%)',
+    '--t-gradient-bar': 'linear-gradient(90deg,#2d6a4f,#52b788)',
 
     // Brand / Accent
-    '--t-brand':          '#2d6a4f',
-    '--t-brand-dim':      'rgba(45,106,79,.10)',
-    '--t-brand-muted':    'rgba(45,106,79,.25)',
-    '--t-brand-glow':     'rgba(45,106,79,.30)',
+    '--t-brand': '#2d6a4f',
+    '--t-brand-dim': 'rgba(45,106,79,.10)',
+    '--t-brand-muted': 'rgba(45,106,79,.25)',
+    '--t-brand-glow': 'rgba(45,106,79,.30)',
 
     // Borders
-    '--t-border':         'rgba(45,106,79,.14)',
-    '--t-border-soft':    'rgba(45,106,79,.08)',
-    '--t-border-strong':  'rgba(45,106,79,.22)',
-    '--t-border-input':   'rgba(45,106,79,.18)',
+    '--t-border': 'rgba(45,106,79,.14)',
+    '--t-border-soft': 'rgba(45,106,79,.08)',
+    '--t-border-strong': 'rgba(45,106,79,.22)',
+    '--t-border-input': 'rgba(45,106,79,.18)',
 
     // Text
-    '--t-text-heading':   '#0f2d1e',
-    '--t-text-body':      'rgba(15,45,30,.75)',
-    '--t-text-muted':     'rgba(15,45,30,.50)',
-    '--t-text-faint':     'rgba(15,45,30,.30)',
-    '--t-text-brand':     '#2d6a4f',
-    '--t-text-input':     'rgba(15,45,30,.45)',
+    '--t-text-heading': '#0f2d1e',
+    '--t-text-body': 'rgba(15,45,30,.75)',
+    '--t-text-muted': 'rgba(15,45,30,.50)',
+    '--t-text-faint': 'rgba(15,45,30,.30)',
+    '--t-text-brand': '#2d6a4f',
+    '--t-text-input': 'rgba(15,45,30,.45)',
 
     // Status
-    '--t-status-good':    '#2d6a4f',
-    '--t-status-fair':    '#b45309',
-    '--t-status-poor':    '#b91c1c',
-    '--t-status-info':    '#1d4ed8',
+    '--t-status-good': '#2d6a4f',
+    '--t-status-fair': '#b45309',
+    '--t-status-poor': '#b91c1c',
+    '--t-status-info': '#1d4ed8',
 
     // Role badges
-    '--t-role-standard-bg':    '#d1fae5',
-    '--t-role-standard-text':  '#065f46',
-    '--t-role-credible-bg':    '#fef3c7',
-    '--t-role-credible-text':  '#92400e',
-    '--t-role-caretaker-bg':   '#dbeafe',
+    '--t-role-standard-bg': '#d1fae5',
+    '--t-role-standard-text': '#065f46',
+    '--t-role-credible-bg': '#fef3c7',
+    '--t-role-credible-text': '#92400e',
+    '--t-role-caretaker-bg': '#dbeafe',
     '--t-role-caretaker-text': '#1e40af',
-    '--t-role-admin-bg':       '#fee2e2',
-    '--t-role-admin-text':     '#991b1b',
+    '--t-role-admin-bg': '#fee2e2',
+    '--t-role-admin-text': '#991b1b',
 
     // Radius
-    '--t-radius-sm':    '8px',
-    '--t-radius-md':    '12px',
-    '--t-radius-lg':    '16px',
-    '--t-radius-pill':  '9999px',
+    '--t-radius-sm': '8px',
+    '--t-radius-md': '12px',
+    '--t-radius-lg': '16px',
+    '--t-radius-pill': '9999px',
 
     // Shadows
-    '--t-shadow-card':        '0 2px 16px rgba(0,0,0,.08)',
-    '--t-shadow-nav':         '0 1px 0 rgba(45,106,79,.10)',
-    '--t-shadow-pixel':       'none',
-    '--t-shadow-pixel-btn':   'none',
+    '--t-shadow-card': '0 2px 16px rgba(0,0,0,.08)',
+    '--t-shadow-nav': '0 1px 0 rgba(45,106,79,.10)',
+    '--t-shadow-pixel': 'none',
+    '--t-shadow-pixel-btn': 'none',
     '--t-shadow-pixel-inset': 'none',
 
     // Motion
-    '--t-transition':       '0.2s ease',
-    '--t-transition-slow':  '0.5s ease',
+    '--t-transition': '0.2s ease',
+    '--t-transition-slow': '0.5s ease',
     '--t-transition-pixel': '0.2s ease',
 
     // Typography
     '--t-font-display': "'Playfair Display', Georgia, serif",
-    '--t-font-body':    "'DM Sans', system-ui, sans-serif",
-    '--t-font-mono':    "'JetBrains Mono', monospace",
-    '--t-font-pixel':   "'DM Sans', system-ui, sans-serif",
+    '--t-font-body': "'DM Sans', system-ui, sans-serif",
+    '--t-font-mono': "'JetBrains Mono', monospace",
+    '--t-font-pixel': "'DM Sans', system-ui, sans-serif",
 
     // Sizing
-    '--t-nav-height':    '58px',
+    '--t-nav-height': '58px',
     '--t-sidebar-width': '260px',
-    '--t-content-max':   '1000px',
-    '--t-border-width':  '1px',
+    '--t-content-max': '1000px',
+    '--t-border-width': '1px',
   },
 
   // ── PIXEL ───────────────────────────────────────────────────────────────────
@@ -206,95 +206,95 @@ const tokens = {
   // modern terminal UI.
   pixel: {
     // Canvas / Backgrounds — solid opaques, no glassmorphism
-    '--t-bg-base':        '#0b1a0f',
-    '--t-bg-surface':     '#0f2214',
-    '--t-bg-elevated':    '#162e1c',
-    '--t-bg-overlay':     '#0b1a0f',
-    '--t-bg-hover':       '#1e3d26',
-    '--t-bg-active':      '#254d30',
-    '--t-bg-input':       '#0f2214',
-    '--t-bg-photo':       '#0b1a0f',
+    '--t-bg-base': '#0b1a0f',
+    '--t-bg-surface': '#0f2214',
+    '--t-bg-elevated': '#162e1c',
+    '--t-bg-overlay': '#0b1a0f',
+    '--t-bg-hover': '#1e3d26',
+    '--t-bg-active': '#254d30',
+    '--t-bg-input': '#0f2214',
+    '--t-bg-photo': '#0b1a0f',
     // Scanline overlay — apply as background-image on top of bg-base
     '--t-bg-texture':
       'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px)',
 
     // Gradients — flat in pixel mode (just solid colours)
-    '--t-gradient-page':  '#0b1a0f',
-    '--t-gradient-banner':'#162e1c',
-    '--t-gradient-bar':   '#39d353',  // solid neon green, no gradient
+    '--t-gradient-page': '#0b1a0f',
+    '--t-gradient-banner': '#162e1c',
+    '--t-gradient-bar': '#39d353',  // solid neon green, no gradient
 
     // Brand / Accent — punchy neon green
-    '--t-brand':          '#39d353',
-    '--t-brand-dim':      '#1e3d26',
-    '--t-brand-muted':    '#2a5c34',
-    '--t-brand-glow':     '#39d353',
+    '--t-brand': '#39d353',
+    '--t-brand-dim': '#1e3d26',
+    '--t-brand-muted': '#2a5c34',
+    '--t-brand-glow': '#39d353',
 
     // Borders — solid, no transparency
-    '--t-border':         '#2a5c34',
-    '--t-border-soft':    '#1e3d26',
-    '--t-border-strong':  '#39d353',
-    '--t-border-input':   '#2a5c34',
+    '--t-border': '#2a5c34',
+    '--t-border-soft': '#1e3d26',
+    '--t-border-strong': '#39d353',
+    '--t-border-input': '#2a5c34',
 
     // Text
-    '--t-text-heading':   '#b3ffcc',
-    '--t-text-body':      '#7ecb90',
-    '--t-text-muted':     '#4a8c5c',
-    '--t-text-faint':     '#2e5c3a',
-    '--t-text-brand':     '#39d353',
-    '--t-text-input':     '#7ecb90',
+    '--t-text-heading': '#b3ffcc',
+    '--t-text-body': '#7ecb90',
+    '--t-text-muted': '#4a8c5c',
+    '--t-text-faint': '#2e5c3a',
+    '--t-text-brand': '#39d353',
+    '--t-text-input': '#7ecb90',
 
     // Status — bright, fully saturated
-    '--t-status-good':    '#39d353',
-    '--t-status-fair':    '#ffd700',
-    '--t-status-poor':    '#ff4444',
-    '--t-status-info':    '#44aaff',
+    '--t-status-good': '#39d353',
+    '--t-status-fair': '#ffd700',
+    '--t-status-poor': '#ff4444',
+    '--t-status-info': '#44aaff',
 
     // Role badges — solid, opaque
-    '--t-role-standard-bg':    '#1a3d27',
-    '--t-role-standard-text':  '#39d353',
-    '--t-role-credible-bg':    '#3d3000',
-    '--t-role-credible-text':  '#ffd700',
-    '--t-role-caretaker-bg':   '#0a1f3d',
+    '--t-role-standard-bg': '#1a3d27',
+    '--t-role-standard-text': '#39d353',
+    '--t-role-credible-bg': '#3d3000',
+    '--t-role-credible-text': '#ffd700',
+    '--t-role-caretaker-bg': '#0a1f3d',
     '--t-role-caretaker-text': '#44aaff',
-    '--t-role-admin-bg':       '#3d0a0a',
-    '--t-role-admin-text':     '#ff4444',
+    '--t-role-admin-bg': '#3d0a0a',
+    '--t-role-admin-text': '#ff4444',
 
     // Radius — ZERO everywhere. Pixel UIs are square.
-    '--t-radius-sm':    '0px',
-    '--t-radius-md':    '0px',
-    '--t-radius-lg':    '0px',
-    '--t-radius-pill':  '0px',
+    '--t-radius-sm': '0px',
+    '--t-radius-md': '0px',
+    '--t-radius-lg': '0px',
+    '--t-radius-pill': '0px',
 
     // Shadows — hard pixel offset, zero blur
     // Cards / panels:
-    '--t-shadow-card':        '4px 4px 0 #39d353',
+    '--t-shadow-card': '4px 4px 0 #39d353',
     // Navbar bottom border replacement:
-    '--t-shadow-nav':         '0 2px 0 #39d353',
+    '--t-shadow-nav': '0 2px 0 #39d353',
     // Buttons (shifts on :active to simulate press):
-    '--t-shadow-pixel-btn':   '3px 3px 0 #1e3d26',
+    '--t-shadow-pixel-btn': '3px 3px 0 #1e3d26',
     // Pressed / active inset:
     '--t-shadow-pixel-inset': 'inset 2px 2px 0 #0b1a0f',
     // Generic alias:
-    '--t-shadow-pixel':       '4px 4px 0 #2a5c34',
+    '--t-shadow-pixel': '4px 4px 0 #2a5c34',
 
     // Motion — stepped for frame-by-frame feel
-    '--t-transition':       '0.15s steps(3)',
-    '--t-transition-slow':  '0.4s steps(6)',
+    '--t-transition': '0.15s steps(3)',
+    '--t-transition-slow': '0.4s steps(6)',
     '--t-transition-pixel': '0.1s steps(2)',
 
     // Typography
     // Press Start 2P → headings, labels, badges (dense, use sparingly)
     // VT323 → body text at large sizes (very legible retro feel)
     '--t-font-display': "'Press Start 2P', monospace",
-    '--t-font-body':    "'VT323', monospace",
-    '--t-font-mono':    "'Press Start 2P', monospace",
-    '--t-font-pixel':   "'Press Start 2P', monospace",
+    '--t-font-body': "'VT323', monospace",
+    '--t-font-mono': "'Press Start 2P', monospace",
+    '--t-font-pixel': "'Press Start 2P', monospace",
 
     // Sizing — slightly taller nav for pixel font
-    '--t-nav-height':    '62px',
+    '--t-nav-height': '62px',
     '--t-sidebar-width': '260px',
-    '--t-content-max':   '1000px',
-    '--t-border-width':  '2px',  // chunky 2px borders throughout
+    '--t-content-max': '1000px',
+    '--t-border-width': '2px',  // chunky 2px borders throughout
   },
 }
 
@@ -319,7 +319,7 @@ function loadPixelFonts() {
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
-const STORAGE_KEY  = 'treestagram-theme'
+const STORAGE_KEY = 'treestagram-theme'
 const VALID_THEMES = ['dark', 'light', 'pixel']
 
 // ─── Detect initial theme ─────────────────────────────────────────────────────

@@ -16,8 +16,6 @@ env/
 *.log
 *.pot
 *.pyc
-db.sqlite3
-db.sqlite3-journal
 media/
 staticfiles/
 
@@ -68,3 +66,10 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 treestagram_project/treestagram-svelte/node_modules/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+Bundle*

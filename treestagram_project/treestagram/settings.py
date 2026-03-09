@@ -153,15 +153,44 @@ MESSAGE_TAGS = {
 }
 
 # -- Allow Svelte dev server to talk to Django --
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+# SESSION_COOKIE_SAMESITE = 'Lax'
+# SESSION_COOKIE_HTTPONLY = True
+
+# # -- Media files (profile pictures etc.) --
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
+
+# # -- django-allauth --
+# SITE_ID = 1
+
+# AUTHENTICATION_BACKENDS = [
+#     'django.contrib.auth.backends.ModelBackend',
+#     'allauth.account.auth_backends.AuthenticationBackend',
+# ]
+
+# ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+# ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+# ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+# ACCOUNT_ADAPTER = 'accounts.adapter.TreestagramAccountAdapter'
+# ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+# ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+# # Google OAuth -- skip email verification for social accounts (already verified)
+# SOCIALACCOUNT_AUTO_SIGNUP = True
+# SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+# SOCIALACCOUNT_LOGIN_ON_GET = True
+EB_DOMAIN = os.environ.get('EB_DOMAIN', 'http://localhost:5173')
+CSRF_TRUSTED_ORIGINS = [EB_DOMAIN]
+
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 
-# -- Media files (profile pictures etc.) --
+# -- Media files (Keep this for now so uploads don't crash) --
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# -- django-allauth --
+# -- django-allauth (CRITICAL - MUST BE INCLUDED) --
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
@@ -176,8 +205,30 @@ ACCOUNT_ADAPTER = 'accounts.adapter.TreestagramAccountAdapter'
 ACCOUNT_LOGIN_METHODS = {'email', 'username'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
-# Google OAuth -- skip email verification for social accounts (already verified)
+# Google OAuth Settings
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            # Safely fetching secrets from Elastic Beanstalk environment
+            'client_id': os.environ.get('GOOGLE_OAUTH_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_OAUTH_SECRET', ''),
+        },
+    }
+}
+
+# -- Email backend --
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# Safely fetching email credentials
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'cooladhyayan1@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '') 
+DEFAULT_FROM_EMAIL = f"Treestagram <{EMAIL_HOST_USER}>"

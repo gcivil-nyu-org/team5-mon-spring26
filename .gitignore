@@ -73,3 +73,5 @@ treestagram_project/treestagram-svelte/node_modules/
 !.elasticbeanstalk/*.global.yml
 
 Bundle*
+
+/venv*

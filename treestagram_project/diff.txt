@@ -1,0 +1,284 @@
+diff --git a/treestagram_project/.ebextensions/00_cleanup.config b/treestagram_project/.ebextensions/00_cleanup.config
+deleted file mode 100644
+index 0a8a893..0000000
+--- a/treestagram_project/.ebextensions/00_cleanup.config
++++ /dev/null
+@@ -1,4 +0,0 @@
+-commands:
+- 00_remove_venv:
+-    command: "rm -rf /var/app/venv/staging-*"
+-    ignoreErrors: 
+\ No newline at end of file
+diff --git a/treestagram_project/.ebextensions/django.config b/treestagram_project/.ebextensions/django.config
+index 58bd88e..8c41845 100644
+--- a/treestagram_project/.ebextensions/django.config
++++ b/treestagram_project/.ebextensions/django.config
+@@ -1,16 +1,15 @@
+ option_settings:
+-    aws:elasticbeanstalk:application:environment:
+-        DJANGO_SETTINGS_MODULE: treestagram.settings
+-    aws:elasticbeanstalk:container:python:
+-        WSGIPath: treestagram.wsgi:application
+-    aws:elasticbeanstalk:environment:proxy:staticfiles:
+-        /static: staticfiles
+-
++  aws:elasticbeanstalk:application:environment:
++    DJANGO_SETTINGS_MODULE: treestagram.settings
++  aws:elasticbeanstalk:container:python:
++    WSGIPath: treestagram.wsgi:application
++  aws:elasticbeanstalk:environment:proxy:staticfiles:
++    /static: staticfiles
+ 
+ container_commands:
+-    01_migrate:
+-        command: "source /var/app/venv/*/bin/activate && python manage.py migrate"
+-        leader_only: true
+-    02_collectstatic:
+-        command: "source /var/app/venv/*/bin/activate && python manage.py
+-        collectstatic --noinput"
+\ No newline at end of file
++  01_migrate:
++    command: "source /var/app/venv/*/bin/activate && python manage.py migrate"
++    leader_only: true
++
++  02_collectstatic:
++    command: "source /var/app/venv/*/bin/activate && python manage.py collectstatic --noinput"
+\ No newline at end of file
+diff --git a/treestagram_project/accounts/api_views.py b/treestagram_project/accounts/api_views.py
+index 22e8404..8903fd6 100644
+--- a/treestagram_project/accounts/api_views.py
++++ b/treestagram_project/accounts/api_views.py
+@@ -3,6 +3,7 @@ accounts/api_views.py
+ JSON API endpoints consumed by the Svelte frontend.
+ """
+ import json
++import logging
+ from django.contrib.auth import login, logout, authenticate
+ from django.http import JsonResponse
+ from django.views.decorators.http import require_http_methods
+@@ -19,6 +20,8 @@ from django.conf import settings
+ from .forms import SignupForm
+ from .models import User
+ 
++logger = logging.getLogger(__name__)
++
+ 
+ def user_to_dict(user):
+     return {
+@@ -47,23 +50,32 @@ def csrf_view(request):
+ def api_signup(request):
+     try:
+         data = json.loads(request.body)
++        logger.info("Received data: %s", data)
+     except json.JSONDecodeError:
++        logger.error("Invalid JSON")
+         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+ 
+     form = SignupForm(data)
+     if form.is_valid():
++        logger.info("Form is valid")
+         user = form.save(commit=False)
+         user.is_active = False          # inactive until email is confirmed
+         user.save()
++        logger.info("User created: %s", user)
+ 
+-        # Create an EmailAddress record and send the confirmation email
+-        email_address = EmailAddress.objects.create(
+-            user=user,
+-            email=user.email,
+-            primary=True,
+-            verified=False,
+-        )
+-        email_address.send_confirmation(request)
++        try:
++            email_address = EmailAddress.objects.create(
++                user=user,
++                email=user.email,
++                primary=True,
++                verified=False,
++            )
++            logger.info("EmailAddress created: %s", email_address)
++            email_address.send_confirmation(request)
++            logger.info("Confirmation email sent")
++        except Exception as e:
++            logger.error("Error sending confirmation email: %s", e)
++            return JsonResponse({'success': False, 'error': 'Failed to send confirmation email'}, status=500)
+ 
+         return JsonResponse({
+             'success': True,
+@@ -71,6 +83,7 @@ def api_signup(request):
+             'message': 'Account created! Check your email for a confirmation link.',
+         })
+     else:
++        logger.error("Form errors: %s", form.errors)
+         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+ 
+ 
+diff --git a/treestagram_project/logs1.txt b/treestagram_project/logs1.txt
+new file mode 100644
+index 0000000..519b140
+--- /dev/null
++++ b/treestagram_project/logs1.txt
+@@ -0,0 +1,107 @@
++Retrieving logs...
++============= i-0b2eb2552094f41df ==============
++----------------------------------------
++/var/log/eb-engine.log
++----------------------------------------
++2026/03/15 04:32:41.917891 [INFO] Running command: systemctl enable aws-eb.target
++2026/03/15 04:32:42.166473 [INFO] Running command: systemctl start aws-eb.target
++2026/03/15 04:32:42.176423 [INFO] Running command: systemctl enable cfn-hup.service
++2026/03/15 04:32:42.425891 [INFO] Created symlink /etc/systemd/system/multi-user.target.wants/cfn-hup.service → /etc/systemd/system/cfn-hup.service.
++
++2026/03/15 04:32:42.425920 [INFO] Running command: systemctl is-active cfn-hup.service
++2026/03/15 04:32:42.434982 [INFO] cfn-hup process is not running, starting it now
++2026/03/15 04:32:42.435006 [INFO] Running command: systemctl show -p PartOf cfn-hup.service
++2026/03/15 04:32:42.444881 [INFO] Running command: systemctl is-active cfn-hup.service
++2026/03/15 04:32:42.453116 [INFO] Running command: systemctl start cfn-hup.service
++2026/03/15 04:32:42.522634 [INFO] Instance has NOT been bootstrapped
++2026/03/15 04:32:42.522650 [INFO] Executing instruction: SetupPublishLogCronjob
++2026/03/15 04:32:42.522654 [INFO] Setup publish logs cron job...
++2026/03/15 04:32:42.522658 [INFO] Copying file /opt/elasticbeanstalk/config/private/logtasks/cron/publishlogs to /etc/cron.d/publishlogs
++2026/03/15 04:32:42.525121 [INFO] Instance has NOT been bootstrapped
++2026/03/15 04:32:42.525313 [INFO] Executing instruction: MarkBootstrapped
++2026/03/15 04:32:42.525323 [INFO] Starting MarkBootstrapped
++2026/03/15 04:32:42.525359 [INFO] Instance has NOT been bootstrapped
++2026/03/15 04:32:42.525448 [INFO] Marked instance as Bootstrapped
++2026/03/15 04:32:42.525453 [INFO] Executing instruction: Save CFN Stack Info
++2026/03/15 04:32:42.525507 [INFO] Executing cleanup logic
++2026/03/15 04:32:42.525518 [INFO] Platform Engine finished execution on command: env-launch
++
++2026/03/15 04:34:29.723518 [INFO] Starting...
++2026/03/15 04:34:29.723578 [INFO] Starting EBPlatform-PlatformEngine
++2026/03/15 04:34:29.723603 [INFO] reading event message file
++2026/03/15 04:34:29.724038 [INFO] Engine received EB command cfn-hup-exec
++
++2026/03/15 04:34:29.795157 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 -r AWSEBAutoScalingGroup --region us-east-1
++2026/03/15 04:34:30.085083 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 -r AWSEBBeanstalkMetadata --region us-east-1
++2026/03/15 04:34:30.379248 [INFO] checking whether command app-deploy is applicable to this instance...
++2026/03/15 04:34:30.379260 [INFO] this command is applicable to the instance, thus instance should execute command
++2026/03/15 04:34:30.379264 [INFO] Setting up deployment log with request ID: 7cf9373f-c8a3-4f32-be60-cbd1fd734977
++2026/03/15 04:34:30.425032 [INFO] Started S3 deployment log upload to s3://elasticbeanstalk-us-east-1-288378107443/resources/environments/logs/deployments/e-5jxmzqq5c2/eb-deployment-7cf9373f-c8a3-4f32-be60-cbd1fd734977.log
++2026/03/15 04:34:30.425098 [INFO] Engine command: (app-deploy)
++
++2026/03/15 04:34:30.425103 [INFO] Downloading EB Application...
++2026/03/15 04:34:30.425106 [INFO] Region: us-east-1
++2026/03/15 04:34:30.425108 [INFO] envID: e-5jxmzqq5c2
++2026/03/15 04:34:30.425111 [INFO] envBucket: elasticbeanstalk-us-east-1-288378107443
++2026/03/15 04:34:30.425113 [INFO] accountID: 288378107443
++2026/03/15 04:34:30.425116 [INFO] Using manifest file name from command request
++2026/03/15 04:34:30.425139 [INFO] Unable to get version manifest file.
++2026/03/15 04:34:30.425142 [INFO] Downloading latest manifest available.
++2026/03/15 04:34:30.425144 [INFO] Download latest app version manifest
++2026/03/15 04:34:30.425293 [INFO] resources/environments/e-5jxmzqq5c2/_runtime/versions/manifest
++2026/03/15 04:34:30.484424 [INFO] latestManifest key *: resources/environments/e-5jxmzqq5c2/_runtime/versions/manifest_1773549110922
++
++2026/03/15 04:34:30.484703 [INFO] Downloading: bucket: elasticbeanstalk-us-east-1-288378107443, object: resources/environments/e-5jxmzqq5c2/_runtime/versions/manifest_1773549110922, expected bucket owner: 288378107443
++2026/03/15 04:34:30.521086 [INFO] Download successful152bytes downloaded
++2026/03/15 04:34:30.521193 [INFO] Trying to read and parse version manifest...
++2026/03/15 04:34:30.521304 [INFO] Downloading: bucket: elasticbeanstalk-us-east-1-288378107443, object: resources/environments/e-5jxmzqq5c2/_runtime/_versions/treestagram-project/app-260315_003135490047, expected bucket owner: 288378107443
++2026/03/15 04:34:30.685082 [INFO] Download successful13338351bytes downloaded
++2026/03/15 04:34:30.685428 [INFO] Executing instruction: ElectLeader
++2026/03/15 04:34:30.685443 [INFO] Running leader election for instance i-0b2eb2552094f41df...
++2026/03/15 04:34:30.685445 [INFO] Calling the cfn-elect-cmd-leader to elect the command leader.
++2026/03/15 04:34:30.685457 [INFO] Running command: /opt/aws/bin/cfn-elect-cmd-leader --stack arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 --command-name ElasticBeanstalkCommand-AWSEBAutoScalingGroup --invocation-id a033dd24-818e-4c13-93d5-696d9d615c1a --listener-id i-0b2eb2552094f41df --region us-east-1
++2026/03/15 04:34:30.985846 [INFO] Instance is Leader.
++2026/03/15 04:34:30.985900 [INFO] Executing instruction: stopSqsd
++2026/03/15 04:34:30.985910 [INFO] This is a web server environment instance, skip stop sqsd daemon ...
++2026/03/15 04:34:30.985913 [INFO] Executing instruction: PreBuildEbExtension
++2026/03/15 04:34:30.985950 [INFO] Starting executing the config set Infra-EmbeddedPreBuild.
++2026/03/15 04:34:30.985963 [INFO] Running command: /opt/aws/bin/cfn-init -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 -r AWSEBAutoScalingGroup --region us-east-1 --configsets Infra-EmbeddedPreBuild
++2026/03/15 04:34:31.438103 [INFO] Finished executing the config set Infra-EmbeddedPreBuild.
++
++2026/03/15 04:34:31.438264 [INFO] Executing instruction: StageApplication
++2026/03/15 04:34:31.438269 [INFO] Recreating /var/app/staging/
++2026/03/15 04:34:31.438380 [INFO] extracting /opt/elasticbeanstalk/deployment/app_source_bundle to /var/app/staging/
++2026/03/15 04:34:31.438394 [INFO] Running command: /usr/bin/unzip -q -o /opt/elasticbeanstalk/deployment/app_source_bundle -d /var/app/staging/
++2026/03/15 04:34:31.821714 [INFO] finished extracting /opt/elasticbeanstalk/deployment/app_source_bundle to /var/app/staging/ successfully
++2026/03/15 04:34:31.837328 [INFO] Executing instruction: RunAppDeployPreBuildHooks
++2026/03/15 04:34:31.837362 [INFO] No hooks found in .platform/hooks/prebuild/, skipping
++2026/03/15 04:34:31.837365 [INFO] Executing instruction: InstallDependency
++2026/03/15 04:34:31.837370 [INFO] checking dependencies file
++2026/03/15 04:34:31.837381 [INFO] Installing dependencies with requirements.txt by using Pip
++2026/03/15 04:34:31.837401 [INFO] Running command: /var/app/venv/staging-LQM1lest/bin/pip install -r requirements.txt
++2026/03/15 04:34:31.839213 [INFO] /bin/sh: line 1: /var/app/venv/staging-LQM1lest/bin/pip: No such file or directory
++
++2026/03/15 04:34:31.839251 [ERROR] An error occurred during execution of command [app-deploy] - [InstallDependency]. Stop running the command. Error: fail to install dependencies with requirements.txt file with error Command /var/app/venv/staging-LQM1lest/bin/pip install -r requirements.txt failed with error exit status 127. Stderr:/bin/sh: line 1: /var/app/venv/staging-LQM1lest/bin/pip: No such file or directory
++ 
++
++2026/03/15 04:34:31.839253 [INFO] Executing cleanup logic
++2026/03/15 04:34:31.839323 [INFO] CommandService Response: {"status":"FAILURE","api_version":"1.0","results":[{"status":"FAILURE","msg":"Engine execution has encountered an error.","returncode":1,"events":[{"msg":"Instance deployment failed to install application dependencies. The deployment failed.","timestamp":1773549271839,"severity":"ERROR"},{"msg":"Instance deployment failed. For details, see 'eb-engine.log'.","timestamp":1773549271839,"severity":"ERROR"}]}]}
++
++2026/03/15 04:34:31.866602 [INFO] Platform Engine finished execution on command: app-deploy
++
++2026/03/15 04:35:53.711074 [INFO] Starting...
++2026/03/15 04:35:53.711130 [INFO] Starting EBPlatform-PlatformEngine
++2026/03/15 04:35:53.711164 [INFO] reading event message file
++2026/03/15 04:35:53.711599 [INFO] Engine received EB command cfn-hup-exec
++
++2026/03/15 04:35:53.785851 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 -r AWSEBAutoScalingGroup --region us-east-1
++2026/03/15 04:35:54.077918 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-5jxmzqq5c2-stack/e35a5f00-2027-11f1-bbc0-0afff431e359 -r AWSEBBeanstalkMetadata --region us-east-1
++2026/03/15 04:35:54.363205 [INFO] checking whether command tail-log is applicable to this instance...
++2026/03/15 04:35:54.363217 [INFO] this command is applicable to the instance, thus instance should execute command
++2026/03/15 04:35:54.363220 [INFO] Engine command: (tail-log)
++
++2026/03/15 04:35:54.363288 [INFO] Executing instruction: GetTailLogs
++2026/03/15 04:35:54.363291 [INFO] Tail Logs...
++2026/03/15 04:35:54.363887 [INFO] Running command: tail -n 100 /var/log/eb-engine.log
++
++
+diff --git a/treestagram_project/requirements.txt b/treestagram_project/requirements.txt
+index 2ec02f7..74b5e9a 100644
+Binary files a/treestagram_project/requirements.txt and b/treestagram_project/requirements.txt differ
+diff --git a/treestagram_project/treestagram/settings.py b/treestagram_project/treestagram/settings.py
+index 9895065..d4ddd66 100644
+--- a/treestagram_project/treestagram/settings.py
++++ b/treestagram_project/treestagram/settings.py
+@@ -52,6 +52,7 @@ INSTALLED_APPS = [
+ 
+ MIDDLEWARE = [
+     'django.middleware.security.SecurityMiddleware',
++    'whitenoise.middleware.WhiteNoiseMiddleware',
+     'django.contrib.sessions.middleware.SessionMiddleware',
+     'django.middleware.common.CommonMiddleware',
+     'django.middleware.csrf.CsrfViewMiddleware',
+@@ -134,7 +135,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
+ STATICFILES_DIRS = [
+  BASE_DIR / 'frontend' / 'assets',
+ ]
+-WHITENOISE_ROOT = BASE_DIR / 'frontend'
++STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+ 
+ 
+ # Default primary key field type
+@@ -157,7 +158,7 @@ MESSAGE_TAGS = {
+ }
+ 
+ # -- Allow Svelte dev server to talk to Django --
+-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://YOUR-ENV-NAME.us-east-1.elasticbeanstalk.com']
++CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://treestagram-env-1.eba-ni2xvdyh.us-east-1.elasticbeanstalk.com/']
+ SESSION_COOKIE_SAMESITE = 'Lax'
+ SESSION_COOKIE_HTTPONLY = True
+ 
+@@ -227,8 +228,18 @@ EMAIL_PORT = 587
+ 
+ EMAIL_USE_TLS = True
+ 
+-EMAIL_HOST_USER = 'rgqu kqfe capo wqsa'
++EMAIL_HOST_PASSWORD = 'rgqu kqfe capo wqsa'
+ 
+-EMAIL_HOST_PASSWORD = 'ananyasingh180600@gmail.com'
++EMAIL_HOST_USER = 'ananyasingh180600@gmail.com'
+ 
+ DEFAULT_FROM_EMAIL = 'Treestagram <>'
++
++AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
++AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
++AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
++AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
++AWS_S3_FILE_OVERWRITE = False
++AWS_DEFAULT_ACL = None
++
++if AWS_STORAGE_BUCKET_NAME:
++ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+\ No newline at end of file

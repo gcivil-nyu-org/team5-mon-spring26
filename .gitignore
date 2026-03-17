@@ -16,6 +16,8 @@ env/
 *.log
 *.pot
 *.pyc
+db.sqlite3
+db.sqlite3-journal
 media/
 staticfiles/
 
@@ -29,6 +31,8 @@ staticfiles/
 !.env.example
 
 # Packaging
+dist/
+build/
 *.egg-info/
 .eggs/
 
@@ -50,6 +54,8 @@ pnpm-debug.log*
 
 # SvelteKit build output
 .svelte-kit/
+build/
+dist/
 
 # Environment files
 .env.local
@@ -66,12 +72,3 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 treestagram_project/treestagram-svelte/node_modules/
-
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-
-Bundle*
-
-/venv*

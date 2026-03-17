@@ -1,0 +1,42 @@
+language: python
+
+env:
+  global:
+    - TRAVIS_SERVICE=travis-pro
+
+python:
+  - "3.11"
+
+services:
+  - docker
+
+before_install:
+  - python -m pip install --upgrade pip
+
+install:
+  - pip install -r treestagram_project/requirements.txt
+
+script:
+  - cd treestagram_project/treestagram-svelte
+  - npm install
+  - npm run build
+  - cp -r dist ../frontend
+
+  - cd ..
+  - python manage.py migrate
+  - coverage run --source=treestagram_project,treestagram manage.py test
+
+after_success:
+  - coveralls
+
+deploy:
+  provider: elasticbeanstalk
+  region: us-east-1
+  app: treestagram-project
+  env: treestagram-env
+  bucket_name: elasticbeanstalk-us-east-1-288378107443
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  on:
+    branch: develop 
+

@@ -10,8 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 from django.contrib.messages import constants as message_constants
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-^6mmku6r49r2@*(%p7(bys*c)35$swil%+)-u%jc2(724m-16g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,13 +63,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'treestagram.urls'
-svelte_build_path = os.path.join(BASE_DIR, 'treestagram-svelte', 'dist')
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-#         'DIRS': [BASE_DIR / 'accounts' / 'templates'],
-        'DIRS': [svelte_build_path],
+        'DIRS': [BASE_DIR / 'accounts' / 'templates', BASE_DIR / 'frontend', # Svelte index.html
+                 ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -79,9 +80,6 @@ TEMPLATES = [
         },
     },
 ]
-
-STATICFILES_DIRS = [ svelte_build_path ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 WSGI_APPLICATION = 'treestagram.wsgi.application'
 
@@ -131,7 +129,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = 'static/'
+STATIC_URL = '/assets/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+ BASE_DIR / 'frontend' / 'assets',
+]
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -153,45 +158,19 @@ MESSAGE_TAGS = {
 }
 
 # -- Allow Svelte dev server to talk to Django --
-# CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
-# SESSION_COOKIE_SAMESITE = 'Lax'
-# SESSION_COOKIE_HTTPONLY = True
-
-# # -- Media files (profile pictures etc.) --
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
-
-# # -- django-allauth --
-# SITE_ID = 1
-
-# AUTHENTICATION_BACKENDS = [
-#     'django.contrib.auth.backends.ModelBackend',
-#     'allauth.account.auth_backends.AuthenticationBackend',
-# ]
-
-# ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-# ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
-# ACCOUNT_CONFIRM_EMAIL_ON_GET = True
-# ACCOUNT_ADAPTER = 'accounts.adapter.TreestagramAccountAdapter'
-# ACCOUNT_LOGIN_METHODS = {'email', 'username'}
-# ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
-
-# # Google OAuth -- skip email verification for social accounts (already verified)
-# SOCIALACCOUNT_AUTO_SIGNUP = True
-# SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
-# SOCIALACCOUNT_LOGIN_ON_GET = True
-EB_DOMAIN = os.environ.get('EB_DOMAIN', 'http://localhost:5173')
-CSRF_TRUSTED_ORIGINS = [EB_DOMAIN]
-
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://treestagram-env-1.eba-ni2xvdyh.us-east-1.elasticbeanstalk.com/']
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 
-# -- Media files (Keep this for now so uploads don't crash) --
+
+
+# -- Media files (profile pictures etc.) --
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# -- django-allauth (CRITICAL - MUST BE INCLUDED) --
-SITE_ID = 1
+# -- django-allauth --
+# SITE_ID = 1
+SITE_ID = int(os.environ.get('SITE_ID', 1))
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -205,30 +184,63 @@ ACCOUNT_ADAPTER = 'accounts.adapter.TreestagramAccountAdapter'
 ACCOUNT_LOGIN_METHODS = {'email', 'username'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 
-# Google OAuth Settings
+# Google OAuth -- skip email verification for social accounts (already verified)
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 SOCIALACCOUNT_PROVIDERS = {
+
     'google': {
+
         'SCOPE': ['profile', 'email'],
+
         'AUTH_PARAMS': {'access_type': 'online'},
+
         'APP': {
-            # Safely fetching secrets from Elastic Beanstalk environment
-            'client_id': os.environ.get('GOOGLE_OAUTH_CLIENT_ID', ''),
-            'secret': os.environ.get('GOOGLE_OAUTH_SECRET', ''),
+
+            'client_id': '',
+
+            'secret': '',
+
         },
+
     }
+
 }
 
+ 
+
 # -- Email backend --
+
+# Development (prints to terminal):
+
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+ 
+
+# Gmail SMTP
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = 'smtp.gmail.com'
+
 EMAIL_PORT = 587
+
 EMAIL_USE_TLS = True
 
-# Safely fetching email credentials
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'cooladhyayan1@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '') 
-DEFAULT_FROM_EMAIL = f"Treestagram <{EMAIL_HOST_USER}>"
+EMAIL_HOST_PASSWORD = 'rgqu kqfe capo wqsa'
+
+EMAIL_HOST_USER = 'ananyasingh180600@gmail.com'
+
+DEFAULT_FROM_EMAIL = 'Treestagram <ananyasingh180600@gmail.com>'
+
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+
+if AWS_STORAGE_BUCKET_NAME:
+ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

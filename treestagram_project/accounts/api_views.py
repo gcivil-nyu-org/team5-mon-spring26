@@ -3,6 +3,7 @@ accounts/api_views.py
 JSON API endpoints consumed by the Svelte frontend.
 """
 import json
+import logging
 from django.contrib.auth import login, logout, authenticate
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -18,6 +19,8 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from .forms import SignupForm
 from .models import User
+
+logger = logging.getLogger(__name__)
 
 
 def user_to_dict(user):
@@ -47,23 +50,32 @@ def csrf_view(request):
 def api_signup(request):
     try:
         data = json.loads(request.body)
+        logger.info("Received data: %s", data)
     except json.JSONDecodeError:
+        logger.error("Invalid JSON")
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
     form = SignupForm(data)
     if form.is_valid():
+        logger.info("Form is valid")
         user = form.save(commit=False)
         user.is_active = False          # inactive until email is confirmed
         user.save()
+        logger.info("User created: %s", user)
 
-        # Create an EmailAddress record and send the confirmation email
-        email_address = EmailAddress.objects.create(
-            user=user,
-            email=user.email,
-            primary=True,
-            verified=False,
-        )
-        email_address.send_confirmation(request)
+        try:
+            email_address = EmailAddress.objects.create(
+                user=user,
+                email=user.email,
+                primary=True,
+                verified=False,
+            )
+            logger.info("EmailAddress created: %s", email_address)
+            email_address.send_confirmation(request)
+            logger.info("Confirmation email sent")
+        except Exception as e:
+            logger.exception("Error sending confirmation email")
+            return JsonResponse({'success': False, 'error': 'Failed to send confirmation email'}, status=500)
 
         return JsonResponse({
             'success': True,
@@ -71,6 +83,7 @@ def api_signup(request):
             'message': 'Account created! Check your email for a confirmation link.',
         })
     else:
+        logger.error("Form errors: %s", form.errors)
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
 

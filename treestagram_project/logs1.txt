@@ -1,0 +1,367 @@
+Retrieving logs...
+============= i-07f17d50456b4d260 ==============
+----------------------------------------
+/var/log/nginx/error.log
+----------------------------------------
+2026/03/15 06:11:06 [warn] 2178#2178: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:11:06 [warn] 2211#2211: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:11:06 [warn] 2212#2212: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:23:15 [warn] 3069#3069: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:23:15 [warn] 3102#3102: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:23:15 [warn] 3103#3103: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:33:32 [warn] 3858#3858: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:33:33 [warn] 3891#3891: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:33:33 [warn] 3892#3892: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:42:31 [warn] 4773#4773: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:42:32 [warn] 4806#4806: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 06:42:32 [warn] 4807#4807: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:15:55 [warn] 29299#29299: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:15:55 [warn] 29332#29332: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:15:55 [warn] 29333#29333: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:30:44 [warn] 30287#30287: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:30:44 [warn] 30320#30320: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:30:44 [warn] 30321#30321: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:34:55 [warn] 30950#30950: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:34:55 [warn] 30983#30983: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 18:34:55 [warn] 30984#30984: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:35:14 [warn] 33419#33419: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:35:14 [warn] 33453#33453: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:35:14 [warn] 33454#33454: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:37:09 [warn] 33972#33972: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:37:09 [warn] 34005#34005: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:37:09 [warn] 34006#34006: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:40:56 [warn] 34589#34589: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:40:56 [warn] 34622#34622: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:40:56 [warn] 34623#34623: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:42:25 [warn] 35118#35118: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:42:25 [warn] 35151#35151: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:42:25 [warn] 35152#35152: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:44:07 [warn] 35649#35649: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:44:08 [warn] 35682#35682: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:44:08 [warn] 35683#35683: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:52:00 [warn] 36400#36400: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:52:00 [warn] 36433#36433: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 19:52:00 [warn] 36434#36434: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:19:55 [warn] 38453#38453: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:19:56 [warn] 38486#38486: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:19:56 [warn] 38487#38487: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:21:48 [warn] 38958#38958: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:21:49 [warn] 38991#38991: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+2026/03/15 20:21:49 [warn] 38992#38992: could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+
+
+----------------------------------------
+/var/log/web.stdout.log
+----------------------------------------
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 104, in send_confirmation
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    confirmation.send(request, signup=signup)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 133, in send
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    get_adapter().send_confirmation_mail(request, self, signup)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 690, in send_confirmation_mail
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 217, in send_mail
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    "current_site": get_current_site(request),
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/shortcuts.py", line 16, in get_current_site
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    return Site.objects.get_current(request)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 59, in get_current
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    return self._get_site_by_id(site_id)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 30, in _get_site_by_id
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    site = self.get(pk=site_id)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/manager.py", line 87, in manager_method
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    return getattr(self.get_queryset(), name)(*args, **kwargs)
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/query.py", line 639, in get
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]:    raise self.model.DoesNotExist(
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]: django.contrib.sites.models.Site.DoesNotExist: Site matching query does not exist.
+Mar 15 19:53:11 ip-172-31-17-180 web[36399]: Internal Server Error: /api/signup/
+Mar 15 19:53:26 ip-172-31-17-180 web[36399]: Unauthorized: /api/me/
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]: Error sending confirmation email
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]: Traceback (most recent call last):
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/current/accounts/api_views.py", line 74, in api_signup
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    email_address.send_confirmation(request)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 104, in send_confirmation
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    confirmation.send(request, signup=signup)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 133, in send
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    get_adapter().send_confirmation_mail(request, self, signup)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 690, in send_confirmation_mail
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 217, in send_mail
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    "current_site": get_current_site(request),
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/shortcuts.py", line 16, in get_current_site
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    return Site.objects.get_current(request)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 59, in get_current
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    return self._get_site_by_id(site_id)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 30, in _get_site_by_id
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    site = self.get(pk=site_id)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/manager.py", line 87, in manager_method
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    return getattr(self.get_queryset(), name)(*args, **kwargs)
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/query.py", line 639, in get
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]:    raise self.model.DoesNotExist(
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]: django.contrib.sites.models.Site.DoesNotExist: Site matching query does not exist.
+Mar 15 19:53:45 ip-172-31-17-180 web[36399]: Internal Server Error: /api/signup/
+Mar 15 20:01:25 ip-172-31-17-180 web[36399]: Form errors: <ul class="errorlist"><li>username<ul class="errorlist"><li>A user with that username already exists.</li></ul></li></ul>
+Mar 15 20:01:25 ip-172-31-17-180 web[36399]: Bad Request: /api/signup/
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]: Error sending confirmation email
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]: Traceback (most recent call last):
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/current/accounts/api_views.py", line 74, in api_signup
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    email_address.send_confirmation(request)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 104, in send_confirmation
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    confirmation.send(request, signup=signup)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/models.py", line 133, in send
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    get_adapter().send_confirmation_mail(request, self, signup)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 690, in send_confirmation_mail
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/allauth/account/adapter.py", line 217, in send_mail
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    "current_site": get_current_site(request),
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/shortcuts.py", line 16, in get_current_site
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    return Site.objects.get_current(request)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 59, in get_current
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    return self._get_site_by_id(site_id)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/contrib/sites/models.py", line 30, in _get_site_by_id
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    site = self.get(pk=site_id)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/manager.py", line 87, in manager_method
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    return getattr(self.get_queryset(), name)(*args, **kwargs)
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:  File "/var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages/django/db/models/query.py", line 639, in get
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]:    raise self.model.DoesNotExist(
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]: django.contrib.sites.models.Site.DoesNotExist: Site matching query does not exist.
+Mar 15 20:01:34 ip-172-31-17-180 web[36399]: Internal Server Error: /api/signup/
+Mar 15 20:19:52 ip-172-31-17-180 web[36399]: [2026-03-15 20:19:52 +0000] [36399] [INFO] Worker exiting (pid: 36399)
+Mar 15 20:19:52 ip-172-31-17-180 web[36395]: [2026-03-15 20:19:52 +0000] [36395] [INFO] Handling signal: term
+Mar 15 20:19:52 ip-172-31-17-180 web[36395]: [2026-03-15 20:19:52 +0000] [36395] [INFO] Shutting down: Master
+Mar 15 20:19:53 ip-172-31-17-180 web[38448]: [2026-03-15 20:19:53 +0000] [38448] [INFO] Starting gunicorn 25.0.3
+Mar 15 20:19:53 ip-172-31-17-180 web[38448]: [2026-03-15 20:19:53 +0000] [38448] [INFO] Listening at: http://127.0.0.1:8000 (38448)
+Mar 15 20:19:53 ip-172-31-17-180 web[38448]: [2026-03-15 20:19:53 +0000] [38448] [INFO] Using worker: gthread
+Mar 15 20:19:53 ip-172-31-17-180 web[38452]: [2026-03-15 20:19:53 +0000] [38452] [INFO] Booting worker with pid: 38452
+Mar 15 20:21:45 ip-172-31-17-180 web[38448]: [2026-03-15 20:21:45 +0000] [38448] [INFO] Handling signal: term
+Mar 15 20:21:45 ip-172-31-17-180 web[38452]: [2026-03-15 20:21:45 +0000] [38452] [INFO] Worker exiting (pid: 38452)
+Mar 15 20:21:45 ip-172-31-17-180 web[38448]: [2026-03-15 20:21:45 +0000] [38448] [INFO] Shutting down: Master
+Mar 15 20:21:46 ip-172-31-17-180 web[38953]: [2026-03-15 20:21:46 +0000] [38953] [INFO] Starting gunicorn 25.0.3
+Mar 15 20:21:46 ip-172-31-17-180 web[38953]: [2026-03-15 20:21:46 +0000] [38953] [INFO] Listening at: http://127.0.0.1:8000 (38953)
+Mar 15 20:21:46 ip-172-31-17-180 web[38953]: [2026-03-15 20:21:46 +0000] [38953] [INFO] Using worker: gthread
+Mar 15 20:21:46 ip-172-31-17-180 web[38957]: [2026-03-15 20:21:46 +0000] [38957] [INFO] Booting worker with pid: 38957
+
+
+----------------------------------------
+/var/log/eb-engine.log
+----------------------------------------
+2026/03/15 20:25:56.302890 [INFO] checking dependencies file
+2026/03/15 20:25:56.302902 [INFO] Installing dependencies with requirements.txt by using Pip
+2026/03/15 20:25:56.302918 [INFO] Running command: /var/app/venv/staging-LQM1lest/bin/pip install -r requirements.txt
+2026/03/15 20:25:56.729822 [INFO] Requirement already satisfied: asgiref==3.11.1 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 1)) (3.11.1)
+Requirement already satisfied: boto3==1.42.66 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 2)) (1.42.66)
+Requirement already satisfied: botocore==1.42.66 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 3)) (1.42.66)
+Requirement already satisfied: certifi==2026.2.25 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 4)) (2026.2.25)
+Requirement already satisfied: cffi==2.0.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 5)) (2.0.0)
+Requirement already satisfied: charset-normalizer==3.4.5 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 6)) (3.4.5)
+Requirement already satisfied: cryptography==46.0.5 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 7)) (46.0.5)
+Requirement already satisfied: Django==4.2.29 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 8)) (4.2.29)
+Requirement already satisfied: django-allauth==65.14.3 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 9)) (65.14.3)
+Requirement already satisfied: django-storages==1.14.6 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 10)) (1.14.6)
+Requirement already satisfied: gunicorn==25.0.3 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 11)) (25.0.3)
+Requirement already satisfied: idna==3.11 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 12)) (3.11)
+Requirement already satisfied: jmespath==1.1.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 13)) (1.1.0)
+Requirement already satisfied: packaging==26.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 14)) (26.0)
+Requirement already satisfied: pillow==12.1.1 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 15)) (12.1.1)
+Requirement already satisfied: pycparser==3.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 16)) (3.0)
+Requirement already satisfied: PyJWT==2.11.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 17)) (2.11.0)
+Requirement already satisfied: python-dateutil==2.9.0.post0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 18)) (2.9.0.post0)
+Requirement already satisfied: requests==2.32.5 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 19)) (2.32.5)
+Requirement already satisfied: s3transfer==0.16.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 20)) (0.16.0)
+Requirement already satisfied: six==1.17.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 21)) (1.17.0)
+Requirement already satisfied: sqlparse==0.5.5 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 22)) (0.5.5)
+Requirement already satisfied: tzdata==2025.3 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 23)) (2025.3)
+Requirement already satisfied: urllib3==2.6.3 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 24)) (2.6.3)
+Requirement already satisfied: whitenoise==6.12.0 in /var/app/venv/staging-LQM1lest/lib64/python3.11/site-packages (from -r requirements.txt (line 25)) (6.12.0)
+
+2026/03/15 20:25:56.729864 [INFO] Executing instruction: check Procfile
+2026/03/15 20:25:56.729921 [INFO] creating default Procfile...
+2026/03/15 20:25:56.730024 [INFO] Executing instruction: configure X-Ray
+2026/03/15 20:25:56.730029 [INFO] X-Ray is not enabled.
+2026/03/15 20:25:56.730034 [INFO] Executing instruction: configure proxy server
+2026/03/15 20:25:56.730054 [INFO] Recreating /var/proxy/staging/nginx
+2026/03/15 20:25:56.749791 [INFO] Executing instruction: configure healthd specific proxy conf
+2026/03/15 20:25:56.752159 [INFO] Running command: systemctl show -p PartOf healthd.service
+2026/03/15 20:25:56.812158 [WARN] Warning: process healthd is already registered...
+Deregistering the process ...
+2026/03/15 20:25:56.812194 [INFO] Running command: systemctl show -p PartOf healthd.service
+2026/03/15 20:25:56.826472 [INFO] Running command: systemctl is-active healthd.service
+2026/03/15 20:25:56.837214 [INFO] Running command: systemctl show -p PartOf healthd.service
+2026/03/15 20:25:56.849397 [INFO] Running command: systemctl stop healthd.service
+2026/03/15 20:25:56.996929 [INFO] Running command: systemctl disable healthd.service
+2026/03/15 20:25:57.274005 [INFO] Removed "/etc/systemd/system/multi-user.target.wants/healthd.service".
+
+2026/03/15 20:25:57.274091 [INFO] Running command: systemctl daemon-reload
+2026/03/15 20:25:57.548231 [INFO] Running command: systemctl reset-failed
+2026/03/15 20:25:57.559350 [INFO] Running command: systemctl daemon-reload
+2026/03/15 20:25:57.890359 [INFO] Running command: systemctl reset-failed
+2026/03/15 20:25:57.898729 [INFO] Running command: systemctl is-enabled aws-eb.target
+2026/03/15 20:25:57.906562 [INFO] Running command: systemctl enable aws-eb.target
+2026/03/15 20:25:58.151198 [INFO] Running command: systemctl start aws-eb.target
+2026/03/15 20:25:58.160236 [INFO] Running command: systemctl enable healthd.service
+2026/03/15 20:25:58.441956 [INFO] Created symlink /etc/systemd/system/multi-user.target.wants/healthd.service → /etc/systemd/system/healthd.service.
+
+2026/03/15 20:25:58.441988 [INFO] Running command: systemctl show -p PartOf healthd.service
+2026/03/15 20:25:58.452838 [INFO] Running command: systemctl is-active healthd.service
+2026/03/15 20:25:58.460004 [INFO] Running command: systemctl start healthd.service
+2026/03/15 20:25:58.550844 [INFO] Copying file /opt/elasticbeanstalk/config/private/healthd/healthd_logformat.conf to /var/proxy/staging/nginx/conf.d/healthd_logformat.conf
+2026/03/15 20:25:58.552053 [INFO] Copying file /opt/elasticbeanstalk/config/private/healthd/healthd_nginx.conf to /var/proxy/staging/nginx/conf.d/elasticbeanstalk/healthd.conf
+2026/03/15 20:25:58.553264 [INFO] Executing instruction: configure log streaming
+2026/03/15 20:25:58.553275 [INFO] log streaming is not enabled
+2026/03/15 20:25:58.553278 [INFO] disable log stream
+2026/03/15 20:25:58.553289 [INFO] Running command: systemctl show -p PartOf amazon-cloudwatch-agent.service
+2026/03/15 20:25:58.572016 [INFO] Running command: systemctl stop amazon-cloudwatch-agent.service
+2026/03/15 20:25:58.588832 [INFO] Executing instruction: GetToggleForceRotate
+2026/03/15 20:25:58.588857 [INFO] Checking if logs need forced rotation
+2026/03/15 20:25:58.588887 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-s3jh5fee3t-stack/58185060-2035-11f1-9571-0e166b5438e5 -r AWSEBAutoScalingGroup --region us-east-1
+2026/03/15 20:25:59.042888 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-s3jh5fee3t-stack/58185060-2035-11f1-9571-0e166b5438e5 -r AWSEBBeanstalkMetadata --region us-east-1
+2026/03/15 20:25:59.447417 [INFO] Generating rsyslog config from Procfile
+2026/03/15 20:25:59.449588 [INFO] Running command: systemctl restart rsyslog.service
+2026/03/15 20:25:59.781671 [INFO] Executing instruction: PostBuildEbExtension
+2026/03/15 20:25:59.781793 [INFO] Starting executing the config set Infra-EmbeddedPostBuild.
+2026/03/15 20:25:59.781813 [INFO] Running command: /opt/aws/bin/cfn-init -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-s3jh5fee3t-stack/58185060-2035-11f1-9571-0e166b5438e5 -r AWSEBAutoScalingGroup --region us-east-1 --configsets Infra-EmbeddedPostBuild
+2026/03/15 20:26:02.369769 [INFO] Error occurred during build: Command 03_setup_sites failed
+
+2026/03/15 20:26:02.370278 [ERROR] An error occurred during execution of command [app-deploy] - [PostBuildEbExtension]. Stop running the command. Error: container commands build failed. Please refer to /var/log/cfn-init.log for more details. 
+
+2026/03/15 20:26:02.370282 [INFO] Executing cleanup logic
+2026/03/15 20:26:02.370360 [INFO] CommandService Response: {"status":"FAILURE","api_version":"1.0","results":[{"status":"FAILURE","msg":"Engine execution has encountered an error.","returncode":1,"events":[{"msg":"Instance deployment successfully generated a 'Procfile'.","timestamp":1773606356730,"severity":"INFO"},{"msg":"Instance deployment failed. For details, see 'eb-engine.log'.","timestamp":1773606362370,"severity":"ERROR"}]}]}
+
+2026/03/15 20:26:02.408410 [INFO] Platform Engine finished execution on command: app-deploy
+
+2026/03/15 20:26:29.780742 [INFO] Starting...
+2026/03/15 20:26:29.780780 [INFO] Starting EBPlatform-PlatformEngine
+2026/03/15 20:26:29.780805 [INFO] reading event message file
+2026/03/15 20:26:29.781176 [INFO] Engine received EB command cfn-hup-exec
+
+2026/03/15 20:26:29.851426 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-s3jh5fee3t-stack/58185060-2035-11f1-9571-0e166b5438e5 -r AWSEBAutoScalingGroup --region us-east-1
+2026/03/15 20:26:30.165199 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-east-1:288378107443:stack/awseb-e-s3jh5fee3t-stack/58185060-2035-11f1-9571-0e166b5438e5 -r AWSEBBeanstalkMetadata --region us-east-1
+2026/03/15 20:26:30.462751 [INFO] checking whether command tail-log is applicable to this instance...
+2026/03/15 20:26:30.462765 [INFO] this command is applicable to the instance, thus instance should execute command
+2026/03/15 20:26:30.462769 [INFO] Engine command: (tail-log)
+
+2026/03/15 20:26:30.462820 [INFO] Executing instruction: GetTailLogs
+2026/03/15 20:26:30.462823 [INFO] Tail Logs...
+2026/03/15 20:26:30.463228 [INFO] Running command: tail -n 100 /var/log/nginx/error.log
+2026/03/15 20:26:30.465603 [INFO] Running command: tail -n 100 /var/log/web.stdout.log
+2026/03/15 20:26:30.467521 [INFO] Running command: tail -n 100 /var/log/eb-engine.log
+
+
+----------------------------------------
+/var/log/nginx/access.log
+----------------------------------------
+172.31.28.99 - - [15/Mar/2026:20:14:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:14:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:14:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:14:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:14:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:14:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:14:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:14:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:15:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:15:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:15:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:15:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:15:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:15:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:15:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:15:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:16:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:16:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:16:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:16:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:16:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:16:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:16:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:16:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:17:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:17:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:17:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:17:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:17:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:17:40 +0000] "GET / HTTP/1.1" 200 720 "-" "Mozilla/5.0 (X11; U; Linux i686; en-gb) AppleWebKit/534.35 (KHTML, like Gecko) Chrome/11.0.696.65 Safari/534.35 Puffin/2.0.5603M" "93.174.93.12"
+172.31.8.222 - - [15/Mar/2026:20:17:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:17:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:17:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:18:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:18:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:18:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:18:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:18:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:18:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:18:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:18:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:19:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:19:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:19:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:19:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:19:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:19:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:19:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:19:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:20:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:20:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:20:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:20:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:20:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:20:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:20:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:20:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:21:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:21:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:21:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:21:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:21:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:21:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:21:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:22:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:22:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:22:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:22:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:22:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:22:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:22:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:22:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:23:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:23:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:23:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:23:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:23:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:23:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:23:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:23:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:24:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:24:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:24:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:24:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:24:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:24:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:24:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:24:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:25:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:25:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:25:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:25:28 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:25:32 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:25:43 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:25:47 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:25:58 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:26:02 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:26:13 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.28.99 - - [15/Mar/2026:20:26:17 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+172.31.8.222 - - [15/Mar/2026:20:26:29 +0000] "GET / HTTP/1.1" 200 720 "-" "ELB-HealthChecker/2.0" "-"
+
+

@@ -1,0 +1,112 @@
+<script>
+  import LeftNav from "../components/LeftNav.svelte";
+  import BackgroundRings from "../components/BackgroundRings.svelte";
+  export let navigate;
+  
+  import { onMount } from "svelte";
+  import L from "leaflet";
+  import "leaflet/dist/leaflet.css";
+
+  let map;
+  let trees = [];
+
+  async function fetchTrees() {
+    try {
+      const res = await fetch("/trees/api/?limit=10", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch");
+      trees = await res.json();
+      console.log("Fetched trees:", trees); // should be only 10
+    } catch (err) {
+      console.error("Error fetching trees:", err);
+    }
+  }
+
+  onMount(async () => {
+    await fetchTrees();
+
+    if (!trees.length) return;
+
+    map = L.map("map").setView([40.7128, -74.0060], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    }).addTo(map);
+
+    const latlngs = [];
+
+    trees.forEach((tree) => {
+      const lat = parseFloat(tree.latitude);
+      const lng = parseFloat(tree.longitude);
+
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      // Create popup content with "Dashboard" button
+      const popupContent = `
+        <div>
+          <b>${tree.spc_common}</b><br>
+          ID: ${tree.tree_id}<br>
+          <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">Dashboard</button>
+        </div>
+      `;
+
+      const marker = L.marker([lat, lng])
+        .bindPopup(popupContent)
+        .addTo(map);
+
+      latlngs.push([lat, lng]);
+    });
+
+    if (latlngs.length > 0) {
+      map.fitBounds(latlngs, { padding: [50, 50] });
+    }
+
+    // Handle click on "Dashboard" buttons inside popups
+    map.on("popupopen", function(e) {
+      const popupNode = e.popup.getElement();
+      const btn = popupNode.querySelector(".popup-dashboard-btn");
+      if (btn) {
+        btn.addEventListener("click", () => {
+          const treeId = btn.dataset.treeid;
+          navigate(`/treedashboard/${treeId}`);
+        });
+      }
+    });
+  });
+</script>
+
+
+
+
+
+
+
+
+<div class="page">
+  <BackgroundRings />
+  <LeftNav {navigate} activePage="map" />
+
+  <div class="map-container">
+    <div id="map"></div>
+  </div>
+</div>
+
+<style>
+.page {
+  background: #faf9f6;
+  min-height: 100vh;
+  padding-left: 60px;
+  position: relative;
+}
+
+.map-container {
+  height: 100vh;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+</style>
+

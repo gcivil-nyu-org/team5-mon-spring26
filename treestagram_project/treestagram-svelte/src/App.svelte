@@ -12,6 +12,9 @@
   import ResetPassword from "./routes/ResetPassword.svelte";
   import Settings from "./routes/Settings.svelte";
 
+  import Map from "./routes/Map.svelte";
+  import SearchPage from "./routes/SearchPage.svelte";
+
   let route = window.location.pathname;
   let ready = false;
 
@@ -70,6 +73,10 @@
     <Profile {navigate} />
   {:else if route === "/settings"}
     <Settings {navigate} />
+  {:else if route === "/map"}
+    <Map {navigate} />  
+  {:else if route === "/search"}
+    <SearchPage {navigate} />  
   {:else}
     <Landing {navigate} />
   {/if}

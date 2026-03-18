@@ -41,5 +41,5 @@ urlpatterns = [
     re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
     # Catch-all — serve Svelte SPA (must be last!)
     re_path(r'^(?!api/|admin/|accounts/|media/).*$', TemplateView.as_view(template_name='index.html')),
-    re_path(r'^.*$', svelte_app, name='svelte_app'),
+    re_path(r'^.*$', svelte_app, name='svelte_app')
 ]

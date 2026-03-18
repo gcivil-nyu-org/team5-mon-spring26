@@ -133,3 +133,94 @@ export async function apiDeleteAccount(password) {
   })
   return res.json()
 }
+
+// ── Post / Like / Comment endpoints ─────────────────────────────────────────
+
+export async function apiFetchPosts() {
+  const res = await apiFetch('/api/posts/')
+  return res.json()
+}
+
+export async function apiFetchMyPosts() {
+  const res = await apiFetch('/api/my-posts/')
+  return res.json()
+}
+
+export async function apiFetchMyTaggedPosts() {
+  const res = await apiFetch('/api/my-tagged-posts/')
+  return res.json()
+}
+
+export async function apiCreatePost(data) {
+  const formData = new FormData()
+  formData.append('tree_name', data.tree_name)
+  if (data.body) formData.append('body', data.body)
+  if (data.borough) formData.append('borough', data.borough)
+  if (data.health) formData.append('health', data.health)
+  if (data.image) formData.append('image', data.image)
+  if (data.tagged_users) formData.append('tagged_users', data.tagged_users)
+
+  const res = await apiFetch('/api/posts/create/', {
+    method: 'POST',
+    body: formData,
+  })
+  return res.json()
+}
+
+export async function apiDeletePost(postId) {
+  const res = await apiFetch(`/api/posts/${postId}/delete/`, { method: 'POST' })
+  return res.json()
+}
+
+export async function apiToggleLike(postId) {
+  const res = await apiFetch(`/api/posts/${postId}/like/`, { method: 'POST' })
+  return res.json()
+}
+
+export async function apiAddComment(postId, text) {
+  const res = await apiFetch(`/api/posts/${postId}/comment/`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+  return res.json()
+}
+
+export async function apiEditComment(commentId, text) {
+  const res = await apiFetch(`/api/comments/${commentId}/edit/`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+  return res.json()
+}
+
+export async function apiDeleteComment(commentId) {
+  const res = await apiFetch(`/api/comments/${commentId}/delete/`, { method: 'POST' })
+  return res.json()
+}
+
+// ── Notification endpoints ───────────────────────────────────────────────────
+
+export async function apiFetchNotifications() {
+  const res = await apiFetch('/api/notifications/')
+  return res.json()
+}
+
+export async function apiFetchUnreadCount() {
+  const res = await apiFetch('/api/notifications/unread-count/')
+  return res.json()
+}
+
+export async function apiMarkNotificationsRead(ids) {
+  const res = await apiFetch('/api/notifications/mark-read/', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  })
+  return res.json()
+}
+
+export async function apiMarkAllNotificationsRead() {
+  const res = await apiFetch('/api/notifications/mark-all-read/', {
+    method: 'POST',
+  })
+  return res.json()
+}

@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 from .forms import SignupForm
-from .models import User
+from .models import User, Notification
 
 logger = logging.getLogger(__name__)
 
@@ -406,3 +406,426 @@ def api_delete_account(request):
     user.delete()
 
     return JsonResponse({'success': True, 'message': 'Account deleted successfully.'})
+
+
+# ── Post / Like / Comment endpoints ─────────────────────────────────────────
+
+from .models import Post, Like, Comment
+
+
+def _post_to_dict(post, request_user):
+    """Serialize a Post to a JSON-safe dict."""
+    liked = False
+    if request_user.is_authenticated:
+        liked = post.likes.filter(user=request_user).exists()
+    return {
+        'id': post.id,
+        'tree_name': post.tree_name,
+        'body': post.body,
+        'health': post.health,
+        'borough': post.borough,
+        'image': post.image.url if post.image else None,
+        'author': {
+            'id': post.author_id,
+            'username': post.author.username,
+            'profile_picture': post.author.profile_picture.url if post.author.profile_picture else None,
+        },
+        'tagged_users': [
+            {'id': u.id, 'username': u.username}
+            for u in post.tagged_users.all()
+        ],
+        'likes_count': post.likes.count(),
+        'liked': liked,
+        'comments': [
+            {
+                'id': c.id,
+                'text': c.text,
+                'author': {
+                    'id': c.author_id,
+                    'username': c.author.username,
+                },
+                'created_at': c.created_at.isoformat(),
+            }
+            for c in post.comments.select_related('author').all()
+        ],
+        'created_at': post.created_at.isoformat(),
+    }
+
+
+def api_fetch_posts(request):
+    """GET /api/posts/ — return all posts (newest first)."""
+    posts = Post.objects.select_related('author').prefetch_related(
+        'likes', 'comments__author', 'tagged_users',
+    ).all()
+    return JsonResponse({
+        'success': True,
+        'posts': [_post_to_dict(p, request.user) for p in posts],
+    })
+
+
+def api_fetch_my_posts(request):
+    """GET /api/my-posts/ — return posts authored by the current user."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+    posts = Post.objects.filter(author=request.user).select_related('author').prefetch_related(
+        'likes', 'comments__author', 'tagged_users',
+    )
+    return JsonResponse({
+        'success': True,
+        'posts': [_post_to_dict(p, request.user) for p in posts],
+    })
+
+
+def api_fetch_my_tagged_posts(request):
+    """GET /api/my-tagged-posts/ — return posts where the current user is tagged."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+    posts = request.user.tagged_posts.select_related('author').prefetch_related(
+        'likes', 'comments__author', 'tagged_users',
+    )
+    return JsonResponse({
+        'success': True,
+        'posts': [_post_to_dict(p, request.user) for p in posts],
+    })
+
+
+@require_http_methods(["POST"])
+def api_create_post(request):
+    """POST /api/posts/create/ — create a new post (multipart or JSON)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    if request.content_type and 'multipart' in request.content_type:
+        data = request.POST
+        image = request.FILES.get('image')
+    else:
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+        image = None
+
+    tree_name = data.get('tree_name', '').strip()
+    if not tree_name:
+        return JsonResponse({'success': False, 'error': 'tree_name is required'}, status=400)
+
+    post = Post.objects.create(
+        author=request.user,
+        tree_name=tree_name,
+        body=data.get('body', ''),
+        health=data.get('health', 'Good'),
+        borough=data.get('borough', ''),
+        image=image,
+    )
+
+    # Handle tagged users
+    tagged_users_str = data.get('tagged_users', '')
+    if tagged_users_str:
+        usernames = [u.strip().lstrip('@') for u in tagged_users_str.split(',') if u.strip()]
+        tagged = User.objects.filter(username__in=usernames)
+        post.tagged_users.set(tagged)
+
+        # ── Notification: you were tagged in a post ──
+        for tagged_user in tagged:
+            _create_notification(
+                recipient=tagged_user,
+                sender=request.user,
+                notif_type='tag',
+                message=f'@{request.user.username} tagged you in a post about "{post.tree_name}"',
+                post=post,
+            )
+
+    # Update post count
+    request.user.post_count = Post.objects.filter(author=request.user).count()
+    request.user.save(update_fields=['post_count'])
+
+    # Check promotion (and notify if promoted)
+    old_role = request.user.role
+    request.user.promote_if_eligible()
+    if request.user.role != old_role:
+        _create_notification(
+            recipient=request.user,
+            sender=None,
+            notif_type='promotion',
+            message=f'Congrats! You\'ve been promoted to {request.user.get_role_display()}!',
+        )
+
+    return JsonResponse({
+        'success': True,
+        'post': _post_to_dict(post, request.user),
+        'user': user_to_dict(request.user),
+    })
+
+
+@require_http_methods(["POST"])
+def api_delete_post(request, post_id):
+    """POST /api/posts/<id>/delete/ — delete a post (author only)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'}, status=404)
+
+    if post.author_id != request.user.id:
+        return JsonResponse({'success': False, 'error': 'Not your post'}, status=403)
+
+    post.delete()
+
+    # Update post count
+    request.user.post_count = Post.objects.filter(author=request.user).count()
+    request.user.save(update_fields=['post_count'])
+
+    return JsonResponse({'success': True})
+
+
+@require_http_methods(["POST"])
+def api_toggle_like(request, post_id):
+    """POST /api/posts/<id>/like/ — toggle like on a post."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'}, status=404)
+
+    like, created = Like.objects.get_or_create(user=request.user, post=post)
+    if not created:
+        like.delete()
+
+    likes_count = post.likes.count()
+
+    # Update author's total_likes_received
+    post.author.total_likes_received = Like.objects.filter(post__author=post.author).count()
+    post.author.save(update_fields=['total_likes_received'])
+
+    # ── Notification: someone liked your post ──
+    if created:
+        _create_notification(
+            recipient=post.author,
+            sender=request.user,
+            notif_type='like',
+            message=f'@{request.user.username} liked your post "{post.tree_name}"',
+            post=post,
+        )
+
+    # Check promotion (and notify if promoted)
+    old_role = post.author.role
+    post.author.promote_if_eligible()
+    if post.author.role != old_role:
+        _create_notification(
+            recipient=post.author,
+            sender=None,
+            notif_type='promotion',
+            message=f'Congrats! You\'ve been promoted to {post.author.get_role_display()}!',
+        )
+
+    return JsonResponse({
+        'success': True,
+        'liked': created,
+        'likes_count': likes_count,
+    })
+
+
+@require_http_methods(["POST"])
+def api_add_comment(request, post_id):
+    """POST /api/posts/<id>/comment/ — add a comment to a post."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    text = data.get('text', '').strip()
+    if not text:
+        return JsonResponse({'success': False, 'error': 'Comment text is required'}, status=400)
+
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'}, status=404)
+
+    comment = Comment.objects.create(author=request.user, post=post, text=text)
+
+    # ── Notification: someone commented on your post ──
+    _create_notification(
+        recipient=post.author,
+        sender=request.user,
+        notif_type='comment',
+        message=f'@{request.user.username} commented on your post "{post.tree_name}"',
+        post=post,
+        comment=comment,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'comment': {
+            'id': comment.id,
+            'text': comment.text,
+            'author': {
+                'id': comment.author_id,
+                'username': comment.author.username,
+            },
+            'created_at': comment.created_at.isoformat(),
+        },
+    })
+
+
+@require_http_methods(["POST"])
+def api_edit_comment(request, comment_id):
+    """POST /api/comments/<id>/edit/ — edit a comment (author only)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        comment = Comment.objects.select_related('author').get(id=comment_id)
+    except Comment.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Comment not found'}, status=404)
+
+    if comment.author_id != request.user.id:
+        return JsonResponse({'success': False, 'error': 'You can only edit your own comments'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    text = data.get('text', '').strip()
+    if not text:
+        return JsonResponse({'success': False, 'error': 'Comment text is required'}, status=400)
+
+    comment.text = text
+    comment.save(update_fields=['text'])
+
+    return JsonResponse({
+        'success': True,
+        'comment': {
+            'id': comment.id,
+            'text': comment.text,
+            'author': {
+                'id': comment.author_id,
+                'username': comment.author.username,
+            },
+            'created_at': comment.created_at.isoformat(),
+        },
+    })
+
+
+@require_http_methods(["POST"])
+def api_delete_comment(request, comment_id):
+    """POST /api/comments/<id>/delete/ — delete a comment (author or post owner)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        comment = Comment.objects.select_related('post').get(id=comment_id)
+    except Comment.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Comment not found'}, status=404)
+
+    # Allow comment author or the post author to delete
+    if comment.author_id != request.user.id and comment.post.author_id != request.user.id:
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+
+    comment.delete()
+
+    return JsonResponse({'success': True})
+
+
+# ── Notification helpers ──────────────────────────────────────────────────────
+
+def _create_notification(recipient, sender, notif_type, message, post=None, comment=None):
+    """Create a notification (skips if recipient == sender)."""
+    if sender and recipient.id == sender.id:
+        return None
+    return Notification.objects.create(
+        recipient=recipient,
+        sender=sender,
+        notif_type=notif_type,
+        message=message,
+        post=post,
+        comment=comment,
+    )
+
+
+def _notif_to_dict(notif):
+    """Serialize a Notification to a JSON-safe dict."""
+    return {
+        'id': notif.id,
+        'notif_type': notif.notif_type,
+        'message': notif.message,
+        'is_read': notif.is_read,
+        'created_at': notif.created_at.isoformat(),
+        'sender': {
+            'id': notif.sender.id,
+            'username': notif.sender.username,
+            'profile_picture': notif.sender.profile_picture.url if notif.sender.profile_picture else None,
+        } if notif.sender else None,
+        'post_id': notif.post_id,
+        'comment_id': notif.comment_id,
+    }
+
+
+# ── Notification API endpoints ───────────────────────────────────────────────
+
+def api_notifications(request):
+    """GET /api/notifications/ — return current user's notifications (newest first)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    notifications = (
+        Notification.objects
+        .filter(recipient=request.user)
+        .select_related('sender', 'post')
+        .order_by('-created_at')[:50]
+    )
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+
+    return JsonResponse({
+        'success': True,
+        'notifications': [_notif_to_dict(n) for n in notifications],
+        'unread_count': unread_count,
+    })
+
+
+def api_notifications_unread_count(request):
+    """GET /api/notifications/unread-count/ — lightweight unread count."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    return JsonResponse({'success': True, 'unread_count': count})
+
+
+@require_http_methods(["POST"])
+def api_notifications_mark_read(request):
+    """POST /api/notifications/mark-read/ — mark specific notifications as read."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    notif_ids = data.get('ids', [])
+    if notif_ids:
+        Notification.objects.filter(recipient=request.user, id__in=notif_ids).update(is_read=True)
+
+    return JsonResponse({'success': True})
+
+
+@require_http_methods(["POST"])
+def api_notifications_mark_all_read(request):
+    """POST /api/notifications/mark-all-read/ — mark ALL notifications as read."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Login required'}, status=401)
+
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'success': True})
+
+
+# ── Profile-specific endpoints ───────────────────────────────────────────────

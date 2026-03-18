@@ -22,6 +22,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+from django.views.static import serve as static_serve
 
 def reset_password_redirect(request, uidb64, token):
     svelte_path = f'/reset-password/{uidb64}/{token}'
@@ -34,6 +35,8 @@ urlpatterns = [
     path('reset-password/<uidb64>/<token>/', reset_password_redirect, name='reset-password-redirect'),
     path('accounts/', include('allauth.urls')),
     path('', include('accounts.urls')),
- # Catch-all — serve Svelte SPA (must be last!)
+    # Serve uploaded media files (images etc.) — works regardless of DEBUG setting
+    re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
+    # Catch-all — serve Svelte SPA (must be last!)
     re_path(r'^(?!api/|admin/|accounts/|media/).*$', TemplateView.as_view(template_name='index.html')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]

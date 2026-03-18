@@ -229,11 +229,11 @@ EMAIL_PORT = 587
 
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_PASSWORD = 'rgqu kqfe capo wqsa'
+EMAIL_HOST_PASSWORD = 'zlji mnbb shjh ovqf'
 
-EMAIL_HOST_USER = 'ananyasingh180600@gmail.com'
+EMAIL_HOST_USER = 'treestagramgetyourroots@gmail.com'
 
-DEFAULT_FROM_EMAIL = 'Treestagram <ananyasingh180600@gmail.com>'
+DEFAULT_FROM_EMAIL = 'Treestagram <treestagramgetyourroots@gmail.com>'
 
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')

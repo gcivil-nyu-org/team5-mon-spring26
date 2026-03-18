@@ -66,3 +66,10 @@ def logout_view(request):
 def home_view(request):
     """Placeholder home view — replace with real feed later."""
     return render(request, 'accounts/home.html', {'user': request.user})
+
+def svelte_app(request):
+    """
+    This single view serves the compiled Svelte index.html.
+    Svelte takes over routing (login, signup, home) from here.
+    """
+    return render(request, 'index.html')

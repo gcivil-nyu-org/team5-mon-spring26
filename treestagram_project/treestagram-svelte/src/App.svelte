@@ -12,7 +12,7 @@
   import ResetPassword from "./routes/ResetPassword.svelte";
   import Settings from "./routes/Settings.svelte";
 
-  import Map from "./routes/Map.svelte";
+    import Map from "./routes/Map.svelte";
   import SearchPage from "./routes/SearchPage.svelte";
 
   let route = window.location.pathname;
@@ -65,8 +65,8 @@
     <ResetPassword {navigate} uid={resetMatch[1]} token={resetMatch[2]} />
   {:else if route === "/home"}
     <Home {navigate} />
-  {:else if route === "/dashboard"}
-    <TreeDashboard {navigate} />
+  {:else if route.startsWith("/treedashboard/")}
+    <TreeDashboard {navigate} treeId={route.split("/")[2]} />
   {:else if route === "/chat"}
     <Chat {navigate} />
   {:else if route === "/profile"}

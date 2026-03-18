@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     # project
     'accounts',
+    'trees',
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,17 @@ WSGI_APPLICATION = 'treestagram.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': 'postgres',
+#         'PASSWORD': os.environ.get('RDS_PASSWORD'),
+#         'HOST': 'database-1.c6n828o8mdqz.us-east-1.rds.amazonaws.com',
+#         'PORT': '5432',
+#     }
+# }
 
 DATABASES = {
     'default': {
@@ -229,11 +241,11 @@ EMAIL_PORT = 587
 
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_PASSWORD = 'rgqu kqfe capo wqsa'
+EMAIL_HOST_PASSWORD = 'zlji mnbb shjh ovqf'
 
-EMAIL_HOST_USER = 'ananyasingh180600@gmail.com'
+EMAIL_HOST_USER = 'treestagramgetyourroots@gmail.com'
 
-DEFAULT_FROM_EMAIL = 'Treestagram <ananyasingh180600@gmail.com>'
+DEFAULT_FROM_EMAIL = 'Treestagram <treestagramgetyourroots@gmail.com>'
 
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')

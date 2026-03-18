@@ -5,6 +5,7 @@
   
   import { onMount } from "svelte";
   import L from "leaflet";
+
   import "leaflet/dist/leaflet.css";
 
   let map;

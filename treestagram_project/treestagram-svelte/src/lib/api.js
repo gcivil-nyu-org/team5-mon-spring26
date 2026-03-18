@@ -224,3 +224,23 @@ export async function apiMarkAllNotificationsRead() {
   })
   return res.json()
 }
+
+// API for Tree search - Ramsey
+
+export async function searchTreesMulti(params = {}, offset = 0, limit = 10) {
+  const url = new URL("/trees/api/search/", window.location.origin);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) url.searchParams.append(k, v); // only append non-empty
+  });
+  url.searchParams.append("offset", offset);
+  url.searchParams.append("limit", limit);
+
+  try {
+    const res = await fetch(url.toString(), { credentials: "include" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("Search failed", err);
+    return { results: [], count: 0 };
+  }
+}

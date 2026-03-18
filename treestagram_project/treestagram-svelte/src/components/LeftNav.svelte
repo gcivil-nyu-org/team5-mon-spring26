@@ -142,13 +142,23 @@
             <span class="left-nav-icon">🏡</span>
             <span class="left-nav-label">Home</span>
         </button>
+        
         <button
-            class="left-nav-btn {activePage === 'dashboard' ? 'active' : ''}"
-            on:click={() => navigate("/dashboard")}
+            class="left-nav-btn {activePage === 'search' ? 'active' : ''}"
+            on:click={() => navigate("/search")}
+        >
+            <span class="left-nav-icon">🔎</span>
+            <span class="left-nav-label">Search</span>
+        </button>
+
+        <button
+            class="left-nav-btn {activePage === 'map' ? 'active' : ''}"
+            on:click={() => navigate("/map")}
         >
             <span class="left-nav-icon">🗺</span>
             <span class="left-nav-label">Explore Map</span>
         </button>
+
         <button
             class="left-nav-btn {activePage === 'chat' ? 'active' : ''}"
             on:click={() => navigate("/chat")}

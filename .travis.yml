@@ -1,11 +1,11 @@
 language: python
 
-env:
-  global:
-    - TRAVIS_SERVICE=travis-pro
-
 python:
   - "3.11"
+
+env:
+  global:
+    - COVERALLS_SERVICE_NAME=travis-pro
 
 services:
   - docker
@@ -24,8 +24,7 @@ script:
 
   - cd ..
   - python manage.py migrate
-  - coverage run --source=treestagram_project,treestagram manage.py test
-
+  - coverage run --source=accounts,treestagram manage.py test
 after_success:
   - coveralls
 
@@ -39,4 +38,3 @@ deploy:
   secret_access_key: $AWS_SECRET_ACCESS_KEY
   on:
     branch: develop 
-

@@ -29,6 +29,8 @@ def reset_password_redirect(request, uidb64, token):
     base_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
     return redirect(f'{base_url}{svelte_path}')
 
+from accounts.views import svelte_app
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('accounts.api_urls')),
@@ -39,4 +41,5 @@ urlpatterns = [
     re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
     # Catch-all — serve Svelte SPA (must be last!)
     re_path(r'^(?!api/|admin/|accounts/|media/).*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r'^.*$', svelte_app, name='svelte_app'),
 ]

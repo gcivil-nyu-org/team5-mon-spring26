@@ -613,20 +613,23 @@
                       class="carousel-textarea"
                       rows="3"
                     ></textarea>
-  
-                    <label class="field-label">
-                      <span class="label-text">🏷️ Tag People</span>
-                      <div class="tag-input-wrapper">
-                        <span class="tag-at">@</span>
-                        <input
-                          type="text"
-                          placeholder="username1, username2…"
-                          bind:value={newTaggedUsers}
-                          class="carousel-input tag-input"
-                        />
-                      </div>
-                      <span class="tag-hint">Separate usernames with commas</span>
-                    </label>
+                    
+                  <!--
+                  <label class="field-label">
+                    <span class="label-text">🏷️ Tag People</span>
+                    <div class="tag-input-wrapper">
+                      <span class="tag-at">@</span>
+                      <input
+                        type="text"
+                        placeholder="username1, username2…"
+                        bind:value={newTaggedUsers}
+                        class="carousel-input tag-input"
+                      />
+                    </div>
+                    <span class="tag-hint">Separate usernames with commas</span>
+                  </label>
+                  -->
+
                   </div>
                   <!-- Preview summary -->
                   <div class="post-preview-card">

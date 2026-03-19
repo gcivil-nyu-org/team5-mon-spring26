@@ -38,12 +38,15 @@
     if (!trees.length) return;
 
     map = L.map("map").setView([40.7128, -74.0060], 12);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    }).addTo(map);
-
+    
+//  FIX: Leaflet marker icons (MUST be here)
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors &copy; Carto",
+      }
+    ).addTo(map);
+//  FIX: Leaflet marker icons (MUST be here)
     const latlngs = [];
 
     trees.forEach((tree) => {
@@ -61,9 +64,21 @@
         </div>
       `;
 
-      const marker = L.marker([lat, lng])
-        .bindPopup(popupContent)
-        .addTo(map);
+//  FIX: Leaflet marker icons (MUST be here)
+    const customIcon = L.icon({
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
+
+    const marker = L.marker([lat, lng], { icon: customIcon })
+      .bindPopup(popupContent)
+      .addTo(map);
+//  FIX: Leaflet marker icons (MUST be here)
 
       latlngs.push([lat, lng]);
     });

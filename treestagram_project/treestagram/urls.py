@@ -33,6 +33,7 @@ from accounts.views import svelte_app
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('trees/', include('trees.urls')),
     path('api/', include('accounts.api_urls')),
     path('reset-password/<uidb64>/<token>/', reset_password_redirect, name='reset-password-redirect'),
     path('accounts/', include('allauth.urls')),
@@ -40,7 +41,6 @@ urlpatterns = [
     # Serve uploaded media files (images etc.) — works regardless of DEBUG setting
     re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
     # Catch-all — serve Svelte SPA (must be last!)
+    # re_path(r'^.*$', svelte_app, name='svelte_app'),
     re_path(r'^(?!api/|admin/|accounts/|media/).*$', TemplateView.as_view(template_name='index.html')),
-    
-    re_path(r'^.*$', svelte_app, name='svelte_app')
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

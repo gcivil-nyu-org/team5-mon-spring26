@@ -47,6 +47,7 @@ htmlcov/
 # ==============================
 
 node_modules/
+treestagram_project/treestagram-svelte/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -72,3 +73,5 @@ dist/
 .DS_Store
 Thumbs.db
 treestagram_project/treestagram-svelte/node_modules/
+
+*.csv

@@ -170,7 +170,11 @@ MESSAGE_TAGS = {
 }
 
 # -- Allow Svelte dev server to talk to Django --
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://treestagram-env-1.eba-ni2xvdyh.us-east-1.elasticbeanstalk.com/']
+CSRF_TRUSTED_ORIGINS = [
+ 'http://localhost:5173', # local Svelte dev server
+ 'http://*.elasticbeanstalk.com', # any EB environment (http)
+ 'https://*.elasticbeanstalk.com', # any EB environment (https)
+]
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 

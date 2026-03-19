@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+import os
 
 from .forms import SignupForm, LoginForm
 
@@ -72,4 +73,24 @@ def svelte_app(request):
     This single view serves the compiled Svelte index.html.
     Svelte takes over routing (login, signup, home) from here.
     """
-    return render(request, 'index.html')
+    context = {
+        'frontend_url': get_frontend_url()
+    }
+    return render(request, 'index.html', context)
+
+# this is for email confirmation ------------------------------------------------
+def get_frontend_url():
+    # Use FRONTEND_URL env variable if set, otherwise default to localhost
+    return os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+
+
+from allauth.account.views import ConfirmEmailView
+class CustomConfirmEmailView(ConfirmEmailView):
+    """
+    Overrides Allauth confirm email view to pass frontend URL to template
+    """
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['frontend_url'] = get_frontend_url()
+        return context
+# this is for email confirmation ------------------------------------------------

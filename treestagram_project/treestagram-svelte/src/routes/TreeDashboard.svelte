@@ -59,7 +59,6 @@
             </div>
             <div class="dash-tree-actions">
                 <button class="btn-follow">🌟 Follow Tree</button>
-                <button class="btn-apply-ct">Apply as Caretaker</button>
                 <button class="btn-apply-ct" on:click={() => navigate("/chat")}
                     >💬 Group Chat (127)</button
                 >
@@ -68,8 +67,6 @@
         <div class="dash-tab-bar">
             <button class="dash-tab active">Overview</button>
             <button class="dash-tab">Posts</button>
-            <button class="dash-tab">Health History</button>
-            <button class="dash-tab">Community</button>
         </div>
     </div>
 
@@ -241,21 +238,6 @@
             </div>
 
             <div class="ct-card">
-                <h3>Community</h3>
-                <div class="fans-count">
-                    <span class="num">127</span>
-                    <small>fans following this tree</small>
-                    <div class="fans-avatars">
-                        <div class="fa">🌿</div>
-                        <div class="fa">🧑</div>
-                        <div class="fa">👩</div>
-                        <div class="fa">🌱</div>
-                        <div class="fa">+123</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ct-card">
                 <h3>Tree Info</h3>
                 <table class="tree-info-table">
                     <tr><td>Species</td><td>{tree.spc_common}</td></tr>
@@ -275,14 +257,8 @@
             </div>
         </aside>
     </div>
-</div>      <div class="post-mini">
-                        <div class="post-mini-thumb">🌳</div>
-                        <div class="post-mini-info">
-                            <strong>Winter check-in — looking healthy!</strong>
-                            <small>@treewhisperer_nyc · 2 hours ago</small>
-                        </div>
-                        <span class="post-mini-likes">❤️ 342</span>
-                    </div>
+</div>      
+
             
 {:else}
   <p>Loading tree data...</p>

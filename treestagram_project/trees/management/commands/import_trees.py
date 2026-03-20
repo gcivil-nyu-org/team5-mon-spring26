@@ -2,7 +2,6 @@ import csv
 from django.core.management.base import BaseCommand
 from trees.models import Tree
 import boto3
-import os
 
 
 class Command(BaseCommand):

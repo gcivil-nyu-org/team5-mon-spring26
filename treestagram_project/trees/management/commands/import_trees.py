@@ -7,7 +7,7 @@ import boto3
 class Command(BaseCommand):
     help = "Import all trees from CSV"
 
-    def download_csv():
+    def download_csv(self):
         bucket = "treestagram-data-2026"
         key = "cleaned_tree_data.csv"
         local_path = "/tmp/cleaned_tree_data.csv"
@@ -17,8 +17,8 @@ class Command(BaseCommand):
 
         return local_path
 
-    def add_arguments(self, parser):
-        parser.add_argument("csv_file", type=str)
+    # def add_arguments(self, parser):
+    #     parser.add_argument("csv_file", type=str)
 
     def handle(self, *args, **kwargs):
         file_path = self.download_csv()

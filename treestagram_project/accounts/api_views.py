@@ -484,6 +484,7 @@ def api_delete_account(request):
 
 # ── Post / Like / Comment endpoints ─────────────────────────────────────────
 
+
 def _post_to_dict(post, request_user):
     """Serialize a Post to a JSON-safe dict."""
     liked = False

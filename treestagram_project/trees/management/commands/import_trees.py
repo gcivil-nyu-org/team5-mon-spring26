@@ -1,16 +1,28 @@
 import csv
 from django.core.management.base import BaseCommand
 from trees.models import Tree
+import boto3
+import os
 
 
 class Command(BaseCommand):
     help = "Import all trees from CSV"
 
+    def download_csv():
+        bucket = "treestagram-data-2026"
+        key = "cleaned_tree_data.csv"
+        local_path = "/tmp/cleaned_tree_data.csv"
+
+        s3 = boto3.client("s3")
+        s3.download_file(bucket, key, local_path)
+
+        return local_path
+
     def add_arguments(self, parser):
         parser.add_argument("csv_file", type=str)
 
     def handle(self, *args, **kwargs):
-        file_path = kwargs["csv_file"]
+        file_path = self.download_csv()
         trees_to_create = []
 
         bool_cols = [

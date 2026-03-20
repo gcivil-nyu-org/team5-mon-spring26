@@ -92,9 +92,7 @@ class Command(BaseCommand):
                             total_inserted += len(batch)
                             batch = []
 
-                            self.stdout.write(
-                                f"Inserted {total_inserted} records..."
-                            )
+                            self.stdout.write(f"Inserted {total_inserted} records...")
 
                     except Exception as row_error:
                         self.stderr.write(f"Skipping row {i}: {row_error}")
@@ -105,7 +103,9 @@ class Command(BaseCommand):
                     total_inserted += len(batch)
 
             self.stdout.write(
-                self.style.SUCCESS(f"Import completed! Total inserted: {total_inserted}")
+                self.style.SUCCESS(
+                    f"Import completed! Total inserted: {total_inserted}"
+                )
             )
 
         except Exception as e:

@@ -2,7 +2,7 @@ language: python
 
 env:
   global:
-    - TRAVIS_SERVICE=travis-pro
+    - COVERALLS_SERVICE_NAME=travis-pro
 
 python:
   - "3.11"

@@ -29,7 +29,7 @@ after_success:
 deploy:
   provider: elasticbeanstalk
   region: us-east-1
-  app: treestagram-project
+  app: treestagram_project
   env: treestagram-dev
   bucket_name: elasticbeanstalk-us-east-1-288378107443
   access_key_id: $AWS_ACCESS_KEY_ID

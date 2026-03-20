@@ -17,11 +17,8 @@ install:
   - pip install -r treestagram_project/requirements.txt
 
 script:
-  - cd treestagram_project/treestagram-svelte
-  - npm install
-  - npm run build
-  - cp -r dist ../frontend
-
+  - black --check .
+  - flake8 .
   - cd ..
   - python manage.py migrate
   - coverage run --source=treestagram_project,treestagram manage.py test

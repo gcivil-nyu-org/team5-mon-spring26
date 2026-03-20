@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Tree(models.Model):
     tree_id = models.IntegerField(unique=True)
     created_at = models.CharField(max_length=50)  # CSV has object type
@@ -12,7 +13,7 @@ class Tree(models.Model):
     spc_common = models.CharField(max_length=100)
     sidewalk = models.CharField(max_length=20)
     problems = models.CharField(max_length=200, null=True, blank=True)
-    
+
     # Boolean fields
     root_stone = models.BooleanField()
     root_grate = models.BooleanField()
@@ -23,7 +24,7 @@ class Tree(models.Model):
     brch_light = models.BooleanField()
     brch_shoe = models.BooleanField()
     brch_other = models.BooleanField()
-    
+
     address = models.CharField(max_length=200)
     zip_city = models.CharField(max_length=50)
     borough = models.CharField(max_length=50)

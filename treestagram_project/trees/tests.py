@@ -1,3 +1,7 @@
 from django.test import TestCase
 
-# Create your tests here.
+
+class BasicTest(TestCase):
+    def test_basic(self):
+        """Basic test to ensure testing works"""
+        self.assertEqual(1, 1)

@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_post_comment_like'),
+        ("accounts", "0002_post_comment_like"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='post',
-            name='tagged_users',
-            field=models.ManyToManyField(blank=True, related_name='tagged_posts', to=settings.AUTH_USER_MODEL),
+            model_name="post",
+            name="tagged_users",
+            field=models.ManyToManyField(
+                blank=True, related_name="tagged_posts", to=settings.AUTH_USER_MODEL
+            ),
         ),
     ]

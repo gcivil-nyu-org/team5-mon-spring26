@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from unittest.mock import patch, MagicMock
+from django.core.signing import TimestampSigner
 
 from accounts.models import Post, Comment, Notification
 from accounts.adapter import TreestagramAccountAdapter
@@ -590,3 +591,626 @@ class FormsTest(TestCase):
         self.assertEqual(
             form.fields["password"].widget.attrs.get("placeholder"), "Password"
         )
+
+
+# ============================================================
+# views.py coverage
+# ============================================================
+
+
+class SignupViewTest(TestCase):
+    def test_signup_get(self):
+        response = self.client.get(reverse("signup"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_signup_redirects_if_authenticated(self):
+        User.objects.create_user(username="already", password="pass123", is_active=True)
+        self.client.login(username="already", password="pass123")
+        response = self.client.get(reverse("signup"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_signup_post_invalid(self):
+        response = self.client.post(
+            reverse("signup"),
+            data={"username": "", "password1": "x", "password2": "y"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_signup_post_valid(self):
+        response = self.client.post(
+            reverse("signup"),
+            data={
+                "username": "newuser",
+                "email": "new@test.com",
+                "password1": "StrongPass123",
+                "password2": "StrongPass123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+
+
+class LoginViewTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="loginuser", password="testpass123", is_active=True
+        )
+
+    def test_login_get(self):
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_redirects_if_authenticated(self):
+        self.client.login(username="loginuser", password="testpass123")
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_login_post_valid(self):
+        response = self.client.post(
+            reverse("login"),
+            data={"username": "loginuser", "password": "testpass123"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_login_post_invalid(self):
+        response = self.client.post(
+            reverse("login"),
+            data={"username": "loginuser", "password": "wrongpass"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_redirects_to_next(self):
+        response = self.client.post(
+            reverse("login") + "?next=/home/",
+            data={"username": "loginuser", "password": "testpass123"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+
+class LogoutViewTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="logoutuser", password="testpass123", is_active=True
+        )
+
+    def test_logout_success(self):
+        self.client.login(username="logoutuser", password="testpass123")
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_logout_requires_login(self):
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
+
+
+class SvelteAppViewTest(TestCase):
+    def test_svelte_app_renders(self):
+        response = self.client.get("/")
+        # Should serve index.html (200) or redirect
+        self.assertIn(response.status_code, [200, 301, 302])
+
+    @patch("accounts.views.os.environ.get")
+    def test_get_frontend_url_from_env(self, mock_env):
+        mock_env.return_value = "http://myapp.com"
+        from accounts.views import get_frontend_url
+
+        self.assertEqual(get_frontend_url(), "http://myapp.com")
+
+    def test_get_frontend_url_default(self):
+        from accounts.views import get_frontend_url
+
+        with patch.dict("os.environ", {}, clear=True):
+            url = get_frontend_url()
+        self.assertEqual(url, "http://localhost:5173")
+
+
+class CustomConfirmEmailViewTest(TestCase):
+    def test_confirm_email_view_context(self):
+        from accounts.views import CustomConfirmEmailView
+        from allauth.account.views import ConfirmEmailView
+
+        self.assertTrue(issubclass(CustomConfirmEmailView, ConfirmEmailView))
+
+
+# ============================================================
+# api_views.py coverage
+# ============================================================
+
+
+class SignupAPITest(TestCase):
+    @patch("accounts.api_views.send_confirmation_email")
+    def test_signup_success(self, mock_send):
+        response = self.client.post(
+            reverse("api-signup"),
+            data=json.dumps(
+                {
+                    "username": "newuser",
+                    "email": "new@test.com",
+                    "password1": "StrongPass123",
+                    "password2": "StrongPass123",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["requires_verification"])
+        mock_send.assert_called_once()
+
+    @patch("accounts.api_views.send_confirmation_email")
+    def test_signup_email_send_failure(self, mock_send):
+        mock_send.side_effect = Exception("SMTP error")
+        response = self.client.post(
+            reverse("api-signup"),
+            data=json.dumps(
+                {
+                    "username": "failuser",
+                    "email": "fail@test.com",
+                    "password1": "StrongPass123",
+                    "password2": "StrongPass123",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Failed to send confirmation email", response.json()["error"])
+
+    def test_signup_invalid_form(self):
+        response = self.client.post(
+            reverse("api-signup"),
+            data=json.dumps(
+                {
+                    "username": "",
+                    "email": "bad",
+                    "password1": "x",
+                    "password2": "y",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_signup_invalid_json(self):
+        response = self.client.post(
+            reverse("api-signup"),
+            data="not json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class ConfirmEmailAPITest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="confirmuser",
+            email="confirm@test.com",
+            password="testpass123",
+            is_active=False,
+        )
+
+    def _make_token(self, user_pk):
+        signer = TimestampSigner()
+        return signer.sign(user_pk)
+
+    def test_confirm_email_success(self):
+        token = self._make_token(self.user.pk)
+        response = self.client.get(reverse("confirm_email", kwargs={"token": token}))
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_confirm_email_invalid_token(self):
+        response = self.client.get(
+            reverse("confirm_email", kwargs={"token": "invalid:token"})
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data["success"])
+
+    def test_confirm_email_expired_token(self):
+        signer = TimestampSigner()
+        token = signer.sign(self.user.pk)
+        with patch("accounts.api_views.TimestampSigner.unsign") as mock_unsign:
+            from django.core.signing import SignatureExpired
+
+            mock_unsign.side_effect = SignatureExpired("expired")
+            response = self.client.get(
+                reverse("confirm_email", kwargs={"token": token})
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("expired", response.json()["error"].lower())
+
+    def test_confirm_email_user_not_found(self):
+        signer = TimestampSigner()
+        token = signer.sign(99999)  # non-existent pk
+        response = self.client.get(reverse("confirm_email", kwargs={"token": token}))
+        self.assertEqual(response.status_code, 400)
+
+
+class LoginByEmailAPITest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="emaillogin",
+            email="emaillogin@test.com",
+            password="testpass123",
+            is_active=True,
+        )
+
+    def test_login_by_email(self):
+        response = self.client.post(
+            reverse("api-login"),
+            data=json.dumps(
+                {
+                    "username": "emaillogin@test.com",
+                    "password": "testpass123",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
+    def test_login_inactive_user(self):
+        User.objects.create_user(
+            username="inactivelogin",
+            email="inactive@test.com",
+            password="testpass123",
+            is_active=False,
+        )
+        response = self.client.post(
+            reverse("api-login"),
+            data=json.dumps(
+                {
+                    "username": "inactivelogin",
+                    "password": "testpass123",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(response.json()["requires_verification"])
+
+    def test_login_invalid_json(self):
+        response = self.client.post(
+            reverse("api-login"),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class ResendVerificationAPITest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="resenduser",
+            email="resend@test.com",
+            password="testpass123",
+            is_active=False,
+        )
+
+    @patch("accounts.api_views.send_confirmation_email")
+    def test_resend_success(self, mock_send):
+        response = self.client.post(
+            reverse("api-resend-verification"),
+            data=json.dumps({"email": "resend@test.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        mock_send.assert_called_once_with(self.user)
+
+    def test_resend_already_verified(self):
+        self.user.is_active = True
+        self.user.save()
+        response = self.client.post(
+            reverse("api-resend-verification"),
+            data=json.dumps({"email": "resend@test.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class ForgotPasswordAPITest(TestCase):
+    def test_forgot_password_invalid_json(self):
+        response = self.client.post(
+            reverse("api-forgot-password"),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_forgot_password_missing_email(self):
+        response = self.client.post(
+            reverse("api-forgot-password"),
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_forgot_password_nonexistent_email(self):
+        # Should still return 200 (don't leak user existence)
+        response = self.client.post(
+            reverse("api-forgot-password"),
+            data=json.dumps({"email": "nobody@test.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+class ResetPasswordAPITest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="resetuser",
+            email="reset@test.com",
+            password="oldpass123",
+            is_active=True,
+        )
+
+    def test_reset_password_missing_password(self):
+        response = self.client.post(
+            reverse("api-reset-password", args=["invalid", "token"]),
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_password_invalid_uid(self):
+        response = self.client.post(
+            reverse("api-reset-password", args=["invalid", "token"]),
+            data=json.dumps({"password": "NewPass123!"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_password_invalid_token(self):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        response = self.client.post(
+            reverse("api-reset-password", args=[uid, "badtoken"]),
+            data=json.dumps({"password": "NewPass123!"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_password_weak_password(self):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.contrib.auth.tokens import default_token_generator
+
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        response = self.client.post(
+            reverse("api-reset-password", args=[uid, token]),
+            data=json.dumps({"password": "123"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_password_success(self):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.contrib.auth.tokens import default_token_generator
+
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        response = self.client.post(
+            reverse("api-reset-password", args=[uid, token]),
+            data=json.dumps({"password": "NewStrongPass123!"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
+
+class ChangePasswordAPITest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="changepass",
+            password="OldPass123!",
+            is_active=True,
+        )
+        self.client.login(username="changepass", password="OldPass123!")
+
+    def test_change_password_success(self):
+        response = self.client.post(
+            reverse("api-change-password"),
+            data=json.dumps(
+                {
+                    "current_password": "OldPass123!",
+                    "new_password": "NewPass456!",
+                    "confirm_password": "NewPass456!",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_change_password_missing_fields(self):
+        response = self.client.post(
+            reverse("api-change-password"),
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_change_password_unauthenticated(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse("api-change-password"),
+            data=json.dumps(
+                {
+                    "current_password": "OldPass123!",
+                    "new_password": "NewPass456!",
+                    "confirm_password": "NewPass456!",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_change_password_invalid_json(self):
+        response = self.client.post(
+            reverse("api-change-password"),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class PostCommentAPIExtraTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="postuser",
+            password="testpass123",
+            is_active=True,
+        )
+        self.client.login(username="postuser", password="testpass123")
+        self.post = Post.objects.create(author=self.user, tree_name="Maple")
+
+    def test_create_post_invalid_json(self):
+        response = self.client.post(
+            reverse("api-create-post"),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_post_missing_tree_name(self):
+        response = self.client.post(
+            reverse("api-create-post"),
+            data=json.dumps({"body": "no tree name"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_post_unauthenticated(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse("api-create-post"),
+            data=json.dumps({"tree_name": "Oak"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_toggle_like_post_not_found(self):
+        response = self.client.post(reverse("api-toggle-like", args=[99999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_add_comment_invalid_json(self):
+        response = self.client.post(
+            reverse("api-add-comment", args=[self.post.id]),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_add_comment_empty_text(self):
+        response = self.client.post(
+            reverse("api-add-comment", args=[self.post.id]),
+            data=json.dumps({"text": ""}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_add_comment_post_not_found(self):
+        response = self.client.post(
+            reverse("api-add-comment", args=[99999]),
+            data=json.dumps({"text": "hello"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_comment_not_owner(self):
+        other = User.objects.create_user(username="other2", password="testpass123")
+        comment = Comment.objects.create(author=other, post=self.post, text="Other")
+        response = self.client.post(
+            reverse("api-edit-comment", args=[comment.id]),
+            data=json.dumps({"text": "hacked"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_edit_comment_not_found(self):
+        response = self.client.post(
+            reverse("api-edit-comment", args=[99999]),
+            data=json.dumps({"text": "test"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_comment_invalid_json(self):
+        comment = Comment.objects.create(author=self.user, post=self.post, text="Old")
+        response = self.client.post(
+            reverse("api-edit-comment", args=[comment.id]),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_edit_comment_empty_text(self):
+        comment = Comment.objects.create(author=self.user, post=self.post, text="Old")
+        response = self.client.post(
+            reverse("api-edit-comment", args=[comment.id]),
+            data=json.dumps({"text": ""}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_delete_comment_not_found(self):
+        response = self.client.post(reverse("api-delete-comment", args=[99999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_comment_permission_denied(self):
+        other = User.objects.create_user(username="other3", password="testpass123")
+        other_post = Post.objects.create(author=other, tree_name="Oak")
+        comment = Comment.objects.create(author=other, post=other_post, text="Other")
+        response = self.client.post(reverse("api-delete-comment", args=[comment.id]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_post_not_found(self):
+        response = self.client.post(reverse("api-delete-post", args=[99999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_fetch_my_tagged_posts(self):
+        self.post.tagged_users.add(self.user)
+        response = self.client.get(reverse("api-my-tagged-posts"))
+        self.assertEqual(response.status_code, 200)
+
+
+class NotificationsAPIExtraTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="notifuser",
+            password="testpass123",
+            is_active=True,
+        )
+
+    def test_notifications_unauthenticated(self):
+        response = self.client.get(reverse("api-notifications"))
+        self.assertEqual(response.status_code, 401)
+
+    def test_notifications_unread_count_unauthenticated(self):
+        response = self.client.get(reverse("api-notifications-unread-count"))
+        self.assertEqual(response.status_code, 401)
+
+    def test_mark_notifications_read_unauthenticated(self):
+        response = self.client.post(
+            reverse("api-notifications-mark-read"),
+            data=json.dumps({"ids": []}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_mark_all_notifications_read_unauthenticated(self):
+        response = self.client.post(reverse("api-notifications-mark-all-read"))
+        self.assertEqual(response.status_code, 401)
+
+    def test_mark_notifications_read_invalid_json(self):
+        self.client.login(username="notifuser", password="testpass123")
+        response = self.client.post(
+            reverse("api-notifications-mark-read"),
+            data="bad json",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)

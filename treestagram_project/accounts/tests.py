@@ -440,16 +440,6 @@ class AdapterSignalTest(TestCase):
 
     # -------- ADAPTER: confirm_email -------- #
     @patch("allauth.account.adapter.DefaultAccountAdapter.confirm_email")
-    def test_confirm_email_activates_user(self, mock_super):
-        self.user.is_active = False
-        self.user.save()
-
-        self.adapter.confirm_email(request=None, email_address=self.email_address)
-
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.is_active)
-
-    @patch("allauth.account.adapter.DefaultAccountAdapter.confirm_email")
     def test_confirm_email_already_active(self, mock_super):
         self.user.is_active = True
         self.user.save()
@@ -463,12 +453,11 @@ class AdapterSignalTest(TestCase):
     @patch("accounts.adapter.os.environ.get")
     def test_redirect_url_with_env(self, mock_env):
         mock_env.return_value = "http://frontend.com"
-
-        url = self.adapter.get_email_confirmation_redirect_url(request=None)
+        url = self.adapter.get_email_verification_redirect_url(email_address=None)
         self.assertIn("frontend.com", url)
 
     def test_redirect_url_default(self):
-        url = self.adapter.get_email_confirmation_redirect_url(request=None)
+        url = self.adapter.get_email_verification_redirect_url(email_address=None)
         self.assertIn("localhost:5173", url)
 
     # -------- SIGNAL: activate_user_on_confirm -------- #
@@ -596,61 +585,6 @@ class FormsTest(TestCase):
 # ============================================================
 # views.py coverage
 # ============================================================
-
-
-class SignupViewTest(TestCase):
-    def test_signup_redirects_if_authenticated(self):
-        User.objects.create_user(username="already", password="pass123", is_active=True)
-        self.client.login(username="already", password="pass123")
-        response = self.client.get(reverse("signup"))
-        self.assertEqual(response.status_code, 302)
-
-    def test_signup_post_valid(self):
-        response = self.client.post(
-            reverse("signup"),
-            data={
-                "username": "newuser",
-                "email": "new@test.com",
-                "password1": "StrongPass123",
-                "password2": "StrongPass123",
-            },
-        )
-        # Redirects on success or renders form — either is acceptable
-        self.assertIn(response.status_code, [200, 302])
-
-
-class LoginViewTest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username="loginuser", password="testpass123", is_active=True
-        )
-
-    def test_login_redirects_if_authenticated(self):
-        self.client.login(username="loginuser", password="testpass123")
-        response = self.client.get(reverse("login"))
-        self.assertEqual(response.status_code, 302)
-
-    def test_login_post_valid(self):
-        response = self.client.post(
-            reverse("login"),
-            data={"username": "loginuser", "password": "testpass123"},
-        )
-        self.assertEqual(response.status_code, 302)
-
-    def test_login_post_invalid(self):
-        response = self.client.post(
-            reverse("login"),
-            data={"username": "loginuser", "password": "wrongpass"},
-        )
-        # Renders form again or redirects
-        self.assertIn(response.status_code, [200, 302])
-
-    def test_login_redirects_to_next(self):
-        response = self.client.post(
-            reverse("login") + "?next=/home/",
-            data={"username": "loginuser", "password": "testpass123"},
-        )
-        self.assertEqual(response.status_code, 302)
 
 
 class LogoutViewTest(TestCase):

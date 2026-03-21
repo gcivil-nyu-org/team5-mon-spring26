@@ -2,9 +2,11 @@ import json
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from accounts.models import Post, Comment, Notification
+from accounts.adapter import TreestagramAccountAdapter
+from accounts.signals import activate_user_on_confirm
 
 User = get_user_model()
 
@@ -414,3 +416,82 @@ class AccountAPIExtraCoverageTest(TestCase):
     def test_fetch_my_tagged_posts_unauth(self):
         response = self.client.get(reverse("api-my-tagged-posts"))
         self.assertEqual(response.status_code, 401)
+
+
+# ---------------- ADAPTER + SIGNAL TESTS ---------------- #
+
+
+class AdapterSignalTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="adapteruser",
+            email="adapter@test.com",
+            password="testpass123",
+            is_active=False,
+        )
+
+        # Fake email address object (since allauth model is heavy)
+        self.email_address = MagicMock()
+        self.email_address.user = self.user
+
+        self.adapter = TreestagramAccountAdapter()
+
+    # -------- ADAPTER: confirm_email -------- #
+    @patch("allauth.account.adapter.DefaultAccountAdapter.confirm_email")
+    def test_confirm_email_activates_user(self, mock_super):
+        self.user.is_active = False
+        self.user.save()
+
+        self.adapter.confirm_email(request=None, email_address=self.email_address)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    @patch("allauth.account.adapter.DefaultAccountAdapter.confirm_email")
+    def test_confirm_email_already_active(self, mock_super):
+        self.user.is_active = True
+        self.user.save()
+
+        self.adapter.confirm_email(request=None, email_address=self.email_address)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    # -------- ADAPTER: redirect URL -------- #
+    @patch("accounts.adapter.os.environ.get")
+    def test_redirect_url_with_env(self, mock_env):
+        mock_env.return_value = "http://frontend.com"
+
+        url = self.adapter.get_email_confirmation_redirect_url(request=None)
+        self.assertIn("frontend.com", url)
+
+    def test_redirect_url_default(self):
+        url = self.adapter.get_email_confirmation_redirect_url(request=None)
+        self.assertIn("localhost:5173", url)
+
+    # -------- SIGNAL: activate_user_on_confirm -------- #
+    def test_signal_activates_user(self):
+        self.user.is_active = False
+        self.user.save()
+
+        activate_user_on_confirm(
+            sender=None,
+            request=None,
+            email_address=self.email_address,
+        )
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_signal_user_already_active(self):
+        self.user.is_active = True
+        self.user.save()
+
+        activate_user_on_confirm(
+            sender=None,
+            request=None,
+            email_address=self.email_address,
+        )
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)

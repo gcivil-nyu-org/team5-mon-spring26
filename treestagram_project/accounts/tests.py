@@ -92,7 +92,7 @@ class AccountAPITest(TestCase):
 
     def test_fetch_my_posts(self):
         Post.objects.create(author=self.user, tree_name="Oak")
-        response = self.client.get(reverse("api-fetch-my-posts"))
+        response = self.client.get(reverse("api-my-posts"))
         self.assertEqual(response.status_code, 200)
 
     def test_delete_post(self):

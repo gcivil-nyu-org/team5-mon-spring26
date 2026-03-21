@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 from accounts.models import Post, Comment, Notification
 from accounts.adapter import TreestagramAccountAdapter
 from accounts.signals import activate_user_on_confirm
+from accounts.forms import SignupForm, LoginForm
 
 User = get_user_model()
 
@@ -495,3 +496,97 @@ class AdapterSignalTest(TestCase):
 
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+
+# ---------------- FORMS COVERAGE ---------------- #
+
+
+class FormsTest(TestCase):
+
+    # -------- SIGNUP FORM VALID -------- #
+    def test_signup_form_valid(self):
+        form = SignupForm(
+            data={
+                "username": "formuser",
+                "email": "form@test.com",
+                "password1": "StrongPass123",
+                "password2": "StrongPass123",
+                "borough": "Manhattan",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        user = form.save()
+        self.assertEqual(user.email, "form@test.com")
+        self.assertEqual(user.borough, "Manhattan")
+
+    # -------- SIGNUP FORM INVALID -------- #
+    def test_signup_form_password_mismatch(self):
+        form = SignupForm(
+            data={
+                "username": "formuser2",
+                "email": "form@test.com",
+                "password1": "StrongPass123",
+                "password2": "WrongPass",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+
+    # -------- SAVE commit=False -------- #
+    def test_signup_form_commit_false(self):
+        form = SignupForm(
+            data={
+                "username": "formuser3",
+                "email": "form@test.com",
+                "password1": "StrongPass123",
+                "password2": "StrongPass123",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        user = form.save(commit=False)
+        self.assertEqual(user.email, "form@test.com")
+
+    # -------- OPTIONAL FIELDS -------- #
+    def test_signup_optional_fields(self):
+        form = SignupForm(
+            data={
+                "username": "formuser4",
+                "email": "form@test.com",
+                "password1": "StrongPass123",
+                "password2": "StrongPass123",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+        user = form.save()
+        self.assertEqual(user.borough, "")
+
+    # -------- INIT CUSTOMIZATION -------- #
+    def test_signup_form_init(self):
+        form = SignupForm()
+
+        # help_text removed
+        for field in form.fields.values():
+            self.assertIsNone(field.help_text)
+
+        # placeholders exist
+        self.assertIn("placeholder", form.fields["password1"].widget.attrs)
+        self.assertIn("placeholder", form.fields["password2"].widget.attrs)
+
+    # -------- LOGIN FORM -------- #
+    def test_login_form_fields(self):
+        form = LoginForm()
+
+        self.assertIn("username", form.fields)
+        self.assertIn("password", form.fields)
+
+        self.assertEqual(
+            form.fields["username"].widget.attrs.get("placeholder"), "Username"
+        )
+        self.assertEqual(
+            form.fields["password"].widget.attrs.get("placeholder"), "Password"
+        )

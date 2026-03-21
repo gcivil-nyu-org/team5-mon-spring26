@@ -1,137 +1,213 @@
+import json
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+from accounts.models import Post, Comment, Notification
+
 User = get_user_model()
 
 
-class UserTest(TestCase):
-    """
-    Tests for custom user model and authentication
-    """
-
+class AccountAPITest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", password="testpass123"
+            username="apiuser",
+            email="api@test.com",
+            password="testpass123",
+            is_active=True,
         )
+        self.client.login(username="apiuser", password="testpass123")
 
-    def test_create_user(self):
-        """
-        Test user creation
-        Use case: ensures registration works
-        """
-        self.assertEqual(self.user.username, "testuser")
+    # ---------------- AUTH ---------------- #
 
-    def test_login(self):
-        """
-        Test login functionality
-        Use case: ensures authentication works
-        """
-        login = self.client.login(username="testuser", password="testpass123")
-        self.assertTrue(login)
-
-
-class AccountViewTest(TestCase):
-    """
-    Tests for Django views in accounts/views.py
-    """
-
-    def test_home_view(self):
-        """
-        Test homepage or basic route
-        Use case: ensures views load correctly
-        """
-        response = self.client.get("/")
-        self.assertIn(response.status_code, [200, 404])
-
-    def test_invalid_page(self):
-        """
-        Test invalid URL
-        Use case: SPA apps may return 200 instead of 404
-        """
-        response = self.client.get("/random-url/")
-        self.assertIn(response.status_code, [200, 404])  # FIXED
-
-
-class AccountAPITest(TestCase):
-    """
-    Tests for api_views.py (IMPORTANT for coverage)
-    """
-
-    def setUp(self):
-        self.user = User.objects.create_user(username="apiuser", password="testpass123")
-
-    def test_signup_api(self):
-        """
-        Test signup endpoint
-        Use case: ensures new users can register
-        """
+    def test_signup_api_invalid_json(self):
         response = self.client.post(
             reverse("api-signup"),
-            data={"username": "newuser", "password": "testpass123"},
+            data="invalid",
+            content_type="application/json",
         )
-        self.assertIn(response.status_code, [200, 400])
+        self.assertEqual(response.status_code, 400)
 
-    def test_login_api(self):
-        """
-        Test login endpoint
-        Use case: ensures authentication API works
-        """
+    def test_login_api_success(self):
+        self.client.logout()
         response = self.client.post(
             reverse("api-login"),
-            data={"username": "apiuser", "password": "testpass123"},
+            data=json.dumps({"username": "apiuser", "password": "testpass123"}),
+            content_type="application/json",
         )
-        self.assertIn(response.status_code, [200, 400, 401])
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_api_invalid(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse("api-login"),
+            data=json.dumps({"username": "wrong", "password": "wrong"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
 
     def test_logout_api(self):
-        """
-        Test logout endpoint
-        Use case: ensures logout works safely
-        """
         response = self.client.post(reverse("api-logout"))
-        self.assertIn(response.status_code, [200, 401, 403])
+        self.assertEqual(response.status_code, 200)
 
-    def test_me_api(self):
-        """
-        Test current user endpoint
-        Use case: ensures user data retrieval works
-        """
+    def test_me_api_authenticated(self):
         response = self.client.get(reverse("api-me"))
-        self.assertIn(response.status_code, [200, 401])
+        self.assertEqual(response.status_code, 200)
+
+    def test_me_api_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(reverse("api-me"))
+        self.assertEqual(response.status_code, 401)
 
     def test_check_username(self):
-        """
-        Test username validation endpoint
-        Use case: ensures username availability check works
-        """
         response = self.client.get(
             reverse("api-check-username"), {"username": "apiuser"}
         )
-        self.assertIn(response.status_code, [200, 400])
+        self.assertEqual(response.status_code, 200)
 
+    # ---------------- PASSWORD ---------------- #
 
-class FormTest(TestCase):
-    """
-    Tests for forms.py
-    """
+    def test_forgot_password(self):
+        response = self.client.post(
+            reverse("api-forgot-password"),
+            data=json.dumps({"email": "api@test.com"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
 
-    def test_form_validation(self):
-        """
-        Basic form test (safe for custom user model)
-        Use case: ensures forms module executes for coverage
-        """
-        self.assertTrue(True)  # FIXED (avoid custom user conflict)
+    # ---------------- POSTS ---------------- #
 
+    def test_create_post(self):
+        response = self.client.post(
+            reverse("api-create-post"),
+            data=json.dumps({"tree_name": "Oak"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
 
-class SignalTest(TestCase):
-    """
-    Tests for signals.py
-    """
+    def test_fetch_posts(self):
+        Post.objects.create(author=self.user, tree_name="Oak")
+        response = self.client.get(reverse("api-fetch-posts"))
+        self.assertEqual(response.status_code, 200)
 
-    def test_user_creation_signal(self):
-        """
-        Test signals triggered on user creation
-        Use case: ensures signals execute without error
-        """
-        user = User.objects.create_user(username="signaluser", password="testpass123")
-        self.assertIsNotNone(user.id)
+    def test_fetch_my_posts(self):
+        Post.objects.create(author=self.user, tree_name="Oak")
+        response = self.client.get(reverse("api-fetch-my-posts"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_post(self):
+        post = Post.objects.create(author=self.user, tree_name="Oak")
+        response = self.client.post(reverse("api-delete-post", args=[post.id]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_post_not_owner(self):
+        other = User.objects.create_user(username="other", password="testpass123")
+        post = Post.objects.create(author=other, tree_name="Oak")
+
+        response = self.client.post(reverse("api-delete-post", args=[post.id]))
+        self.assertEqual(response.status_code, 403)
+
+    # ---------------- LIKES ---------------- #
+
+    def test_toggle_like(self):
+        post = Post.objects.create(author=self.user, tree_name="Oak")
+
+        response = self.client.post(reverse("api-toggle-like", args=[post.id]))
+        self.assertEqual(response.status_code, 200)
+
+        # toggle again (unlike)
+        response = self.client.post(reverse("api-toggle-like", args=[post.id]))
+        self.assertEqual(response.status_code, 200)
+
+    # ---------------- COMMENTS ---------------- #
+
+    def test_add_comment(self):
+        post = Post.objects.create(author=self.user, tree_name="Oak")
+
+        response = self.client.post(
+            reverse("api-add-comment", args=[post.id]),
+            data=json.dumps({"text": "Nice tree"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_edit_comment(self):
+        post = Post.objects.create(author=self.user, tree_name="Oak")
+        comment = Comment.objects.create(author=self.user, post=post, text="Old")
+
+        response = self.client.post(
+            reverse("api-edit-comment", args=[comment.id]),
+            data=json.dumps({"text": "New"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_comment(self):
+        post = Post.objects.create(author=self.user, tree_name="Oak")
+        comment = Comment.objects.create(author=self.user, post=post, text="Test")
+
+        response = self.client.post(reverse("api-delete-comment", args=[comment.id]))
+        self.assertEqual(response.status_code, 200)
+
+    # ---------------- PROFILE ---------------- #
+
+    def test_update_profile(self):
+        response = self.client.post(
+            reverse("api-update-profile"),
+            data=json.dumps({"first_name": "New"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_update_profile_username_taken(self):
+        User.objects.create_user(username="taken", password="123")
+
+        response = self.client.post(
+            reverse("api-update-profile"),
+            data=json.dumps({"username": "taken"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    # ---------------- NOTIFICATIONS ---------------- #
+
+    def test_notifications(self):
+        Notification.objects.create(
+            recipient=self.user,
+            sender=self.user,
+            notif_type="like",
+            message="Test",
+        )
+
+        response = self.client.get(reverse("api-notifications"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_notifications_unread_count(self):
+        response = self.client.get(reverse("api-notifications-unread-count"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_mark_notifications_read(self):
+        notif = Notification.objects.create(
+            recipient=self.user,
+            sender=self.user,
+            notif_type="like",
+            message="Test",
+        )
+
+        response = self.client.post(
+            reverse("api-notifications-mark-read"),
+            data=json.dumps({"ids": [notif.id]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_mark_all_notifications_read(self):
+        Notification.objects.create(
+            recipient=self.user,
+            sender=self.user,
+            notif_type="like",
+            message="Test",
+        )
+
+        response = self.client.post(reverse("api-notifications-mark-all-read"))
+        self.assertEqual(response.status_code, 200)

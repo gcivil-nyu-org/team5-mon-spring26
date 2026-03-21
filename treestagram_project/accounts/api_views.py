@@ -5,18 +5,20 @@ JSON API endpoints consumed by the Svelte frontend.
 
 import json
 import logging
+import os
 from django.contrib.auth import login, logout, authenticate
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.middleware.csrf import get_token
-from allauth.account.models import EmailAddress
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.core.mail import send_mail
+from django.core.signing import TimestampSigner, SignatureExpired, BadSignature
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.shortcuts import redirect
 from django.conf import settings
 from .forms import SignupForm
 from .models import User, Notification
@@ -40,6 +42,35 @@ def user_to_dict(user):
         "total_likes_received": user.total_likes_received,
         "leaves": user.leaves,
     }
+
+
+def send_confirmation_email(user):
+    """Build and send a confirmation email using Django's signing framework.
+    No dependency on the Sites framework or allauth's send_confirmation."""
+    signer = TimestampSigner()
+    token = signer.sign(user.pk)
+
+    base_url = os.environ.get("DJANGO_SITE_DOMAIN", "localhost")
+    confirm_url = f"http://{base_url}/api/confirm-email/{token}/"
+
+    subject = "Welcome to Treestagram — Confirm your email"
+    html_message = render_to_string(
+        "accounts/confirmation_email.html",
+        {
+            "user": user,
+            "confirm_url": confirm_url,
+        },
+    )
+    plain_message = strip_tags(html_message)
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@treestagram.nyc")
+
+    send_mail(
+        subject,
+        plain_message,
+        from_email,
+        [user.email],
+        html_message=html_message,
+    )
 
 
 @ensure_csrf_cookie
@@ -66,15 +97,8 @@ def api_signup(request):
         logger.info("User created: %s", user)
 
         try:
-            email_address = EmailAddress.objects.create(
-                user=user,
-                email=user.email,
-                primary=True,
-                verified=False,
-            )
-            logger.info("EmailAddress created: %s", email_address)
-            email_address.send_confirmation(request)
-            logger.info("Confirmation email sent")
+            send_confirmation_email(user)
+            logger.info("Confirmation email sent to %s", user.email)
         except Exception:
             logger.exception("Error sending confirmation email")
             return JsonResponse(
@@ -92,6 +116,35 @@ def api_signup(request):
     else:
         logger.error("Form errors: %s", form.errors)
         return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+
+def api_confirm_email(request, token):
+    """GET /api/confirm-email/<token>/ — verify token, activate user, redirect to frontend."""
+    signer = TimestampSigner()
+    try:
+        # Token expires after 3 days
+        user_pk = signer.unsign(token, max_age=60 * 5)
+        user = User.objects.get(pk=user_pk)
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        logger.info("Email confirmed for user %s", user.email)
+
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+        return redirect(f"{frontend_url}/login?confirmed=true")
+
+    except SignatureExpired:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Confirmation link has expired. Please sign up again.",
+            },
+            status=400,
+        )
+    except (BadSignature, User.DoesNotExist):
+        return JsonResponse(
+            {"success": False, "error": "Invalid confirmation link."},
+            status=400,
+        )
 
 
 @require_http_methods(["POST"])
@@ -188,10 +241,10 @@ def api_resend_verification(request):
         )
 
     try:
-        email_address = EmailAddress.objects.get(email__iexact=email, verified=False)
-        email_address.send_confirmation(request)
+        user = User.objects.get(email__iexact=email, is_active=False)
+        send_confirmation_email(user)
         return JsonResponse({"success": True, "message": "Verification email sent!"})
-    except EmailAddress.DoesNotExist:
+    except User.DoesNotExist:
         return JsonResponse(
             {
                 "success": False,
@@ -304,20 +357,14 @@ def api_update_profile(request):
 
     user = request.user
 
-    # Handle basic info (could be JSON or Form Data)
-    # If Content-Type is multipart/form-data, data is in request.POST
-    # If Content-Type is application/json, data is in request.body
-
     if request.content_type == "application/json":
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
     else:
-        # Fallback to POST for multipart/form-data
         data = request.POST
 
-    # Fields allowed to be updated
     allowed_fields = ["first_name", "last_name", "username", "bio", "borough"]
 
     for field in allowed_fields:
@@ -332,7 +379,6 @@ def api_update_profile(request):
                     )
             setattr(user, field, val)
 
-    # Handle Photo Upload or Removal
     if "profile_picture" in request.FILES:
         user.profile_picture = request.FILES["profile_picture"]
     elif data.get("remove_photo") == "true":
@@ -399,13 +445,11 @@ def api_change_password(request):
 
     user = request.user
 
-    # Verify current password
     if not user.check_password(current_password):
         return JsonResponse(
             {"success": False, "error": "Current password incorrect."}, status=400
         )
 
-    # Validate new password
     from django.contrib.auth.password_validation import validate_password
     from django.core.exceptions import ValidationError
 
@@ -416,7 +460,6 @@ def api_change_password(request):
             {"success": False, "error": " ".join(e.messages)}, status=400
         )
 
-    # Set new password and keep session alive
     from django.contrib.auth import update_session_auth_hash
 
     user.set_password(new_password)
@@ -428,9 +471,7 @@ def api_change_password(request):
 
 @require_http_methods(["POST"])
 def api_delete_account(request):
-    """
-    Deletes the current user's account after password verification.
-    """
+    """Deletes the current user's account after password verification."""
     if not request.user.is_authenticated:
         return JsonResponse(
             {"success": False, "error": "Not authenticated."}, status=401
@@ -458,7 +499,6 @@ def api_delete_account(request):
     first_name = user.first_name
     username = user.username
 
-    # Send confirmation email
     subject = "Your Treestagram account has been deleted"
     html_message = render_to_string(
         "accounts/account_deleted_email.html",
@@ -472,10 +512,8 @@ def api_delete_account(request):
             subject, plain_message, from_email, [user_email], html_message=html_message
         )
     except Exception as e:
-        # We log the error but proceed with deletion
         print(f"Error sending deletion email: {e}")
 
-    # Log out and delete
     logout(request)
     user.delete()
 
@@ -613,7 +651,6 @@ def api_create_post(request):
         image=image,
     )
 
-    # Handle tagged users
     tagged_users_str = data.get("tagged_users", "")
     if tagged_users_str:
         usernames = [
@@ -622,7 +659,6 @@ def api_create_post(request):
         tagged = User.objects.filter(username__in=usernames)
         post.tagged_users.set(tagged)
 
-        # ── Notification: you were tagged in a post ──
         for tagged_user in tagged:
             _create_notification(
                 recipient=tagged_user,
@@ -632,11 +668,9 @@ def api_create_post(request):
                 post=post,
             )
 
-    # Update post count
     request.user.post_count = Post.objects.filter(author=request.user).count()
     request.user.save(update_fields=["post_count"])
 
-    # Check promotion (and notify if promoted)
     old_role = request.user.role
     request.user.promote_if_eligible()
     if request.user.role != old_role:
@@ -672,7 +706,6 @@ def api_delete_post(request, post_id):
 
     post.delete()
 
-    # Update post count
     request.user.post_count = Post.objects.filter(author=request.user).count()
     request.user.save(update_fields=["post_count"])
 
@@ -696,13 +729,11 @@ def api_toggle_like(request, post_id):
 
     likes_count = post.likes.count()
 
-    # Update author's total_likes_received
     post.author.total_likes_received = Like.objects.filter(
         post__author=post.author
     ).count()
     post.author.save(update_fields=["total_likes_received"])
 
-    # ── Notification: someone liked your post ──
     if created:
         _create_notification(
             recipient=post.author,
@@ -712,7 +743,6 @@ def api_toggle_like(request, post_id):
             post=post,
         )
 
-    # Check promotion (and notify if promoted)
     old_role = post.author.role
     post.author.promote_if_eligible()
     if post.author.role != old_role:
@@ -756,7 +786,6 @@ def api_add_comment(request, post_id):
 
     comment = Comment.objects.create(author=request.user, post=post, text=text)
 
-    # ── Notification: someone commented on your post ──
     _create_notification(
         recipient=post.author,
         sender=request.user,
@@ -844,7 +873,6 @@ def api_delete_comment(request, comment_id):
             {"success": False, "error": "Comment not found"}, status=404
         )
 
-    # Allow comment author or the post author to delete
     if (
         comment.author_id != request.user.id
         and comment.post.author_id != request.user.id

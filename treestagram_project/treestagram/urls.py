@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from django.views.static import serve as static_serve
+from accounts.api_views import api_confirm_email
 
 
 def reset_password_redirect(request, uidb64, token):
@@ -37,6 +38,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("trees/", include("trees.urls")),
     path("api/", include("accounts.api_urls")),
+    path("api/confirm-email/<str:token>/", api_confirm_email, name="confirm_email"),
     path(
         "reset-password/<uidb64>/<token>/",
         reset_password_redirect,

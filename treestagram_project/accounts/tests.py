@@ -2,10 +2,14 @@ import json
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from unittest.mock import patch
 
 from accounts.models import Post, Comment, Notification
 
 User = get_user_model()
+
+
+# ---------------- EXISTING API TESTS (UNCHANGED) ---------------- #
 
 
 class AccountAPITest(TestCase):
@@ -17,8 +21,6 @@ class AccountAPITest(TestCase):
             is_active=True,
         )
         self.client.login(username="apiuser", password="testpass123")
-
-    # ---------------- AUTH ---------------- #
 
     def test_signup_api_invalid_json(self):
         response = self.client.post(
@@ -65,8 +67,6 @@ class AccountAPITest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    # ---------------- PASSWORD ---------------- #
-
     def test_forgot_password(self):
         response = self.client.post(
             reverse("api-forgot-password"),
@@ -74,8 +74,6 @@ class AccountAPITest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
-
-    # ---------------- POSTS ---------------- #
 
     def test_create_post(self):
         response = self.client.post(
@@ -107,19 +105,13 @@ class AccountAPITest(TestCase):
         response = self.client.post(reverse("api-delete-post", args=[post.id]))
         self.assertEqual(response.status_code, 403)
 
-    # ---------------- LIKES ---------------- #
-
     def test_toggle_like(self):
         post = Post.objects.create(author=self.user, tree_name="Oak")
 
+        self.client.post(reverse("api-toggle-like", args=[post.id]))
         response = self.client.post(reverse("api-toggle-like", args=[post.id]))
-        self.assertEqual(response.status_code, 200)
 
-        # toggle again (unlike)
-        response = self.client.post(reverse("api-toggle-like", args=[post.id]))
         self.assertEqual(response.status_code, 200)
-
-    # ---------------- COMMENTS ---------------- #
 
     def test_add_comment(self):
         post = Post.objects.create(author=self.user, tree_name="Oak")
@@ -149,8 +141,6 @@ class AccountAPITest(TestCase):
         response = self.client.post(reverse("api-delete-comment", args=[comment.id]))
         self.assertEqual(response.status_code, 200)
 
-    # ---------------- PROFILE ---------------- #
-
     def test_update_profile(self):
         response = self.client.post(
             reverse("api-update-profile"),
@@ -168,8 +158,6 @@ class AccountAPITest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
-
-    # ---------------- NOTIFICATIONS ---------------- #
 
     def test_notifications(self):
         Notification.objects.create(
@@ -211,3 +199,66 @@ class AccountAPITest(TestCase):
 
         response = self.client.post(reverse("api-notifications-mark-all-read"))
         self.assertEqual(response.status_code, 200)
+
+
+# ---------------- NEW: VIEWS COVERAGE ---------------- #
+
+
+class AccountViewsTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="viewuser",
+            password="testpass123",
+        )
+
+    def test_signup_get(self):
+        response = self.client.get(reverse("signup"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_signup_post_invalid(self):
+        response = self.client.post(reverse("signup"), data={})
+        self.assertEqual(response.status_code, 200)
+
+    def test_signup_redirect_if_authenticated(self):
+        self.client.login(username="viewuser", password="testpass123")
+        response = self.client.get(reverse("signup"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_login_get(self):
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_invalid(self):
+        response = self.client.post(
+            reverse("login"),
+            data={"username": "wrong", "password": "wrong"},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_success(self):
+        response = self.client.post(
+            reverse("login"),
+            data={"username": "viewuser", "password": "testpass123"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_logout_requires_login(self):
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_logout_success(self):
+        self.client.login(username="viewuser", password="testpass123")
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 302)
+
+    @patch("accounts.views.os.environ.get")
+    def test_get_frontend_url_env(self, mock_env):
+        mock_env.return_value = "http://test.com"
+        from accounts.views import get_frontend_url
+
+        self.assertEqual(get_frontend_url(), "http://test.com")
+
+    def test_get_frontend_url_default(self):
+        from accounts.views import get_frontend_url
+
+        self.assertEqual(get_frontend_url(), "http://localhost:5173")

@@ -75,3 +75,7 @@ Thumbs.db
 treestagram_project/treestagram-svelte/node_modules/
 
 *.csv
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

@@ -1,0 +1,66 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Treestagram Map</title>
+
+    <!-- Leaflet CSS (local copy) -->
+    <link rel="stylesheet" href="{% static 'trees/leaflet.css' %}" />
+
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Treestagram Map</h1>
+<div id="map"></div>
+
+<!-- Leaflet JS (local copy) -->
+<script src="{% static 'trees/leaflet.js' %}"></script>
+
+<script>
+    // trees_json is already passed from Django
+    var trees = {{ trees_json|safe }};
+
+    // Initialize map
+    var map = L.map('map').setView([40.7128, -74.0060], 12);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Add markers
+    var latlngs = [];
+    trees.forEach(function(tree) {
+        if (tree.latitude && tree.longitude) {
+            L.marker([tree.latitude, tree.longitude])
+                .bindPopup(`<b>${tree.spc_common}</b><br>ID: ${tree.tree_id}`)
+                .addTo(map);
+            latlngs.push([tree.latitude, tree.longitude]);
+        }
+    });
+
+    // Fit map to markers
+    if (latlngs.length > 0) {
+        map.fitBounds(latlngs, { padding: [50, 50] });
+    }
+</script>
+
+</body>
+</html>

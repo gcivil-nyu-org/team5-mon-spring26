@@ -325,13 +325,20 @@ const VALID_THEMES = ['dark', 'light', 'pixel']
 // ─── Detect initial theme ─────────────────────────────────────────────────────
 
 function detectInitialTheme() {
+  // Migrate: clear any stale 'dark' preference so the app uses the intended light default
+  if (typeof localStorage !== 'undefined') {
+    const migrated = localStorage.getItem('treestagram-theme-v2')
+    if (!migrated) {
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.setItem('treestagram-theme-v2', '1')
+    }
+  }
+
   const saved = typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY)
   if (VALID_THEMES.includes(saved)) return saved
 
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
-  return 'dark'
+  // Default to light theme for the brown-nav + light-content design
+  return 'light'
 }
 
 // ─── Apply tokens to :root ────────────────────────────────────────────────────
@@ -401,11 +408,10 @@ export function watchSystemTheme() {
   return () => mq.removeEventListener('change', handler)
 }
 
-/** Clear saved preference and revert to OS theme */
+/** Clear saved preference and revert to default (light) theme */
 export function resetToSystemTheme() {
   if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY)
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
-  setTheme(prefersDark ? 'dark' : 'light')
+  setTheme('light')
 }
 
 /**

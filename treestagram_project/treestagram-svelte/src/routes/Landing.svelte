@@ -308,7 +308,7 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 30px rgba(212, 168, 83, 0.4);
     }
-    .btn-ghost {
+    /* .btn-ghost {
         background: none;
         color: var(--canopy);
         border: 1.5px solid rgba(255, 255, 255, 0.2);
@@ -322,7 +322,7 @@
     .btn-ghost:hover {
         border-color: var(--canopy);
         color: white;
-    }
+    } */
 
     .hero-visual {
         position: relative;

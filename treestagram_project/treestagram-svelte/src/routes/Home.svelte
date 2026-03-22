@@ -1,6 +1,14 @@
 <script>
   import { onMount } from "svelte";
-  import { user, apiLogout } from "../lib/api.js";
+  import {
+    user,
+    apiLogout,
+    apiFetchPosts,
+    apiToggleLike,
+    apiAddComment,
+    apiEditComment,
+    apiDeleteComment,
+  } from "../lib/api.js";
   import { theme, toggleTheme, cycleTheme } from "../theme.js";
   import LeftNav from "../components/LeftNav.svelte";
   import BackgroundRings from "../components/BackgroundRings.svelte";
@@ -8,7 +16,30 @@
   export let navigate;
 
   let mounted = false;
-  onMount(() => setTimeout(() => (mounted = true), 50));
+  let loading = true;
+  let posts = [];
+
+  // ── Comment drafts (keyed by post id) ──
+  let commentDrafts = {};
+  let showCommentForm = {};
+
+  // ── Edit / delete comment state ──
+  let editingCommentId = null;
+  let editingCommentText = "";
+
+  onMount(async () => {
+    setTimeout(() => (mounted = true), 50);
+    await loadPosts();
+  });
+
+  async function loadPosts() {
+    loading = true;
+    const res = await apiFetchPosts();
+    if (res.success) {
+      posts = res.posts;
+    }
+    loading = false;
+  }
 
   async function logout() {
     await apiLogout();
@@ -41,32 +72,92 @@
 
   $: role = roleColors[$user?.role] || roleColors.standard;
 
-  const placeholderPosts = [
-    {
-      tree: "London Planetree #4821",
-      borough: "Brooklyn",
-      health: "Good",
-      img: "🌳",
-      likes: 24,
-      comment: "Looking healthy after the rain!",
-    },
-    {
-      tree: "Ginkgo #2047",
-      borough: "Manhattan",
-      health: "Fair",
-      img: "🍂",
-      likes: 11,
-      comment: "Some leaf discoloration noted.",
-    },
-    {
-      tree: "Red Oak #7732",
-      borough: "Queens",
-      health: "Good",
-      img: "🌲",
-      likes: 38,
-      comment: "Beautiful canopy this season!",
-    },
-  ];
+  async function toggleLike(index) {
+    const post = posts[index];
+    if (!post) return;
+
+    const res = await apiToggleLike(post.id);
+    if (res.success) {
+      posts[index] = {
+        ...post,
+        liked: res.liked,
+        likes_count: res.likes_count,
+      };
+      posts = [...posts];
+    }
+  }
+
+  function toggleCommentFormVisibility(index) {
+    const post = posts[index];
+    if (!post) return;
+    showCommentForm[post.id] = !showCommentForm[post.id];
+    showCommentForm = { ...showCommentForm };
+  }
+
+  async function addComment(index) {
+    const post = posts[index];
+    if (!post) return;
+    const text = (commentDrafts[post.id] || "").trim();
+    if (!text) return;
+
+    const res = await apiAddComment(post.id, text);
+    if (res.success) {
+      posts[index] = {
+        ...post,
+        comments: [...post.comments, res.comment],
+      };
+      posts = [...posts];
+      commentDrafts[post.id] = "";
+      showCommentForm[post.id] = true;
+    }
+  }
+
+  // ── Edit comment ──
+  function startEditComment(comment) {
+    editingCommentId = comment.id;
+    editingCommentText = comment.text;
+  }
+
+  function cancelEditComment() {
+    editingCommentId = null;
+    editingCommentText = "";
+  }
+
+  async function saveEditComment(postIndex) {
+    if (!editingCommentText.trim()) return;
+    const res = await apiEditComment(editingCommentId, editingCommentText.trim());
+    if (res.success) {
+      const post = posts[postIndex];
+      posts[postIndex] = {
+        ...post,
+        comments: post.comments.map((c) =>
+          c.id === editingCommentId ? { ...c, text: res.comment.text } : c
+        ),
+      };
+      posts = [...posts];
+      cancelEditComment();
+    }
+  }
+
+  // ── Delete comment ──
+  async function deleteComment(postIndex, commentId) {
+    const res = await apiDeleteComment(commentId);
+    if (res.success) {
+      const post = posts[postIndex];
+      posts[postIndex] = {
+        ...post,
+        comments: post.comments.filter((c) => c.id !== commentId),
+      };
+      posts = [...posts];
+    }
+  }
+
+  // Health emoji helper
+  function healthIcon(h) {
+    if (h === "Good") return "🌳";
+    if (h === "Fair") return "🍂";
+    return "🥀";
+  }
 
   $: isDark = $theme === "dark";
 </script>
@@ -79,57 +170,117 @@
   <div class="layout">
     <!-- Feed -->
     <main class="feed">
-      <!-- Create post -->
-      <div class="create-post">
-        <div class="create-avatar">
-          {#if $user?.profile_picture}
-            <img src={$user.profile_picture} alt="Me" class="avatar-img-sm" />
-          {:else}
-            🧑‍🌾
-          {/if}
-        </div>
-        <div class="create-input">
-          <input
-            type="text"
-            placeholder="Share an observation about a tree…"
-            readonly
-          />
-        </div>
-        <button class="create-btn">📸 Post</button>
-      </div>
-
       <!-- Post cards -->
-      <div class="posts">
-        {#each placeholderPosts as post, i}
-          <div class="post-card" style="animation-delay:{i * 0.1}s">
-            <div class="post-header">
-              <span class="post-tree-icon">{post.img}</span>
-              <div>
-                <div class="post-tree-name">{post.tree}</div>
-                <div class="post-meta">
-                  📍 {post.borough} ·
-                  <span class="health health-{post.health.toLowerCase()}"
-                    >{post.health}</span
-                  >
+      {#if loading}
+        <div class="feed-hint">Loading posts…</div>
+      {:else if posts.length === 0}
+        <div class="feed-hint">
+          No posts yet — be the first to share a tree observation! 🌱
+        </div>
+      {:else}
+        <div class="posts">
+          {#each posts as post, i}
+            <div class="post-card" style="animation-delay:{i * 0.1}s">
+              <div class="post-header">
+                <span class="post-tree-icon">{healthIcon(post.health)}</span>
+                <div>
+                  <div class="post-tree-name">{post.tree_name}</div>
+                  <div class="post-meta">
+                    {#if post.borough}📍 {post.borough} · {/if}
+                    <span class="health health-{post.health.toLowerCase()}"
+                      >{post.health}</span
+                    >
+                    · by <strong>{post.author.username}</strong>
+                  </div>
                 </div>
+                <button class="follow-btn">+ Follow</button>
               </div>
-              <button class="follow-btn">+ Follow</button>
+              {#if post.body}
+                <div class="post-body">
+                  <p>{post.body}</p>
+                </div>
+              {/if}
+              {#if post.image}
+                <div class="post-photo">
+                  <img src={post.image} alt={post.tree_name} />
+                </div>
+              {:else}
+                <div class="post-photo-placeholder">
+                  <span style="font-size:3rem"
+                    >{healthIcon(post.health)}</span
+                  >
+                  <span class="photo-hint">No photo yet</span>
+                </div>
+              {/if}
+              <div class="post-actions">
+                <button
+                  class="action-btn"
+                  class:liked={post.liked}
+                  on:click={() => toggleLike(i)}
+                >
+                  ❤️ {post.likes_count}
+                </button>
+                <button
+                  class="action-btn"
+                  on:click={() => toggleCommentFormVisibility(i)}
+                >
+                  💬 {post.comments.length || ""} Comment
+                </button>
+                <!-- <button class="action-btn">🌿 Rate health</button> -->
+              </div>
+              {#if showCommentForm[post.id] || (post.comments && post.comments.length)}
+                <div class="post-comments">
+                  {#if post.comments?.length}
+                    <div class="comment-list">
+                      {#each post.comments as c}
+                        <div class="comment-item">
+                          {#if editingCommentId === c.id}
+                            <div class="comment-edit-row">
+                              <input
+                                type="text"
+                                class="comment-edit-input"
+                                bind:value={editingCommentText}
+                                on:keydown={(e) => e.key === "Enter" && saveEditComment(i)}
+                              />
+                              <button class="comment-action-btn save" on:click={() => saveEditComment(i)}>✓</button>
+                              <button class="comment-action-btn" on:click={cancelEditComment}>✕</button>
+                            </div>
+                          {:else}
+                            <span class="comment-text"><strong>{c.author.username}</strong>: {c.text}</span>
+                            {#if $user && c.author.id === $user.id}
+                              <span class="comment-actions">
+                                <button class="comment-action-btn" on:click={() => startEditComment(c)} title="Edit">✏️</button>
+                                <button class="comment-action-btn delete" on:click={() => deleteComment(i, c.id)} title="Delete">🗑️</button>
+                              </span>
+                            {/if}
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                  {#if showCommentForm[post.id]}
+                    <div class="comment-form">
+                      <input
+                        type="text"
+                        placeholder="Write a comment..."
+                        bind:value={commentDrafts[post.id]}
+                        on:keydown={(event) =>
+                          event.key === "Enter" && addComment(i)}
+                      />
+                      <button
+                        class="comment-submit"
+                        on:click={() => addComment(i)}
+                      >
+                        Post
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             </div>
-            <div class="post-body">
-              <p>{post.comment}</p>
-            </div>
-            <div class="post-photo-placeholder">
-              <span style="font-size:3rem">{post.img}</span>
-              <span class="photo-hint">Photo coming soon</span>
-            </div>
-            <div class="post-actions">
-              <button class="action-btn">❤️ {post.likes}</button>
-              <button class="action-btn">💬 Comment</button>
-              <button class="action-btn">🌿 Rate health</button>
-            </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {/if}
 
       <div class="feed-hint">🌳 Follow trees to personalize your feed</div>
     </main>
@@ -140,9 +291,9 @@
   /* ─── Page Shell ─────────────────────────────────────────────────── */
   .page {
     min-height: 100vh;
-    background: #faf9f6;
+    background: var(--t-bg-base);
     font-family: var(--t-font-body);
-    color: #4a4a4a;
+    color: var(--t-text-body);
     position: relative;
     z-index: 0;
     overflow: hidden;
@@ -299,66 +450,19 @@
     gap: 1rem;
   }
 
-  /* ─── Create Post ────────────────────────────────────────────────── */
-  .create-post {
-    background: #cdd9af; /* Sage Mist */
-    border: 1px solid rgba(164, 74, 63, 0.15);
-    border-radius: var(--t-radius-lg);
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 4px 20px rgba(138, 154, 91, 0.1);
-  }
-  .create-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #36454f; /* Charcoal Gray */
-    color: #faf9f6; /* Contrasting text */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    flex-shrink: 0;
+  /* ─── Post Photo ────────────────────────────────────────────────── */
+  .post-photo {
+    width: 100%;
+    max-height: 400px;
     overflow: hidden;
+    border-top: 1px solid var(--t-border-soft);
+    border-bottom: 1px solid var(--t-border-soft);
   }
-  .avatar-img-sm {
+  .post-photo img {
     width: 100%;
-    height: 100%;
+    height: auto;
     object-fit: cover;
-  }
-  .create-input {
-    flex: 1;
-  }
-  .create-input input {
-    width: 100%;
-    background: #faf9f6;
-    border: 1px solid #36454f;
-    border-radius: var(--t-radius-pill);
-    padding: 9px 16px;
-    color: #2b2b2b;
-    font-size: 0.88rem;
-    font-family: var(--t-font-body);
-    cursor: pointer;
-    outline: none;
-  }
-  .create-btn {
-    background: #36454f; /* Charcoal Gray */
-    color: #faf9f6; /* Contrasting text */
-    border: 1px solid rgba(138, 154, 91, 0.2);
-    border-radius: var(--t-radius-pill);
-    padding: 8px 16px;
-    color: #8a9a5b; /* Sage text */
-    font-size: 0.84rem;
-    font-weight: 600;
-    font-family: var(--t-font-body);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--t-transition);
-  }
-  .create-btn:hover {
-    background: var(--t-bg-active);
+    display: block;
   }
 
   /* ─── Post Cards ─────────────────────────────────────────────────── */
@@ -369,10 +473,10 @@
   }
 
   .post-card {
-    background: #cdd9af; /* Sage Mist */
-    border: 1px solid rgba(164, 74, 63, 0.15);
+    background: var(--t-bg-elevated);
+    border: 1px solid var(--t-border);
     border-radius: var(--t-radius-lg);
-    box-shadow: 0 8px 32px rgba(138, 154, 91, 0.08);
+    box-shadow: var(--t-shadow-card);
     overflow: hidden;
     animation: fadeUp 0.4s both;
   }
@@ -399,11 +503,11 @@
   .post-tree-name {
     font-size: 0.92rem;
     font-weight: 600;
-    color: #a44a3f; /* Redwood Rust titles */
+    color: var(--t-text-brand);
   }
   .post-meta {
     font-size: 0.76rem;
-    color: rgba(43, 43, 43, 0.7); /* Muted dark stone for meta */
+    color: var(--t-text-muted);
     margin-top: 1px;
   }
 
@@ -422,12 +526,11 @@
 
   .follow-btn {
     margin-left: auto;
-    background: #36454f; /* Charcoal Gray */
-    color: #faf9f6; /* Contrasting text */
+    background: var(--t-bg-surface);
     border: none;
     border-radius: var(--t-radius-pill);
     padding: 5px 13px;
-    color: #8a9a5b;
+    color: var(--t-text-brand);
     font-size: 0.78rem;
     font-weight: 600;
     font-family: var(--t-font-body);
@@ -441,7 +544,7 @@
   .post-body {
     padding: 0 16px 10px;
     font-size: 0.88rem;
-    color: #2b2b2b; /* Deep charcoal for legibility */
+    color: var(--t-text-body);
   }
 
   .post-photo-placeholder {
@@ -470,7 +573,7 @@
     border: none;
     border-radius: var(--t-radius-sm);
     padding: 7px 12px;
-    color: rgba(43, 43, 43, 0.6);
+    color: var(--t-text-muted);
     font-size: 0.8rem;
     font-family: var(--t-font-body);
     cursor: pointer;
@@ -482,11 +585,117 @@
     background: var(--t-bg-hover);
     color: var(--t-text-brand);
   }
+  .action-btn.liked {
+    color: var(--t-status-poor);
+  }
+
+  .post-comments {
+    border-top: 1px solid var(--t-border-soft);
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .comment-item {
+    font-size: 0.8rem;
+    color: var(--t-text-body);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .comment-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .comment-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity var(--t-transition);
+    flex-shrink: 0;
+  }
+  .comment-item:hover .comment-actions {
+    opacity: 1;
+  }
+  .comment-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 2px 5px;
+    border-radius: var(--t-radius-sm);
+    color: var(--t-text-muted);
+    transition: background var(--t-transition), color var(--t-transition);
+  }
+  .comment-action-btn:hover {
+    background: var(--t-bg-hover);
+  }
+  .comment-action-btn.save {
+    color: var(--t-status-good);
+  }
+  .comment-action-btn.delete:hover {
+    color: var(--t-status-poor);
+  }
+  .comment-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+  .comment-edit-input {
+    flex: 1;
+    background: var(--t-bg-input);
+    border: 1px solid var(--t-border-input);
+    border-radius: var(--t-radius-sm);
+    padding: 4px 8px;
+    color: var(--t-text-heading);
+    font-size: 0.78rem;
+    font-family: var(--t-font-body);
+    outline: none;
+  }
+  .comment-edit-input:focus {
+    border-color: var(--t-brand);
+  }
+  .comment-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .comment-form input {
+    flex: 1;
+    background: var(--t-bg-input);
+    border: 1px solid var(--t-border-input);
+    border-radius: var(--t-radius-pill);
+    padding: 7px 12px;
+    color: var(--t-text-heading);
+    font-size: 0.78rem;
+    font-family: var(--t-font-body);
+    outline: none;
+  }
+  .comment-submit {
+    background: var(--t-bg-surface);
+    border: none;
+    border-radius: var(--t-radius-pill);
+    padding: 6px 12px;
+    color: var(--t-text-brand);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .comment-submit:hover {
+    background: var(--t-bg-active);
+  }
 
   .feed-hint {
     text-align: center;
     font-size: 0.82rem;
-    color: #a44a3f; /* Redwood Rust hint */
+    color: var(--t-text-brand);
     padding: 0.5rem 0 1rem;
     opacity: 0.8;
   }

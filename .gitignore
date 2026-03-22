@@ -31,6 +31,8 @@ staticfiles/
 !.env.example
 
 # Packaging
+dist/
+build/
 *.egg-info/
 .eggs/
 
@@ -45,6 +47,7 @@ htmlcov/
 # ==============================
 
 node_modules/
+treestagram_project/treestagram-svelte/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -52,6 +55,8 @@ pnpm-debug.log*
 
 # SvelteKit build output
 .svelte-kit/
+build/
+dist/
 
 # Environment files
 .env.local
@@ -68,3 +73,5 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 treestagram_project/treestagram-svelte/node_modules/
+
+*.csv

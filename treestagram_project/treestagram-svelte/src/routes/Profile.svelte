@@ -1,527 +1,2500 @@
 <script>
+    import { onMount } from "svelte";
     import LeftNav from "../components/LeftNav.svelte";
     import BackgroundRings from "../components/BackgroundRings.svelte";
-    import { user } from "../lib/api.js";
+    import {
+      user,
+      apiFetchMyPosts,
+      apiFetchMyTaggedPosts,
+      apiCreatePost,
+      apiToggleLike,
+      apiAddComment,
+      apiEditComment,
+      apiDeleteComment,
+      apiDeletePost,
+    } from "../lib/api.js";
+  
     export let navigate;
-</script>
+  
+    let mounted = false;
+    let myPosts = [];
+    let taggedPosts = [];
+    let loading = true;
+    let loadingTagged = false;
+    let activeTab = "posts";
+  
+    // ── Create-post carousel modal ──
+    let newPostBody = "";
+    let newTreeName = "";
+    let newBorough = "";
+    let newHealth = "Good";
+    let newImage = null;
+    let newImagePreview = null;
+    let newTaggedUsers = "";           // comma-separated @usernames
+    let showCreateModal = false;
+    let carouselStep = 0;            // 0 = tree info, 1 = photo, 2 = observation + submit
+    let slideDirection = "next";      // "next" or "prev" for CSS animation direction
+    let posting = false;              // spinner state while submitting
+  
+    // Modal state
+    let selectedPost = null;
+    let commentDraft = "";
+    let showPostMenu = false;       // 3-dot menu open
+    let showDeleteConfirm = false;  // inline delete confirmation
+    let deleting = false;           // delete spinner
 
-<div class="page">
+    // Edit / delete comment state
+    let editingCommentId = null;
+    let editingCommentText = "";
+  
+    onMount(async () => {
+      setTimeout(() => (mounted = true), 50);
+      await Promise.all([loadMyPosts(), loadTaggedPosts()]);
+    });
+  
+    async function loadMyPosts() {
+      loading = true;
+      const res = await apiFetchMyPosts();
+      if (res.success) {
+        myPosts = res.posts;
+      }
+      loading = false;
+    }
+  
+    async function loadTaggedPosts() {
+      loadingTagged = true;
+      const res = await apiFetchMyTaggedPosts();
+      if (res.success) {
+        taggedPosts = res.posts;
+      }
+      loadingTagged = false;
+    }
+  
+    async function createPost() {
+      const body = newPostBody.trim();
+      const tree_name = newTreeName.trim();
+      if (!tree_name) return;
+  
+      posting = true;
+      const res = await apiCreatePost({
+        tree_name,
+        borough: newBorough,
+        health: newHealth,
+        body,
+        image: newImage,
+        tagged_users: newTaggedUsers,
+      });
+      posting = false;
+  
+      if (res.success) {
+        myPosts = [res.post, ...myPosts];
+        if (res.user) user.set(res.user);
+        closeCreateModal();
+      }
+    }
+  
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        newImage = file;
+        newImagePreview = URL.createObjectURL(file);
+      }
+    }
+  
+    function removeImage() {
+      newImage = null;
+      newImagePreview = null;
+    }
+  
+    function triggerNewPost() {
+      showCreateModal = true;
+      carouselStep = 0;
+      slideDirection = "next";
+    }
+  
+    function closeCreateModal() {
+      showCreateModal = false;
+      carouselStep = 0;
+      newPostBody = "";
+      newTreeName = "";
+      newBorough = "";
+      newHealth = "Good";
+      newImage = null;
+      newImagePreview = null;
+      newTaggedUsers = "";
+      posting = false;
+    }
+  
+    function nextStep() {
+      slideDirection = "next";
+      carouselStep = Math.min(carouselStep + 1, 2);
+    }
+  
+    function prevStep() {
+      slideDirection = "prev";
+      carouselStep = Math.max(carouselStep - 1, 0);
+    }
+  
+    // Can advance from step 0 only if tree name is filled
+    $: canAdvanceStep0 = newTreeName.trim().length > 0;
+    // Can submit from step 2 (tree name is required, rest optional)
+    $: canSubmit = newTreeName.trim().length > 0 && !posting;
+  
+    function openPost(post) {
+      selectedPost = post;
+      commentDraft = "";
+    }
+  
+    function closeModal() {
+      selectedPost = null;
+      commentDraft = "";
+      showPostMenu = false;
+      showDeleteConfirm = false;
+      deleting = false;
+    }
+  
+    function togglePostMenu() {
+      showPostMenu = !showPostMenu;
+      showDeleteConfirm = false;
+    }
+  
+    function closePostMenu() {
+      showPostMenu = false;
+      showDeleteConfirm = false;
+    }
+  
+    async function toggleLikeOnSelected() {
+      if (!selectedPost) return;
+      const res = await apiToggleLike(selectedPost.id);
+      if (res.success) {
+        selectedPost = {
+          ...selectedPost,
+          liked: res.liked,
+          likes_count: res.likes_count,
+        };
+        myPosts = myPosts.map((p) =>
+          p.id === selectedPost.id
+            ? { ...p, liked: res.liked, likes_count: res.likes_count }
+            : p,
+        );
+      }
+    }
+  
+    async function addCommentOnSelected() {
+      if (!selectedPost || !commentDraft.trim()) return;
+      const res = await apiAddComment(selectedPost.id, commentDraft.trim());
+      if (res.success) {
+        selectedPost = {
+          ...selectedPost,
+          comments: [...selectedPost.comments, res.comment],
+        };
+        myPosts = myPosts.map((p) =>
+          p.id === selectedPost.id
+            ? { ...p, comments: [...p.comments, res.comment] }
+            : p,
+        );
+        commentDraft = "";
+      }
+    }
+  
+    // ── Edit comment ──
+    function startEditComment(comment) {
+      editingCommentId = comment.id;
+      editingCommentText = comment.text;
+    }
+
+    function cancelEditComment() {
+      editingCommentId = null;
+      editingCommentText = "";
+    }
+
+    async function saveEditComment() {
+      if (!selectedPost || !editingCommentText.trim()) return;
+      const res = await apiEditComment(editingCommentId, editingCommentText.trim());
+      if (res.success) {
+        const updatedComments = selectedPost.comments.map((c) =>
+          c.id === editingCommentId ? { ...c, text: res.comment.text } : c
+        );
+        selectedPost = { ...selectedPost, comments: updatedComments };
+        myPosts = myPosts.map((p) =>
+          p.id === selectedPost.id ? { ...p, comments: updatedComments } : p
+        );
+        cancelEditComment();
+      }
+    }
+
+    // ── Delete comment ──
+    async function deleteCommentOnSelected(commentId) {
+      if (!selectedPost) return;
+      const res = await apiDeleteComment(commentId);
+      if (res.success) {
+        const updatedComments = selectedPost.comments.filter((c) => c.id !== commentId);
+        selectedPost = { ...selectedPost, comments: updatedComments };
+        myPosts = myPosts.map((p) =>
+          p.id === selectedPost.id ? { ...p, comments: updatedComments } : p
+        );
+      }
+    }
+
+    async function confirmDelete(postId) {
+      deleting = true;
+      const res = await apiDeletePost(postId);
+      if (res.success) {
+        myPosts = myPosts.filter((p) => p.id !== postId);
+        taggedPosts = taggedPosts.filter((p) => p.id !== postId);
+        closeModal();
+      }
+      deleting = false;
+    }
+  
+    function healthIcon(h) {
+      if (h === "Good") return "🌳";
+      if (h === "Fair") return "🍂";
+      return "🥀";
+    }
+  
+    function timeAgo(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return `${mins}m`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h`;
+      const days = Math.floor(hrs / 24);
+      if (days < 7) return `${days}d`;
+      const weeks = Math.floor(days / 7);
+      return `${weeks}w`;
+    }
+  
+    $: totalLikes = myPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
+  </script>
+  
+  <div class="page" class:mounted>
     <BackgroundRings />
     <LeftNav {navigate} activePage="profile" />
-
+  
+    <!-- ─── Hero Section ─── -->
     <div class="profile-hero">
-        <div class="profile-cover">
-            <div class="profile-cover-text">Treestagram Treestagram</div>
-            🌳🌿🍃🌲🌳🌿🍃
+      <div class="profile-cover">
+        <div class="profile-cover-text">Treestagram Treestagram</div>
+        🌳🌿🍃🌲🌳🌿🍃
+      </div>
+      <div class="profile-info-bar">
+        <div class="profile-pic">
+          {#if $user?.profile_picture}
+            <img
+              src={$user.profile_picture}
+              alt="Profile"
+              class="profile-img-fluid"
+            />
+          {:else}
+            🌿
+          {/if}
         </div>
-        <div class="profile-info-bar">
-            <div class="profile-pic">
-                {#if $user?.profile_picture}
-                    <img
-                        src={$user.profile_picture}
-                        alt="Profile"
-                        class="profile-img-fluid"
-                    />
-                {:else}
-                    🌿
-                {/if}
-            </div>
-            <div class="profile-text">
-                <h1>
-                    {$user?.first_name || "Your"}
-                    {$user?.last_name || "Name"}
-                </h1>
-                <div class="handle">@{$user?.username || "greenleaf_nyc"}</div>
-                <div class="profile-chips">
-                    <span class="chip chip-health-good">✦ Credible User</span>
-                    <span class="chip chip-borough"
-                        >📍 {$user?.borough || "Manhattan"}</span
-                    >
-                </div>
-            </div>
+        <div class="profile-text">
+          <h1>
+            {$user?.first_name || "Your"}
+            {$user?.last_name || "Name"}
+          </h1>
+          <div class="handle">@{$user?.username || "greenleaf_nyc"}</div>
+          <div class="profile-chips">
+            {#if $user?.role === "credible"}
+              <span class="chip chip-health-good">✦ Credible User</span>
+            {:else if $user?.role === "caretaker"}
+              <span class="chip chip-health-good">🌳 Caretaker</span>
+            {:else if $user?.role === "admin"}
+              <span class="chip chip-health-good">👑 Admin</span>
+            {:else}
+              <span class="chip chip-health-good">🌱 Standard User</span>
+            {/if}
+            <span class="chip chip-borough"
+              >📍 {$user?.borough || "NYC"}</span
+            >
+          </div>
         </div>
-        <div class="profile-stats-tabs">
-            <div class="p-stat">
-                <span class="n">47</span><span class="l">Posts</span>
-            </div>
-            <div class="p-stat">
-                <span class="n">4</span><span class="l">Trees Followed</span>
-            </div>
-            <div class="p-stat">
-                <span class="n">1,280</span><span class="l">Likes Received</span
-                >
-            </div>
-            <div class="p-stat">
-                <span class="n">🌱</span><span class="l">28 days active</span>
-            </div>
-            <div class="profile-tab-links">
-                <button class="profile-tab active">Posts</button>
-                <button class="profile-tab">Activity</button>
-                <button class="profile-tab">About</button>
-            </div>
+        <button class="new-post-hero-btn" on:click={triggerNewPost}>
+          <span class="btn-sprout">🌱</span>
+          <span class="btn-label">Plant a Post</span>
+          <span class="btn-glow"></span>
+        </button>
+      </div>
+      <div class="profile-stats-tabs">
+        <div class="p-stat">
+          <span class="n">{$user?.post_count ?? myPosts.length}</span><span class="l">Posts</span>
         </div>
+        <div class="p-stat">
+          <span class="n">{$user?.total_likes_received ?? totalLikes}</span><span class="l">Likes Received</span>
+        </div>
+        <div class="p-stat">
+          <span class="n">🌱</span><span class="l">{$user?.leaves ?? 0} leaves</span>
+        </div>
+        <div class="profile-tab-links">
+          <button
+            class="profile-tab"
+            class:active={activeTab === "posts"}
+            on:click={() => (activeTab = "posts")}
+          >Posts</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "tagged"}
+            on:click={() => (activeTab = "tagged")}
+          >🏷️ Tagged</button>
+        </div>
+      </div>
     </div>
-
+  
+    <!-- ─── Body: Grid + Sidebar ─── -->
     <div class="profile-body">
-        <div>
+      <div>
+        {#if activeTab === "posts"}
+          {#if loading}
+            <div class="loading-area">
+              <div class="loading-spinner"></div>
+              <p>Loading your posts…</p>
+            </div>
+          {:else if myPosts.length === 0}
+            <div class="empty-state">
+              <span class="empty-icon">📷</span>
+              <h3>No Posts Yet</h3>
+              <p>Share your first tree observation!</p>
+            </div>
+          {:else}
             <div class="profile-grid">
-                {#each [{ emoji: "🌳", likes: 342, comments: 28 }, { emoji: "🌿", likes: 187, comments: 14 }, { emoji: "🍂", likes: 95, comments: 6 }, { emoji: "🌲", likes: 220, comments: 31 }, { emoji: "🌸", likes: 143, comments: 18 }, { emoji: "🍀", likes: 293, comments: 22 }] as post, i}
-                    <div class="profile-post n{i}">
-                        {post.emoji}
-                        <div class="post-hover">
-                            ❤️ {post.likes} &nbsp; 💬 {post.comments}
-                        </div>
+              {#each myPosts as post, i}
+                <div
+                  class="profile-post n{i % 6}"
+                  on:click={() => openPost(post)}
+                  on:keydown={(e) => e.key === "Enter" && openPost(post)}
+                  role="button"
+                  tabindex="0"
+                >
+                  {#if post.image}
+                    <img src={post.image} alt={post.tree_name} class="post-img" />
+                  {:else}
+                    <span class="post-emoji">{healthIcon(post.health)}</span>
+                  {/if}
+                  <div class="post-hover">
+                    ❤️ {post.likes_count} &nbsp; 💬 {post.comments?.length || 0}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {:else if activeTab === "tagged"}
+          {#if loadingTagged}
+            <div class="loading-area">
+              <div class="loading-spinner"></div>
+              <p>Loading tagged posts…</p>
+            </div>
+          {:else if taggedPosts.length === 0}
+            <div class="empty-state tagged-empty">
+              <span class="empty-icon">🏷️</span>
+              <h3>No Tags Yet</h3>
+              <p>When someone tags you in a post, it will show up here.</p>
+            </div>
+          {:else}
+            <div class="profile-grid">
+              {#each taggedPosts as post, i}
+                <div
+                  class="profile-post n{i % 6}"
+                  on:click={() => openPost(post)}
+                  on:keydown={(e) => e.key === "Enter" && openPost(post)}
+                  role="button"
+                  tabindex="0"
+                >
+                  {#if post.image}
+                    <img src={post.image} alt={post.tree_name} class="post-img" />
+                  {:else}
+                    <span class="post-emoji">{healthIcon(post.health)}</span>
+                  {/if}
+                  <div class="post-hover">
+                    <div class="tagged-by-badge">
+                      📸 by @{post.author?.username}
                     </div>
-                {/each}
+                    <div>
+                      ❤️ {post.likes_count} &nbsp; 💬 {post.comments?.length || 0}
+                    </div>
+                  </div>
+                </div>
+              {/each}
             </div>
-            <div class="load-more">
-                <button class="btn-load-more">Load More Posts</button>
-            </div>
+          {/if}
+        {/if}
+      </div>
+  
+      <!-- ─── Right Sidebar ─── -->
+      <aside>
+        <div class="profile-right-card">
+          <h3>About Me</h3>
+          <p class="about-text">
+            {$user?.bio || "Nature lover exploring NYC's urban forest 🌿"}
+          </p>
         </div>
-
-        <aside>
-            <div class="profile-right-card">
-                <h3>About Me</h3>
-                <p class="about-text">
-                    Nature lover & amateur botanist. Documenting NYC's urban
-                    forest one tree at a time 🌿 Working toward Credible User →
-                    Caretaker status!
-                </p>
-                <div class="joined-date">📅 Joined January 2025</div>
-            </div>
-
-            <div class="profile-right-card">
-                <h3>Trees I Follow</h3>
-                {#each [{ emoji: "🌳", name: "Elm #00482", loc: "Central Park · Good", health: "good" }, { emoji: "🌿", name: "Ginkgo #10293", loc: "Brooklyn · Fair", health: "fair" }, { emoji: "🍁", name: "Maple #03312", loc: "Prospect Park · Good", health: "good" }, { emoji: "🌲", name: "Oak #55721", loc: "Queens · Poor", health: "poor" }] as tree}
-                    <div
-                        class="followed-tree"
-                        on:click={() => navigate("/dashboard")}
-                        on:keydown={(e) =>
-                            e.key === "Enter" && navigate("/dashboard")}
-                        role="button"
-                        tabindex="0"
-                    >
-                        <div class="ft-icon">{tree.emoji}</div>
-                        <div class="ft-info">
-                            <strong>{tree.name}</strong>
-                            <small>{tree.loc}</small>
-                        </div>
-                        <span class="health-badge health-{tree.health}"
-                            >{tree.health.charAt(0).toUpperCase() +
-                                tree.health.slice(1)}</span
-                        >
-                    </div>
-                {/each}
-            </div>
-
-            <div class="profile-right-card">
-                <h3>Progress to Credible User</h3>
-                <div class="progress-item">
-                    <div class="progress-header">
-                        <span class="progress-label">Posts (47/30)</span>
-                        <span class="progress-met">✓ Met</span>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill full"></div>
-                    </div>
+  
+        <div class="profile-right-card">
+          <h3>My Recent Posts</h3>
+          {#if myPosts.length === 0}
+            <p class="about-text">No posts yet.</p>
+          {:else}
+            {#each myPosts.slice(0, 4) as post}
+              <div
+                class="recent-post-item"
+                on:click={() => openPost(post)}
+                on:keydown={(e) => e.key === "Enter" && openPost(post)}
+                role="button"
+                tabindex="0"
+              >
+                <div class="rp-icon">{healthIcon(post.health)}</div>
+                <div class="rp-info">
+                  <strong>{post.tree_name}</strong>
+                  <small>{post.borough || "NYC"} · {post.health}</small>
                 </div>
-                <div class="progress-item">
-                    <div class="progress-header">
-                        <span class="progress-label">Likes (1280/100)</span>
-                        <span class="progress-met">✓ Met</span>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill full"></div>
-                    </div>
-                </div>
-                <div class="credible-banner">
-                    🎉 You're a Credible User! Apply to be a Caretaker now.
-                </div>
+                <span class="health-badge health-{post.health.toLowerCase()}"
+                  >{post.health}</span
+                >
+              </div>
+            {/each}
+          {/if}
+        </div>
+  
+        <div class="profile-right-card">
+          <h3>Progress to Credible User</h3>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Posts ({$user?.post_count ?? 0}/30)</span>
+              {#if ($user?.post_count ?? 0) >= 30}
+                <span class="progress-met">✓ Met</span>
+              {/if}
             </div>
-        </aside>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="width:{Math.min(100, (($user?.post_count ?? 0) / 30) * 100)}%"
+              ></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header">
+              <span class="progress-label">Likes ({$user?.total_likes_received ?? 0}/100)</span>
+              {#if ($user?.total_likes_received ?? 0) >= 100}
+                <span class="progress-met">✓ Met</span>
+              {/if}
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                style="width:{Math.min(100, (($user?.total_likes_received ?? 0) / 100) * 100)}%"
+              ></div>
+            </div>
+          </div>
+          {#if ($user?.post_count ?? 0) >= 30 && ($user?.total_likes_received ?? 0) >= 100}
+            <div class="credible-banner">
+              🎉 You're a Credible User! Apply to be a Caretaker now.
+            </div>
+          {/if}
+        </div>
+      </aside>
     </div>
-</div>
+  
+    <!-- ─── Create Post Carousel Modal ─── -->
+    {#if showCreateModal}
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div
+        class="carousel-backdrop"
+        on:click={closeCreateModal}
+        on:keydown={(e) => e.key === "Escape" && closeCreateModal()}
+        role="button"
+        tabindex="0"
+      >
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div class="carousel-modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog">
+          <!-- Header -->
+          <div class="carousel-header">
+            <button class="carousel-close" on:click={closeCreateModal}>✕</button>
+            <h2>🌱 Plant a Post</h2>
+            <!-- Step indicators -->
+            <div class="step-dots">
+              {#each [0, 1, 2] as s}
+                <span class="dot" class:active={carouselStep === s} class:done={carouselStep > s}></span>
+              {/each}
+            </div>
+          </div>
+  
+          <!-- Carousel body -->
+          <div class="carousel-body">
+            <div class="carousel-track" class:slide-next={slideDirection === "next"} class:slide-prev={slideDirection === "prev"}>
+              {#if carouselStep === 0}
+                <!-- Step 1: Tree Info -->
+                <div class="carousel-slide" key="step0">
+                  <div class="slide-icon">🌳</div>
+                  <h3 class="slide-title">What tree did you see?</h3>
+                  <p class="slide-subtitle">Start by telling us about the tree</p>
+                  <div class="slide-fields">
+                    <label class="field-label">
+                      <span class="label-text">Tree Name <span class="required">*</span></span>
+                      <input
+                        type="text"
+                        placeholder="e.g. London Planetree #4821"
+                        bind:value={newTreeName}
+                        class="carousel-input"
+                      />
+                    </label>
+                    <label class="field-label">
+                      <span class="label-text">Borough</span>
+                      <select bind:value={newBorough} class="carousel-input">
+                        <option value="" disabled>Select a borough…</option>
+                        <option value="Manhattan">🏙️ Manhattan</option>
+                        <option value="Brooklyn">🏘️ Brooklyn</option>
+                        <option value="Queens">🌳 Queens</option>
+                        <option value="The Bronx">🌿 The Bronx</option>
+                        <option value="Staten Island">⛴️ Staten Island</option>
+                      </select>
+                    </label>
+                    <label class="field-label">
+                      <span class="label-text">Health Status</span>
+                      <div class="health-picker">
+                        <button
+                          class="health-option"
+                          class:selected={newHealth === "Good"}
+                          on:click={() => (newHealth = "Good")}
+                        >🌳 Good</button>
+                        <button
+                          class="health-option"
+                          class:selected={newHealth === "Fair"}
+                          on:click={() => (newHealth = "Fair")}
+                        >🍂 Fair</button>
+                        <button
+                          class="health-option"
+                          class:selected={newHealth === "Poor"}
+                          on:click={() => (newHealth = "Poor")}
+                        >🥀 Poor</button>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              {:else if carouselStep === 1}
+                <!-- Step 2: Photo -->
+                <div class="carousel-slide" key="step1">
+                  <div class="slide-icon">📸</div>
+                  <h3 class="slide-title">Add a photo</h3>
+                  <p class="slide-subtitle">A picture says a thousand leaves!</p>
+                  <div class="photo-upload-area">
+                    {#if newImagePreview}
+                      <div class="photo-preview">
+                        <img src={newImagePreview} alt="Preview" />
+                        <button class="photo-remove" on:click={removeImage}>✕</button>
+                      </div>
+                    {:else}
+                      <label class="photo-dropzone">
+                        <span class="dropzone-icon">📷</span>
+                        <span class="dropzone-text">Click to upload a photo</span>
+                        <span class="dropzone-hint">JPG, PNG, GIF up to 10MB</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          on:change={handleImageSelect}
+                          style="display:none"
+                        />
+                      </label>
+                    {/if}
+                  </div>
+                  <p class="slide-skip">Photo is optional — you can skip this step</p>
+                </div>
+              {:else}
+                <!-- Step 3: Observation + Tag + Submit -->
+                <div class="carousel-slide" key="step2">
+                  <div class="slide-icon">✍️</div>
+                  <h3 class="slide-title">Share your observation</h3>
+                  <p class="slide-subtitle">What did you notice about this tree?</p>
+                  <div class="slide-fields">
+                    <textarea
+                      placeholder="The leaves looked vibrant today, and I noticed new growth on the lower branches…"
+                      bind:value={newPostBody}
+                      class="carousel-textarea"
+                      rows="3"
+                    ></textarea>
+                    
+                  <!--
+                  <label class="field-label">
+                    <span class="label-text">🏷️ Tag People</span>
+                    <div class="tag-input-wrapper">
+                      <span class="tag-at">@</span>
+                      <input
+                        type="text"
+                        placeholder="username1, username2…"
+                        bind:value={newTaggedUsers}
+                        class="carousel-input tag-input"
+                      />
+                    </div>
+                    <span class="tag-hint">Separate usernames with commas</span>
+                  </label>
+                  -->
 
-<style>
-    :root {
-        --bark: #2c1810;
-        --moss: #3d5a3e;
-        --sage: #6b8f71;
-        --leaf: #8fbc8f;
-        --canopy: #c5d5c5;
-        --cream: #f5f0e8;
-        --mist: #e8ede8;
-        --sun: #d4a853;
-        --ink: #1a1108;
-        --shadow: rgba(44, 24, 16, 0.12);
-    }
-
+                  </div>
+                  <!-- Preview summary -->
+                  <div class="post-preview-card">
+                    <div class="preview-header">
+                      <span class="preview-icon">{healthIcon(newHealth)}</span>
+                      <div>
+                        <strong>{newTreeName || "Tree Name"}</strong>
+                        <small>{newBorough || "NYC"} · {newHealth}</small>
+                      </div>
+                    </div>
+                    {#if newImagePreview}
+                      <img src={newImagePreview} alt="Preview" class="preview-thumb" />
+                    {/if}
+                    {#if newTaggedUsers.trim()}
+                      <div class="preview-tags">
+                        🏷️ {newTaggedUsers.split(",").map(u => "@" + u.trim().replace(/^@/, "")).filter(u => u !== "@").join(", ")}
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+  
+          <!-- Footer navigation -->
+          <div class="carousel-footer">
+            {#if carouselStep > 0}
+              <button class="carousel-nav-btn back" on:click={prevStep}>
+                ← Back
+              </button>
+            {:else}
+              <div></div>
+            {/if}
+  
+            {#if carouselStep < 2}
+              <button
+                class="carousel-nav-btn next"
+                on:click={nextStep}
+                disabled={carouselStep === 0 && !canAdvanceStep0}
+              >
+                Next →
+              </button>
+            {:else}
+              <button
+                class="carousel-nav-btn submit"
+                on:click={createPost}
+                disabled={!canSubmit}
+              >
+                {#if posting}
+                  <span class="btn-spinner"></span> Planting…
+                {:else}
+                  🌱 Plant It!
+                {/if}
+              </button>
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
+  
+    <!-- ─── Post Detail Modal ─── -->
+    {#if selectedPost}
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div
+        class="modal-backdrop"
+        on:click={closeModal}
+        on:keydown={(e) => e.key === "Escape" && closeModal()}
+      >
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div
+          class="modal"
+          on:click|stopPropagation
+          on:keydown|stopPropagation
+          role="dialog"
+        >
+          <!-- Close button floating on top-right -->
+          <button class="modal-close-btn" on:click={closeModal} title="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+  
+          <!-- Left: Image -->
+          <div class="modal-image">
+            {#if selectedPost.image}
+              <img src={selectedPost.image} alt={selectedPost.tree_name} />
+            {:else}
+              <div class="modal-placeholder">
+                <span class="modal-placeholder-emoji">{healthIcon(selectedPost.health)}</span>
+                <span class="modal-placeholder-label">{selectedPost.tree_name}</span>
+              </div>
+            {/if}
+          </div>
+  
+          <!-- Right: Details -->
+          <div class="modal-details">
+            <!-- Header -->
+            <div class="modal-header">
+              <div class="modal-author">
+                {#if selectedPost.author?.profile_picture || $user?.profile_picture}
+                  <img src={selectedPost.author?.profile_picture || $user?.profile_picture} alt="avatar" class="modal-avatar" />
+                {:else}
+                  <div class="modal-avatar-placeholder">
+                    {(selectedPost.author?.username || $user?.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                {/if}
+                <div class="modal-author-info">
+                  <strong>{selectedPost.author?.username || $user?.username}</strong>
+                  {#if selectedPost.borough}
+                    <span class="modal-loc">📍 {selectedPost.borough}</span>
+                  {/if}
+                </div>
+              </div>
+  
+              <!-- 3-dot menu -->
+              <div class="post-menu-wrapper">
+                <button class="post-menu-trigger" on:click={togglePostMenu} title="More options">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+  
+                {#if showPostMenu}
+                  <!-- svelte-ignore a11y-no-static-element-interactions -->
+                  <div class="post-menu-dropdown" on:click|stopPropagation on:keydown|stopPropagation>
+                    {#if !showDeleteConfirm}
+                      <button class="menu-item menu-item-danger" on:click={() => (showDeleteConfirm = true)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete Post
+                      </button>
+                      <button class="menu-item" on:click={closePostMenu}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Cancel
+                      </button>
+                    {:else}
+                      <div class="delete-confirm-panel">
+                        <div class="delete-confirm-icon">⚠️</div>
+                        <p class="delete-confirm-text">Delete this post permanently?</p>
+                        <div class="delete-confirm-actions">
+                          <button class="confirm-cancel-btn" on:click={() => (showDeleteConfirm = false)} disabled={deleting}>
+                            Keep
+                          </button>
+                          <button class="confirm-delete-btn" on:click={() => confirmDelete(selectedPost.id)} disabled={deleting}>
+                            {#if deleting}
+                              <span class="btn-spinner-sm"></span>
+                            {:else}
+                              Delete
+                            {/if}
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            </div>
+  
+            <!-- Body / Content -->
+            <div class="modal-body">
+              <div class="modal-tree-card">
+                <span class="modal-tree-icon">{healthIcon(selectedPost.health)}</span>
+                <div class="modal-tree-info">
+                  <span class="modal-tree-name">{selectedPost.tree_name}</span>
+                  <span class="health-badge health-{selectedPost.health.toLowerCase()}">{selectedPost.health}</span>
+                </div>
+              </div>
+  
+              {#if selectedPost.body}
+                <p class="modal-text">{selectedPost.body}</p>
+              {/if}
+  
+              {#if selectedPost.tagged_users?.length}
+                <div class="modal-tagged">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  <span>{selectedPost.tagged_users.map(u => "@" + u.username).join(", ")}</span>
+                </div>
+              {/if}
+  
+              <span class="modal-time">{timeAgo(selectedPost.created_at)}</span>
+  
+              <!-- Comments Section -->
+              <div class="modal-comments">
+                <div class="comments-header">
+                  <span class="comments-label">Comments</span>
+                  <span class="comments-count">{selectedPost.comments?.length || 0}</span>
+                </div>
+                {#if selectedPost.comments?.length}
+                  {#each selectedPost.comments as c}
+                    <div class="modal-comment">
+                      <div class="comment-avatar">
+                        {(c.author?.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                      {#if editingCommentId === c.id}
+                        <div class="comment-edit-row">
+                          <input
+                            type="text"
+                            class="comment-edit-input"
+                            bind:value={editingCommentText}
+                            on:keydown={(e) => e.key === "Enter" && saveEditComment()}
+                          />
+                          <button class="comment-action-btn save" on:click={saveEditComment}>✓</button>
+                          <button class="comment-action-btn" on:click={cancelEditComment}>✕</button>
+                        </div>
+                      {:else}
+                        <div class="comment-content">
+                          <strong>{c.author.username}</strong>
+                          <span>{c.text}</span>
+                        </div>
+                        {#if $user && (c.author.id === $user.id || selectedPost.author?.id === $user.id)}
+                          <span class="comment-actions">
+                            {#if c.author.id === $user.id}
+                              <button class="comment-action-btn" on:click={() => startEditComment(c)} title="Edit">✏️</button>
+                            {/if}
+                            <button class="comment-action-btn delete" on:click={() => deleteCommentOnSelected(c.id)} title="Delete">🗑️</button>
+                          </span>
+                        {/if}
+                      {/if}
+                    </div>
+                  {/each}
+                {:else}
+                  <div class="no-comments">
+                    <span class="no-comments-icon">💬</span>
+                    <span>No comments yet. Be the first!</span>
+                  </div>
+                {/if}
+              </div>
+            </div>
+  
+            <!-- Action Bar -->
+            <div class="modal-actions">
+              <div class="action-row">
+                <button
+                  class="like-btn"
+                  class:liked={selectedPost.liked}
+                  on:click={toggleLikeOnSelected}
+                >
+                  <svg class="like-icon" width="22" height="22" viewBox="0 0 24 24"
+                    fill={selectedPost.liked ? "currentColor" : "none"}
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+                <span class="likes-count">{selectedPost.likes_count} {selectedPost.likes_count === 1 ? "like" : "likes"}</span>
+              </div>
+              <div class="comment-input-row">
+                <input
+                  type="text"
+                  placeholder="Add a comment…"
+                  bind:value={commentDraft}
+                  on:keydown={(e) => e.key === "Enter" && addCommentOnSelected()}
+                />
+                <button
+                  class="post-comment-btn"
+                  on:click={addCommentOnSelected}
+                  disabled={!commentDraft.trim()}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
+  
+  <style>
     .page {
-        background: #faf9f6; /* Warm White background */
-        min-height: 100vh;
-        padding-left: 60px;
-        color: #4a4a4a;
-        position: relative;
-        z-index: 0;
-        overflow: hidden;
+      background: var(--t-bg-base);
+      min-height: 100vh;
+      padding-left: 60px;
+      color: var(--t-text-body);
+      font-family: var(--t-font-body);
+      position: relative;
+      z-index: 0;
+      overflow: hidden;
     }
+  
+    /* ─── Hero ──────────────────────────────────────────────────────── */
     .profile-hero {
-        background: #8a9a5b; /* Sage Leaf Green hero */
-        padding: 0 3rem;
-        position: relative;
-        overflow: hidden;
+      background: var(--t-bg-base);
+      padding: 0 3rem;
+      position: relative;
+      overflow: hidden;
     }
     .profile-hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-            ellipse at 30% 60%,
-            rgba(61, 90, 62, 0.5) 0%,
-            transparent 70%
-        );
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--t-brand) 22%, var(--t-bg-base)) 0%,
+        color-mix(in srgb, var(--t-brand) 8%, var(--t-bg-base)) 100%
+      );
     }
     .profile-cover {
-        height: 180px;
-        position: relative;
-        background: linear-gradient(
-            135deg,
-            #1a3d1a 0%,
-            #2d6b2d 50%,
-            #1a3d1a 100%
-        );
-        margin: 0 -3rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 4rem;
-        letter-spacing: 1rem;
-        opacity: 0.4;
-        overflow: hidden;
+      height: 180px;
+      position: relative;
+      background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--t-brand) 30%, transparent) 0%,
+        color-mix(in srgb, var(--t-brand) 10%, transparent) 60%,
+        transparent 100%
+      );
+      margin: 0 -3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      letter-spacing: 1rem;
+      opacity: 0.7;
+      overflow: hidden;
     }
     .profile-cover-text {
-        font-family: "Playfair Display", serif;
-        font-size: 6rem;
-        opacity: 0.15;
-        color: var(--leaf);
-        position: absolute;
-        font-style: italic;
-        letter-spacing: 0.2em;
-        white-space: nowrap;
+      font-family: var(--t-font-display);
+      font-size: 6rem;
+      opacity: 0.15;
+      color: var(--t-brand);
+      position: absolute;
+      font-style: italic;
+      letter-spacing: 0.2em;
+      white-space: nowrap;
     }
     .profile-info-bar {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: flex-end;
-        gap: 1.5rem;
-        padding-bottom: 1.5rem;
-        margin-top: -40px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5rem;
+      padding-bottom: 1.5rem;
+      margin-top: -40px;
     }
     .profile-pic {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #8a9a5b, #cdd9af);
-        border: 4px solid #faf9f6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        flex-shrink: 0;
-        box-shadow: 0 4px 12px rgba(138, 154, 91, 0.15);
-        overflow: hidden;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: var(--t-brand-dim);
+      border: 4px solid var(--t-bg-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      flex-shrink: 0;
+      box-shadow: var(--t-shadow-card);
+      overflow: hidden;
     }
     .profile-img-fluid {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .profile-text {
-        flex: 1;
+      flex: 1;
     }
     .profile-text h1 {
-        font-family: "Playfair Display", serif;
-        font-size: 1.8rem;
-        color: white;
-        line-height: 1.2;
+      font-family: var(--t-font-display);
+      font-size: 1.8rem;
+      color: var(--t-text-heading);
+      line-height: 1.2;
+      margin: 0;
     }
     .handle {
-        color: #faf9f6;
-        opacity: 0.9;
-        font-size: 0.9rem;
+      color: var(--t-text-muted);
+      font-size: 0.9rem;
     }
     .profile-chips {
-        display: flex;
-        gap: 0.4rem;
-        margin-top: 0.4rem;
-        flex-wrap: wrap;
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.4rem;
+      flex-wrap: wrap;
     }
     .chip {
-        padding: 0.35rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: var(--t-radius-pill);
+      font-size: 0.78rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
     }
     .chip-health-good {
-        background: rgba(143, 188, 143, 0.25);
-        color: var(--leaf);
-        border: 1px solid rgba(143, 188, 143, 0.4);
+      background: var(--t-brand-dim);
+      color: var(--t-text-brand);
+      border: 1px solid var(--t-brand-muted);
     }
     .chip-borough {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--canopy);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--t-bg-hover);
+      color: var(--t-text-body);
+      border: 1px solid var(--t-border);
     }
-
+    /* ─── Innovative "Plant a Post" Button ─────────────────────────── */
+    .new-post-hero-btn {
+      margin-left: auto;
+      align-self: center;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: var(--t-radius-pill);
+      background: linear-gradient(135deg, var(--t-brand), var(--t-brand-glow));
+      color: var(--t-bg-base);
+      font-size: 0.88rem;
+      font-weight: 700;
+      font-family: var(--t-font-body);
+      cursor: pointer;
+      overflow: hidden;
+      white-space: nowrap;
+      box-shadow:
+        0 2px 12px color-mix(in srgb, var(--t-brand) 35%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition:
+        transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.3s ease;
+      animation: btnBreath 3s ease-in-out infinite;
+    }
+    @keyframes btnBreath {
+      0%, 100% { box-shadow: 0 2px 12px color-mix(in srgb, var(--t-brand) 30%, transparent); }
+      50%      { box-shadow: 0 4px 20px color-mix(in srgb, var(--t-brand) 50%, transparent); }
+    }
+    .new-post-hero-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 24px color-mix(in srgb, var(--t-brand) 50%, transparent);
+      animation: none;
+    }
+    .new-post-hero-btn:active {
+      transform: scale(0.97);
+    }
+  
+    /* Sprout icon — grows on hover */
+    .btn-sprout {
+      display: inline-block;
+      font-size: 1.1rem;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .new-post-hero-btn:hover .btn-sprout {
+      transform: scale(1.35) rotate(-8deg);
+    }
+  
+    /* Shine sweep on hover */
+    .btn-glow {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.25) 50%,
+        transparent 60%
+      );
+      transform: translateX(-100%);
+      pointer-events: none;
+    }
+    .new-post-hero-btn:hover .btn-glow {
+      animation: sweep 0.7s ease forwards;
+    }
+    @keyframes sweep {
+      to { transform: translateX(100%); }
+    }
+  
+    /* ─── Stats & Tabs Row ──────────────────────────────────────────── */
     .profile-stats-tabs {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        gap: 3rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-        padding-top: 1rem;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      border-top: 1px solid var(--t-border-soft);
+      padding-top: 1rem;
+      padding-bottom: 0.5rem;
     }
     .p-stat {
-        text-align: center;
+      text-align: center;
     }
     .p-stat .n {
-        font-family: "Playfair Display", serif;
-        font-size: 1.6rem;
-        color: #faf9f6;
-        display: block;
+      font-family: var(--t-font-display);
+      font-size: 1.6rem;
+      color: var(--t-text-heading);
+      display: block;
     }
     .p-stat .l {
-        font-size: 0.75rem;
-        color: rgba(250, 249, 246, 0.7);
+      font-size: 0.75rem;
+      color: var(--t-text-muted);
     }
     .profile-tab-links {
-        display: flex;
-        gap: 0;
-        margin-left: auto;
+      display: flex;
+      gap: 0;
+      margin-left: auto;
     }
     .profile-tab {
-        background: none;
-        border: none;
-        color: rgba(250, 249, 246, 0.8);
-        padding: 0.6rem 1.2rem;
-        cursor: pointer;
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.85rem;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s;
+      background: none;
+      border: none;
+      color: var(--t-text-muted);
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      font-family: var(--t-font-body);
+      font-size: 0.85rem;
+      border-bottom: 2px solid transparent;
+      transition: all var(--t-transition);
     }
     .profile-tab:hover {
-        color: #faf9f6;
+      color: var(--t-text-heading);
     }
     .profile-tab.active {
-        color: #faf9f6;
-        border-bottom-color: #faf9f6;
-        font-weight: 600;
+      color: var(--t-text-heading);
+      border-bottom-color: var(--t-brand);
+      font-weight: 600;
     }
-
+  
+    /* ─── Body Grid (posts + sidebar) ───────────────────────────────── */
     .profile-body {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem;
-        display: grid;
-        grid-template-columns: 1fr 260px;
-        gap: 1.5rem;
+      max-width: var(--t-content-max);
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 1.5rem;
+      opacity: 0;
+      transform: translateY(16px);
+      transition:
+        opacity var(--t-transition-slow) 0.15s,
+        transform var(--t-transition-slow) 0.15s;
     }
+    .page.mounted .profile-body {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  
+    /* ─── Create Post Carousel Modal ─────────────────────────────────── */
+    .carousel-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: cFadeIn 0.25s ease;
+    }
+    @keyframes cFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .carousel-modal {
+      background: var(--t-bg-elevated);
+      border: 1px solid var(--t-border);
+      border-radius: 20px;
+      width: 480px;
+      max-width: 94vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow:
+        0 24px 64px rgba(0, 0, 0, 0.3),
+        0 0 0 1px var(--t-border-soft);
+      animation: cSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cSlideUp {
+      from { opacity: 0; transform: translateY(40px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  
+    /* Header */
+    .carousel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--t-border-soft);
+      position: relative;
+    }
+    .carousel-header h2 {
+      font-family: var(--t-font-display);
+      font-size: 1.15rem;
+      color: var(--t-text-heading);
+      margin: 0;
+      flex: 1;
+    }
+    .carousel-close {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--t-bg-hover);
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      font-size: 0.85rem;
+      color: var(--t-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--t-transition), color var(--t-transition);
+    }
+    .carousel-close:hover {
+      background: var(--t-bg-active);
+      color: var(--t-status-poor);
+    }
+  
+    /* Step dots */
+    .step-dots {
+      display: flex;
+      gap: 6px;
+      margin-right: 42px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--t-border);
+      transition: all 0.35s ease;
+    }
+    .dot.active {
+      width: 22px;
+      border-radius: 4px;
+      background: var(--t-brand);
+    }
+    .dot.done {
+      background: var(--t-brand-muted);
+    }
+  
+    /* Carousel body */
+    .carousel-body {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      min-height: 340px;
+    }
+    .carousel-track {
+      width: 100%;
+      height: 100%;
+    }
+  
+    /* Slide animation */
+    .carousel-slide {
+      padding: 28px 28px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: slideEnter 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    .slide-next .carousel-slide { animation-name: slideFromRight; }
+    .slide-prev .carousel-slide { animation-name: slideFromLeft; }
+  
+    @keyframes slideFromRight {
+      from { opacity: 0; transform: translateX(50px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideFromLeft {
+      from { opacity: 0; transform: translateX(-50px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  
+    .slide-icon {
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+      animation: bounceIcon 0.5s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes bounceIcon {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .slide-title {
+      font-family: var(--t-font-display);
+      font-size: 1.2rem;
+      color: var(--t-text-heading);
+      margin: 0 0 4px;
+    }
+    .slide-subtitle {
+      font-size: 0.82rem;
+      color: var(--t-text-muted);
+      margin: 0 0 20px;
+    }
+    .slide-skip {
+      font-size: 0.75rem;
+      color: var(--t-text-faint);
+      margin-top: 12px;
+    }
+  
+    /* Slide fields */
+    .slide-fields {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: left;
+    }
+    .field-label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .label-text {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--t-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .required {
+      color: var(--t-status-poor);
+    }
+    .carousel-input {
+      width: 100%;
+      background: var(--t-bg-input);
+      border: 1px solid var(--t-border-input);
+      border-radius: var(--t-radius-md);
+      padding: 10px 14px;
+      color: var(--t-text-heading);
+      font-size: 0.88rem;
+      font-family: var(--t-font-body);
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color var(--t-transition), box-shadow var(--t-transition);
+    }
+    .carousel-input:focus {
+      border-color: var(--t-brand);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-brand) 15%, transparent);
+    }
+    select.carousel-input {
+      cursor: pointer;
+    }
+    .carousel-textarea {
+      width: 100%;
+      background: var(--t-bg-input);
+      border: 1px solid var(--t-border-input);
+      border-radius: var(--t-radius-md);
+      padding: 10px 14px;
+      color: var(--t-text-heading);
+      font-size: 0.88rem;
+      font-family: var(--t-font-body);
+      outline: none;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color var(--t-transition), box-shadow var(--t-transition);
+    }
+    .carousel-textarea:focus {
+      border-color: var(--t-brand);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-brand) 15%, transparent);
+    }
+  
+    /* Health picker buttons */
+    .health-picker {
+      display: flex;
+      gap: 8px;
+    }
+    .health-option {
+      flex: 1;
+      padding: 10px 8px;
+      border: 2px solid var(--t-border-input);
+      border-radius: var(--t-radius-md);
+      background: var(--t-bg-input);
+      font-size: 0.84rem;
+      font-family: var(--t-font-body);
+      color: var(--t-text-body);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .health-option:hover {
+      background: var(--t-bg-hover);
+      border-color: var(--t-brand-muted);
+    }
+    .health-option.selected {
+      background: var(--t-brand-dim);
+      border-color: var(--t-brand);
+      color: var(--t-text-brand);
+      font-weight: 600;
+      transform: scale(1.02);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-brand) 12%, transparent);
+    }
+  
+    /* Photo upload */
+    .photo-upload-area {
+      width: 100%;
+      max-width: 320px;
+    }
+    .photo-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 32px 20px;
+      border: 2px dashed var(--t-border);
+      border-radius: var(--t-radius-lg);
+      background: var(--t-bg-input);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .photo-dropzone:hover {
+      border-color: var(--t-brand);
+      background: var(--t-brand-dim);
+    }
+    .dropzone-icon {
+      font-size: 2.2rem;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .photo-dropzone:hover .dropzone-icon {
+      transform: scale(1.2);
+    }
+    .dropzone-text {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--t-text-heading);
+    }
+    .dropzone-hint {
+      font-size: 0.72rem;
+      color: var(--t-text-faint);
+    }
+    .photo-preview {
+      position: relative;
+      border-radius: var(--t-radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--t-border);
+      max-height: 220px;
+    }
+    .photo-preview img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      border: none;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .photo-remove:hover {
+      background: rgba(200, 50, 50, 0.85);
+    }
+  
+    /* Post preview card on step 3 */
+    .post-preview-card {
+      margin-top: 16px;
+      background: var(--t-bg-surface);
+      border: 1px solid var(--t-border-soft);
+      border-radius: var(--t-radius-md);
+      padding: 12px 14px;
+      width: 100%;
+      text-align: left;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-icon {
+      font-size: 1.6rem;
+    }
+    .preview-header strong {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--t-text-heading);
+    }
+    .preview-header small {
+      font-size: 0.72rem;
+      color: var(--t-text-muted);
+    }
+    .preview-thumb {
+      width: 100%;
+      max-height: 100px;
+      object-fit: cover;
+      border-radius: var(--t-radius-sm);
+      margin-top: 10px;
+    }
+  
+    /* Footer navigation */
+    .carousel-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px 18px;
+      border-top: 1px solid var(--t-border-soft);
+    }
+    .carousel-nav-btn {
+      padding: 10px 22px;
+      border-radius: var(--t-radius-pill);
+      font-size: 0.86rem;
+      font-weight: 600;
+      font-family: var(--t-font-body);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .carousel-nav-btn.back {
+      background: var(--t-bg-hover);
+      color: var(--t-text-muted);
+      border: 1px solid var(--t-border);
+    }
+    .carousel-nav-btn.back:hover {
+      background: var(--t-bg-active);
+      color: var(--t-text-heading);
+    }
+    .carousel-nav-btn.next {
+      background: linear-gradient(135deg, var(--t-brand), var(--t-brand-glow));
+      color: var(--t-bg-base);
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--t-brand) 30%, transparent);
+    }
+    .carousel-nav-btn.next:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px color-mix(in srgb, var(--t-brand) 45%, transparent);
+    }
+    .carousel-nav-btn.next:disabled,
+    .carousel-nav-btn.submit:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .carousel-nav-btn.submit {
+      background: linear-gradient(135deg, var(--t-brand), var(--t-brand-glow));
+      color: var(--t-bg-base);
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--t-brand) 30%, transparent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .carousel-nav-btn.submit:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px color-mix(in srgb, var(--t-brand) 45%, transparent);
+    }
+    .btn-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+  
+    /* ─── Posts Grid ────────────────────────────────────────────────── */
     .profile-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.8rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
     }
     .profile-post {
-        aspect-ratio: 1;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #1a3d1a, #3a7a30);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: transform 0.2s;
+      aspect-ratio: 1;
+      border-radius: var(--t-radius-md);
+      background: var(--t-bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--t-transition);
+      border: 1px solid var(--t-border-soft);
     }
     .profile-post:hover {
-        transform: scale(0.97);
+      transform: scale(0.97);
     }
-    .profile-post.n1 {
-        background: linear-gradient(135deg, #2d5a1a, #5a8c30);
+    .profile-post.n0 { background: var(--t-bg-surface); }
+    .profile-post.n1 { background: var(--t-bg-elevated); }
+    .profile-post.n2 { background: var(--t-bg-surface); }
+    .profile-post.n3 { background: var(--t-bg-elevated); }
+    .profile-post.n4 { background: var(--t-bg-surface); }
+    .profile-post.n5 { background: var(--t-bg-elevated); }
+  
+    .post-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
     }
-    .profile-post.n2 {
-        background: linear-gradient(135deg, #0d2b0d, #1e5218);
-    }
-    .profile-post.n3 {
-        background: linear-gradient(135deg, #3d5a1a, #6a8c30);
-    }
-    .profile-post.n4 {
-        background: linear-gradient(135deg, #1a4a2d, #3a8c50);
-    }
-    .profile-post.n5 {
-        background: linear-gradient(135deg, #2d1a0d, #5a3a20);
+    .post-emoji {
+      font-size: 2.5rem;
+      position: relative;
+      z-index: 1;
     }
     .post-hover {
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        transition: opacity 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-        color: white;
-        font-size: 0.85rem;
+      position: absolute;
+      inset: 0;
+      background: var(--t-bg-overlay);
+      opacity: 0;
+      transition: opacity var(--t-transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      color: var(--t-text-heading);
+      font-size: 0.85rem;
+      z-index: 2;
     }
     .profile-post:hover .post-hover {
-        opacity: 1;
+      opacity: 1;
     }
-
-    .load-more {
-        text-align: center;
-        margin-top: 1.5rem;
+  
+    /* ─── Loading & Empty ───────────────────────────────────────────── */
+    .loading-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 4rem 1rem;
+      color: var(--t-text-muted);
+      font-size: 0.9rem;
     }
-    .btn-load-more {
-        background: none;
-        border: 1.5px solid var(--canopy);
-        color: var(--sage);
-        padding: 0.6rem 1.5rem;
-        border-radius: 20px;
-        cursor: pointer;
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.88rem;
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--t-border);
+      border-top-color: var(--t-brand);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+    .empty-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 0.8rem;
+    }
+    .empty-state h3 {
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: var(--t-text-heading);
+      margin: 0 0 0.4rem;
+    }
+    .empty-state p {
+      color: var(--t-text-muted);
+      font-size: 0.9rem;
+      margin: 0 0 1.2rem;
+    }
+    /* ─── Tagged Tab ───────────────────────────────────────────────── */
+    .tagged-empty p {
+      max-width: 280px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .tagged-by-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 3px 8px;
+      border-radius: var(--t-radius-sm);
+      margin-bottom: 4px;
+    }
+  
+    /* Tag input inside carousel */
+    .tag-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .tag-at {
+      position: absolute;
+      left: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--t-text-brand);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .tag-input {
+      padding-left: 28px !important;
+    }
+    .tag-hint {
+      font-size: 0.7rem;
+      color: var(--t-text-faint);
+      margin-top: 2px;
+    }
+  
+    /* Preview tags */
+    .preview-tags {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--t-text-brand);
+      font-weight: 500;
+    }
+  
+    /* Modal tagged users */
+    .modal-tagged {
+      font-size: 0.8rem;
+      color: var(--t-text-brand);
+      margin: 6px 0 4px;
+      font-weight: 500;
+    }
+  
+    /* ─── Right Sidebar Cards ───────────────────────────────────────── */
     .profile-right-card {
-        background: #cdd9af; /* Sage Mist */
-        border-radius: 16px;
-        padding: 1.4rem;
-        box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08);
-        margin-bottom: 1rem;
+      background: var(--t-bg-elevated);
+      border-radius: var(--t-radius-lg);
+      padding: 1.4rem;
+      box-shadow: var(--t-shadow-card);
+      border: 1px solid var(--t-border);
+      margin-bottom: 1rem;
     }
     .profile-right-card h3 {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #a44a3f; /* Redwood Rust */
-        margin-bottom: 1rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--t-text-brand);
+      margin-bottom: 1rem;
     }
     .about-text {
-        font-size: 0.85rem;
-        color: var(--sage);
-        line-height: 1.6;
+      font-size: 0.85rem;
+      color: var(--t-text-body);
+      line-height: 1.6;
+      margin: 0;
     }
-    .joined-date {
-        margin-top: 0.8rem;
-        font-size: 0.8rem;
-        color: var(--sage);
+  
+    .recent-post-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--t-border-soft);
+      cursor: pointer;
+      transition: background var(--t-transition);
+      border-radius: var(--t-radius-sm);
     }
-
-    .followed-tree {
-        display: flex;
-        align-items: center;
-        gap: 0.7rem;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid var(--mist);
-        cursor: pointer;
+    .recent-post-item:hover {
+      background: var(--t-bg-hover);
     }
-    .followed-tree:last-child {
-        border: none;
+    .recent-post-item:last-child {
+      border: none;
     }
-    .ft-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: linear-gradient(135deg, var(--moss), var(--sage));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        flex-shrink: 0;
+    .rp-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--t-radius-sm);
+      background: var(--t-brand-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
     }
-    .ft-info {
-        flex: 1;
-        min-width: 0;
+    .rp-info {
+      flex: 1;
+      min-width: 0;
     }
-    .ft-info strong {
-        display: block;
-        font-size: 0.82rem;
-        color: var(--ink);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .rp-info strong {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--t-text-heading);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .ft-info small {
-        font-size: 0.72rem;
-        color: var(--sage);
+    .rp-info small {
+      font-size: 0.72rem;
+      color: var(--t-text-muted);
     }
     .health-badge {
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--t-radius-sm);
     }
-    .health-good {
-        background: #d4edda;
-        color: #1e7e34;
-    }
-    .health-fair {
-        background: #fff3cd;
-        color: #856404;
-    }
-    .health-poor {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
+    .health-good { background: var(--t-role-standard-bg); color: var(--t-status-good); }
+    .health-fair { background: var(--t-role-credible-bg); color: var(--t-status-fair); }
+    .health-poor { background: var(--t-role-admin-bg); color: var(--t-status-poor); }
+  
+    /* ─── Progress Bars ─────────────────────────────────────────────── */
     .progress-item {
-        margin-bottom: 0.8rem;
+      margin-bottom: 0.8rem;
     }
     .progress-header {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.8rem;
-        margin-bottom: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 0.3rem;
     }
     .progress-label {
-        color: var(--sage);
+      color: var(--t-text-muted);
     }
     .progress-met {
-        color: var(--moss);
-        font-weight: 600;
+      color: var(--t-status-good);
+      font-weight: 600;
     }
     .progress-track {
-        height: 6px;
-        background: var(--canopy);
-        border-radius: 3px;
-        overflow: hidden;
+      height: 6px;
+      background: var(--t-border-soft);
+      border-radius: var(--t-radius-sm);
+      overflow: hidden;
     }
     .progress-fill {
-        height: 100%;
-        border-radius: 3px;
-        background: var(--sage);
-    }
-    .progress-fill.full {
-        width: 100%;
+      height: 100%;
+      border-radius: var(--t-radius-sm);
+      background: var(--t-brand);
+      transition: width 0.6s ease;
     }
     .credible-banner {
-        margin-top: 0.8rem;
-        background: rgba(61, 90, 62, 0.1);
-        border: 1px solid rgba(61, 90, 62, 0.2);
-        border-radius: 8px;
-        padding: 0.6rem;
-        font-size: 0.82rem;
-        color: var(--moss);
-        text-align: center;
+      margin-top: 0.8rem;
+      background: var(--t-brand-dim);
+      border: 1px solid var(--t-brand-muted);
+      border-radius: var(--t-radius-sm);
+      padding: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--t-text-brand);
+      text-align: center;
     }
-</style>
+  
+    /* ─── Post Detail Modal ────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: modalFadeIn 0.3s ease;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .modal {
+      position: relative;
+      background: var(--t-bg-surface);
+      border-radius: 16px;
+      display: flex;
+      max-width: 920px;
+      width: 94vw;
+      max-height: 88vh;
+      overflow: hidden;
+      box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.45),
+        0 0 0 1px var(--t-border-soft),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      animation: modalSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid var(--t-border);
+    }
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(30px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  
+    /* Close button (floating) */
+    .modal-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 10;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--t-bg-overlay);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--t-border-soft);
+      color: var(--t-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .modal-close-btn:hover {
+      background: var(--t-bg-active);
+      color: var(--t-text-heading);
+      transform: rotate(90deg);
+    }
+  
+    /* Image panel */
+    .modal-image {
+      flex: 1;
+      background: var(--t-bg-photo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 420px;
+      max-width: 55%;
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .modal-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, var(--t-brand-dim), var(--t-bg-surface));
+    }
+    .modal-placeholder-emoji {
+      font-size: 5rem;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+      animation: floatEmoji 3s ease-in-out infinite;
+    }
+    @keyframes floatEmoji {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    .modal-placeholder-label {
+      font-family: var(--t-font-display);
+      font-size: 1rem;
+      color: var(--t-text-muted);
+      letter-spacing: 0.02em;
+    }
+  
+    /* Details panel */
+    .modal-details {
+      width: 360px;
+      display: flex;
+      flex-direction: column;
+      background: var(--t-bg-elevated);
+      border-left: 1px solid var(--t-border-soft);
+    }
+  
+    /* Header */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--t-border-soft);
+    }
+    .modal-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--t-brand-muted);
+    }
+    .modal-avatar-placeholder {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--t-brand), var(--t-brand-glow));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--t-bg-base);
+    }
+    .modal-author-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-author strong {
+      font-size: 0.88rem;
+      color: var(--t-text-heading);
+      line-height: 1.2;
+    }
+    .modal-loc {
+      font-size: 0.72rem;
+      color: var(--t-text-muted);
+      margin-top: 1px;
+    }
+  
+    /* ─── 3-Dot Menu & Delete Confirm ─────────────────────────────── */
+    .post-menu-wrapper {
+      position: relative;
+    }
+    .post-menu-trigger {
+      background: none;
+      border: none;
+      color: var(--t-text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .post-menu-trigger:hover {
+      background: var(--t-bg-hover);
+      color: var(--t-text-heading);
+    }
+    .post-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 180px;
+      background: var(--t-bg-surface);
+      border: 1px solid var(--t-border);
+      border-radius: 12px;
+      box-shadow:
+        0 12px 40px rgba(0,0,0,0.3),
+        0 0 0 1px var(--t-border-soft);
+      z-index: 20;
+      overflow: hidden;
+      animation: menuDrop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes menuDrop {
+      from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 16px;
+      border: none;
+      background: none;
+      font-size: 0.84rem;
+      font-family: var(--t-font-body);
+      color: var(--t-text-body);
+      cursor: pointer;
+      transition: background 0.15s ease;
+      text-align: left;
+    }
+    .menu-item:hover {
+      background: var(--t-bg-hover);
+    }
+    .menu-item-danger {
+      color: var(--t-status-poor);
+      font-weight: 600;
+    }
+    .menu-item-danger:hover {
+      background: rgba(248, 113, 113, 0.08);
+    }
+  
+    /* Inline delete confirmation */
+    .delete-confirm-panel {
+      padding: 16px;
+      text-align: center;
+      animation: menuDrop 0.2s ease;
+    }
+    .delete-confirm-icon {
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+    .delete-confirm-text {
+      font-size: 0.82rem;
+      color: var(--t-text-body);
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+    .delete-confirm-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .confirm-cancel-btn {
+      flex: 1;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--t-font-body);
+      border: 1px solid var(--t-border);
+      background: var(--t-bg-hover);
+      color: var(--t-text-body);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .confirm-cancel-btn:hover:not(:disabled) {
+      background: var(--t-bg-active);
+      color: var(--t-text-heading);
+    }
+    .confirm-delete-btn {
+      flex: 1;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: var(--t-font-body);
+      border: none;
+      background: var(--t-status-poor);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .confirm-delete-btn:hover:not(:disabled) {
+      background: #ef4444;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+    }
+    .confirm-delete-btn:disabled,
+    .confirm-cancel-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-spinner-sm {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+  
+    /* ─── Modal Body ─────────────────────────────────────────────── */
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+    }
+    .modal-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+      background: var(--t-border);
+      border-radius: 4px;
+    }
+  
+    /* Tree info card */
+    .modal-tree-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--t-brand-dim);
+      border: 1px solid var(--t-brand-muted);
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .modal-tree-icon {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+    .modal-tree-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .modal-tree-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--t-text-heading);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .modal-text {
+      font-size: 0.86rem;
+      color: var(--t-text-body);
+      line-height: 1.6;
+      margin: 0 0 10px;
+    }
+    .modal-tagged {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--t-text-brand);
+      margin: 0 0 8px;
+      font-weight: 500;
+      padding: 6px 10px;
+      background: var(--t-brand-dim);
+      border-radius: 6px;
+      border: 1px solid var(--t-brand-muted);
+    }
+    .modal-time {
+      font-size: 0.7rem;
+      color: var(--t-text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: block;
+      margin-bottom: 2px;
+    }
+  
+    /* Comments */
+    .modal-comments {
+      margin-top: 16px;
+      border-top: 1px solid var(--t-border-soft);
+      padding-top: 12px;
+    }
+    .comments-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .comments-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--t-text-muted);
+    }
+    .comments-count {
+      font-size: 0.68rem;
+      font-weight: 600;
+      background: var(--t-bg-hover);
+      color: var(--t-text-muted);
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .modal-comment {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      animation: commentFade 0.25s ease;
+    }
+    @keyframes commentFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .comment-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--t-bg-active);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--t-text-brand);
+      flex-shrink: 0;
+    }
+    .comment-content {
+      font-size: 0.84rem;
+      line-height: 1.45;
+      color: var(--t-text-body);
+    }
+    .comment-content strong {
+      color: var(--t-text-heading);
+      margin-right: 5px;
+      font-size: 0.82rem;
+    }
+    .comment-actions {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity var(--t-transition);
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .modal-comment:hover .comment-actions {
+      opacity: 1;
+    }
+    .comment-action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 2px 5px;
+      border-radius: var(--t-radius-sm);
+      color: var(--t-text-muted);
+      transition: background var(--t-transition), color var(--t-transition);
+    }
+    .comment-action-btn:hover {
+      background: var(--t-bg-hover);
+    }
+    .comment-action-btn.save {
+      color: var(--t-status-good);
+    }
+    .comment-action-btn.delete:hover {
+      color: var(--t-status-poor);
+    }
+    .comment-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+    .comment-edit-input {
+      flex: 1;
+      background: var(--t-bg-input);
+      border: 1px solid var(--t-border-input);
+      border-radius: var(--t-radius-sm);
+      padding: 4px 8px;
+      color: var(--t-text-heading);
+      font-size: 0.78rem;
+      font-family: var(--t-font-body);
+      outline: none;
+    }
+    .comment-edit-input:focus {
+      border-color: var(--t-brand);
+    }
+    .no-comments {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 0;
+      color: var(--t-text-faint);
+      font-size: 0.8rem;
+    }
+    .no-comments-icon {
+      font-size: 1.4rem;
+      opacity: 0.4;
+    }
+  
+    /* ─── Action Bar ─────────────────────────────────────────────── */
+    .modal-actions {
+      border-top: 1px solid var(--t-border-soft);
+      padding: 12px 18px 14px;
+      background: var(--t-bg-elevated);
+    }
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .like-btn {
+      background: none;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--t-text-muted);
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .like-btn:hover {
+      transform: scale(1.15);
+    }
+    .like-btn.liked {
+      color: #ef4444;
+      animation: heartBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes heartBounce {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    .like-icon {
+      display: block;
+    }
+    .likes-count {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--t-text-heading);
+    }
+  
+    /* Comment input */
+    .comment-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: var(--t-bg-input);
+      border: 1px solid var(--t-border-input);
+      border-radius: 24px;
+      padding: 2px 4px 2px 16px;
+      transition: border-color var(--t-transition), box-shadow var(--t-transition);
+    }
+    .comment-input-row:focus-within {
+      border-color: var(--t-brand);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-brand) 12%, transparent);
+    }
+    .comment-input-row input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.84rem;
+      font-family: var(--t-font-body);
+      color: var(--t-text-heading);
+      padding: 8px 0;
+      background: transparent;
+    }
+    .comment-input-row input::placeholder {
+      color: var(--t-text-muted);
+    }
+    .post-comment-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--t-brand), var(--t-brand-glow));
+      color: var(--t-bg-base);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .post-comment-btn:hover:not(:disabled) {
+      transform: scale(1.08);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--t-brand) 40%, transparent);
+    }
+    .post-comment-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+      transform: none;
+    }
+  
+    /* ─── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .profile-hero {
+        padding: 0 1rem;
+      }
+      .profile-cover {
+        margin: 0 -1rem;
+        height: 120px;
+      }
+      .profile-info-bar {
+        flex-wrap: wrap;
+      }
+      .profile-stats-tabs {
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+      .profile-body {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+      }
+      .profile-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+      }
+      .modal {
+        flex-direction: column;
+        max-height: 92vh;
+        border-radius: 12px;
+        width: 96vw;
+      }
+      .modal-close-btn {
+        top: 8px;
+        right: 8px;
+        width: 30px;
+        height: 30px;
+      }
+      .modal-image {
+        max-width: 100%;
+        min-height: 220px;
+        max-height: 280px;
+      }
+      .modal-details {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--t-border-soft);
+      }
+      .post-menu-dropdown {
+        right: -4px;
+      }
+    }
+  </style>
+  

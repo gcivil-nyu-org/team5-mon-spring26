@@ -8,4 +8,4 @@ def activate_user_on_confirm(sender, request, email_address, **kwargs):
     user = email_address.user
     if not user.is_active:
         user.is_active = True
-        user.save(update_fields=['is_active'])
+        user.save(update_fields=["is_active"])

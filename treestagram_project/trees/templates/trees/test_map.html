@@ -1,0 +1,43 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet Test Map</title>
+
+    <!-- Leaflet CSS (local copy) -->
+    <link rel="stylesheet" href="{% static 'trees/leaflet.css' %}" />
+
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align:center;">Leaflet Map Test</h1>
+    <div id="map"></div>
+
+    <!-- Leaflet JS (local copy) -->
+    <script src="{% static 'trees/leaflet.js' %}"></script>
+
+    <script>
+        // Initialize map centered on New York
+        var map = L.map('map').setView([40.7128, -74.0060], 12);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+    </script>
+
+</body>
+</html>

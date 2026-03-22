@@ -27,13 +27,23 @@ after_success:
   - coveralls
 
 deploy:
-  provider: elasticbeanstalk
-  region: us-east-1
-  app: treestagram5
-  env: treestagram-env5
-  bucket_name: elasticbeanstalk-us-east-1-180382394287 
-  access_key_id: $AWS_ACCESS_KEY_ID
-  secret_access_key: $AWS_SECRET_ACCESS_KEY
-  on:
-    branch: develop
+  - provider: elasticbeanstalk
+    region: us-east-1
+    app: treestagram6
+    env: treestagram-env6
+    bucket_name: elasticbeanstalk-us-east-1-180382394287
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    on:
+      branch: main
+
+  - provider: elasticbeanstalk
+    region: us-east-1
+    app: treestagram6
+    env: treestagram-env-develop
+    bucket_name: elasticbeanstalk-us-east-1-180382394287
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    on:
+      branch: develop
 

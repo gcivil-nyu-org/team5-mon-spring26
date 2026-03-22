@@ -62,12 +62,12 @@
         <div class="icon">🌳</div>
         <h1>Email Confirmed!</h1>
         <p>Your Treestagram account is now active. You can sign in and start exploring NYC's urban forest.</p>
-        <a href="http://localhost:5173/login" class="btn">Sign In to Treestagram</a>
+        <a href="{{ frontend_url }}/login" class="btn">Sign In to Treestagram</a>
     </div>
     <script>
         // Auto-redirect after 5 seconds
         setTimeout(function () {
-            window.location.href = 'http://localhost:5173/login';
+            window.location.href = "{{ frontend_url }}/login";
         }, 5000);
     </script>
 </body>

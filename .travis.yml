@@ -1,0 +1,39 @@
+language: python
+
+env:
+  global:
+    - COVERALLS_SERVICE_NAME=travis-pro
+
+python:
+  - "3.11"
+
+services:
+  - docker
+
+before_install:
+  - python -m pip install --upgrade pip
+
+install:
+  - pip install -r treestagram_project/requirements.txt
+
+script:
+  - cd treestagram_project
+  - black --check .
+  - flake8 .
+  - python manage.py migrate
+  - coverage run --source=accounts,trees,treestagram manage.py test
+
+after_success:
+  - coveralls
+
+deploy:
+  provider: elasticbeanstalk
+  region: us-east-1
+  app: treestagram5
+  env: treestagram-env5
+  bucket_name: elasticbeanstalk-us-east-1-180382394287 
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  on:
+    branch: ramsey-new-feature 
+

@@ -2,49 +2,63 @@
     import LeftNav from "../components/LeftNav.svelte";
     import BackgroundRings from "../components/BackgroundRings.svelte";
     export let navigate;
+    export let treeId;
+
+    import { onMount } from "svelte";
+
+    let tree = null;
+
+    onMount(async () => {
+        try {
+        const res = await fetch(`/trees/api/${treeId}/`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch tree");
+        tree = await res.json();
+        console.log("Tree loaded:", tree);
+        } catch (err) {
+        console.error("Error fetching tree:", err);
+        }
+    });
+
+    $: diameter =
+    tree
+        ? (tree.tree_dbh > 0
+            ? tree.tree_dbh
+            : (tree.stump_diam > 0 ? tree.stump_diam : null))
+        : null;
+
+    // estimate stormwater savings
+    $: stormwaterSavings =
+        diameter ? Math.round(0.6 * diameter * diameter) : null;
+
+    $: problemList =
+        tree && tree.problems && tree.problems !== "None"
+            ? tree.problems.split(",")
+            : [];
 </script>
 
+{#if tree}
 <div class="page">
     <BackgroundRings />
     <LeftNav {navigate} activePage="explore" />
 
-    <div class="dash-top-bar">
-        <div class="search-container">
-            <span class="search-icon">🔍</span>
-            <input
-                type="text"
-                placeholder="Search trees, species, or locations..."
-                class="dash-search-input"
-            />
-        </div>
-        <button class="btn-filter">
-            <span class="filter-icon">🔘</span> Filter
-        </button>
-    </div>
-
     <div class="dashboard-hero">
-        <div class="dash-breadcrumb">
-            <button class="breadcrumb-link" on:click={() => navigate("/home")}
-                >NYC Trees</button
-            >
-            › <span>Manhattan</span> › <span>Elm #00482</span>
-        </div>
         <div class="dash-hero-content">
             <div class="tree-title-block">
                 <div class="tree-species">
-                    🌳 Ulmus americana · American Elm
+                    {tree.spc_latin}
                 </div>
-                <h1>Elm #00482<br />Central Park</h1>
+                <h1>{tree.spc_common} #{tree.tree_id}<br />{tree.zip_city}</h1>
                 <div class="tree-meta-chips">
-                    <span class="chip chip-health-good">✓ Good Health</span>
-                    <span class="chip chip-borough">📍 Manhattan</span>
-                    <span class="chip chip-id">ID: 00482</span>
-                    <span class="chip chip-borough">10024</span>
+                    <span class="chip chip-health-good">Health: {tree.health}</span>
+                    <span class="chip chip-health-good">Status: {tree.status}</span>
+                    <span class="chip chip-health-good">Borough: {tree.borough}</span>
+                    <span class="chip chip-health-good">ID: {tree.tree_id}</span>
+                    <span class="chip chip-health-good">Latitude: {tree.latitude}</span>
+                    <span class="chip chip-health-good">Longitude: {tree.longitude}</span>
                 </div>
             </div>
             <div class="dash-tree-actions">
                 <button class="btn-follow">🌟 Follow Tree</button>
-                <button class="btn-apply-ct">Apply as Caretaker</button>
                 <button class="btn-apply-ct" on:click={() => navigate("/chat")}
                     >💬 Group Chat (127)</button
                 >
@@ -53,8 +67,6 @@
         <div class="dash-tab-bar">
             <button class="dash-tab active">Overview</button>
             <button class="dash-tab">Posts</button>
-            <button class="dash-tab">Health History</button>
-            <button class="dash-tab">Community</button>
         </div>
     </div>
 
@@ -64,7 +76,13 @@
                 <div class="stat-card">
                     <div class="s-icon">💧</div>
                     <div class="s-label">Stormwater Savings</div>
-                    <div class="s-val">$2,140</div>
+                    <div class="s-val">
+                        {#if stormwaterSavings}
+                            ${stormwaterSavings.toLocaleString()}
+                        {:else}
+                            Unknown
+                        {/if}
+                    </div>
                     <div class="s-sub">per year</div>
                 </div>
                 <div class="stat-card">
@@ -79,75 +97,96 @@
                     <div class="s-val">342</div>
                     <div class="s-sub">community posts</div>
                 </div>
-                <div class="stat-card">
-                    <div class="s-icon">🌡️</div>
-                    <div class="s-label">Health Score</div>
-                    <div class="s-val green">92</div>
-                    <div class="s-sub">out of 100</div>
-                </div>
             </div>
 
             <div class="content-card">
-                <h3>Health History — Last 12 Months</h3>
-                <div class="health-history-bar">
-                    <div class="hh-bar good" style="height:90%"></div>
-                    <div class="hh-bar good" style="height:85%"></div>
-                    <div class="hh-bar good" style="height:88%"></div>
-                    <div class="hh-bar fair" style="height:60%"></div>
-                    <div class="hh-bar fair" style="height:65%"></div>
-                    <div class="hh-bar good" style="height:80%"></div>
-                    <div class="hh-bar good" style="height:92%"></div>
-                    <div class="hh-bar good" style="height:95%"></div>
-                    <div class="hh-bar good" style="height:90%"></div>
-                    <div class="hh-bar good" style="height:88%"></div>
-                    <div class="hh-bar good" style="height:86%"></div>
-                    <div class="hh-bar good" style="height:92%"></div>
-                </div>
-                <div class="hh-months">
-                    <span>Mar</span><span>Apr</span><span>May</span><span
-                        >Jun</span
-                    ><span>Jul</span>
-                    <span>Aug</span><span>Sep</span><span>Oct</span><span
-                        >Nov</span
-                    ><span>Dec</span><span>Jan</span><span>Feb</span>
-                </div>
-                <div class="legend">
-                    <span><span class="dot good-dot"></span>Good</span>
-                    <span><span class="dot fair-dot"></span>Fair</span>
-                    <span><span class="dot poor-dot"></span>Poor</span>
-                </div>
+                <h3>Tree Problems</h3>
+
+                {#if problemList.length > 0}
+                    <div class="problem-grid">
+                        {#each problemList as problem}
+                            <div class="problem-item">
+                                ⚠️ {problem}
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <div class="no-problem">
+                        🌿 No reported problems
+                    </div>
+                {/if}
             </div>
 
             <div class="content-card">
-                <h3>Environmental Ratings</h3>
+                <h3>Root Probelms</h3>
                 <div class="env-ratings">
                     <div class="env-item">
-                        <div class="env-label">Soil Condition</div>
-                        <div class="env-bar-track">
-                            <div class="env-bar-fill green-fill"></div>
-                        </div>
-                        <div class="env-score">Good · 8/10</div>
+                        <div class="env-label">Caused by Stones</div>
+                        <div class="env-score">{tree.root_stone ? "YES" : "NO"}</div>
                     </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Metal Grates</div>
+                        <div class="env-score">{tree.root_grate ? "YES" : "NO"}</div>
+                    </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Others</div>
+                        <div class="env-score">{tree.root_other ? "YES" : "NO"}</div>
+                    </div>      
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Trunk Probelms</h3>
+                <div class="env-ratings">
+                    <div class="env-item">
+                        <div class="env-label">Caused by Wires or Ropes</div>
+                        <div class="env-score">{tree.trunk_wire ? "YES" : "NO"}</div>
+                    </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Installed Lighting</div>
+                        <div class="env-score">{tree.trnk_light ? "YES" : "NO"}</div>
+                    </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Others</div>
+                        <div class="env-score">{tree.trnk_other ? "YES" : "NO"}</div>
+                    </div>      
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Branch Probelms</h3>
+                <div class="env-ratings">
+                    <div class="env-item">
+                        <div class="env-label">Caused by Lights or Wires</div>
+                        <div class="env-score">{tree.brch_light ? "YES" : "NO"}</div>
+                    </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Sneakers</div>
+                        <div class="env-score">{tree.brch_shoe ? "YES" : "NO"}</div>
+                    </div>
+                    <div class="env-item">
+                        <div class="env-label">Caused by Others</div>
+                        <div class="env-score">{tree.brch_other ? "YES" : "NO"}</div>
+                    </div>      
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3>Location & Sidewalk Condition</h3>
+
+                <div class="sidecurb-ratings">
+                    <div class="env-item">
+                        <div class="env-label">Curb Location</div>
+                        <div class="env-score">
+                            {tree.curb_loc === "OnCurb" ? "Along the curb" : "Offset from curb"}
+                        </div>
+                    </div>
+
                     <div class="env-item">
                         <div class="env-label">Sidewalk Damage</div>
-                        <div class="env-bar-track">
-                            <div class="env-bar-fill yellow-fill"></div>
+                        <div class="env-score">
+                            {tree.sidewalk === "Damage" ? "⚠️ Damage detected" : "No damage"}
                         </div>
-                        <div class="env-score">Moderate · 5/10</div>
-                    </div>
-                    <div class="env-item">
-                        <div class="env-label">Root Space</div>
-                        <div class="env-bar-track">
-                            <div class="env-bar-fill orange-fill"></div>
-                        </div>
-                        <div class="env-score">Limited · 7/10</div>
-                    </div>
-                    <div class="env-item">
-                        <div class="env-label">Canopy Coverage</div>
-                        <div class="env-bar-track">
-                            <div class="env-bar-fill green-fill wide"></div>
-                        </div>
-                        <div class="env-score">Excellent · 9/10</div>
                     </div>
                 </div>
             </div>
@@ -155,15 +194,7 @@
             <div class="content-card">
                 <h3>Recent Community Posts</h3>
                 <div class="posts-mini">
-                    <div class="post-mini">
-                        <div class="post-mini-thumb">🌳</div>
-                        <div class="post-mini-info">
-                            <strong>Winter check-in — looking healthy!</strong>
-                            <small>@treewhisperer_nyc · 2 hours ago</small>
-                        </div>
-                        <span class="post-mini-likes">❤️ 342</span>
-                    </div>
-                    <div class="post-mini">
+                      <div class="post-mini">
                         <div class="post-mini-thumb">🍂</div>
                         <div class="post-mini-info">
                             <strong>Beautiful fall foliage this season</strong>
@@ -207,33 +238,31 @@
             </div>
 
             <div class="ct-card">
-                <h3>Community</h3>
-                <div class="fans-count">
-                    <span class="num">127</span>
-                    <small>fans following this tree</small>
-                    <div class="fans-avatars">
-                        <div class="fa">🌿</div>
-                        <div class="fa">🧑</div>
-                        <div class="fa">👩</div>
-                        <div class="fa">🌱</div>
-                        <div class="fa">+123</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ct-card">
                 <h3>Tree Info</h3>
                 <table class="tree-info-table">
-                    <tr><td>Species</td><td>American Elm</td></tr>
-                    <tr><td>Diameter</td><td>24 in</td></tr>
-                    <tr><td>Zipcode</td><td>10024</td></tr>
-                    <tr><td>Borough</td><td>Manhattan</td></tr>
-                    <tr><td>Census Year</td><td>2015</td></tr>
+                    <tr><td>Species</td><td>{tree.spc_common}</td></tr>
+                    <tr><td>Latin Name</td><td>{tree.spc_latin}</td></tr>
+                    <tr>
+                        <td>Trunk Diameter</td>
+                        <td>{tree.tree_dbh === 0 ? "Unknown" : `${tree.tree_dbh} in`}</td>
+                    </tr>
+                    <tr>
+                        <td>Stump Diameter</td>
+                        <td>{tree.stump_diam === 0 ? "Unknown" : `${tree.stump_diam} in`}</td>
+                    </tr>
+                    <tr><td>Zip City</td><td>{tree.zip_city}</td></tr>
+                    <tr><td>Borough</td><td>{tree.borough}</td></tr>
+                    <tr><td>Address</td><td>{tree.address}</td></tr>
                 </table>
             </div>
         </aside>
     </div>
-</div>
+</div>      
+
+            
+{:else}
+  <p>Loading tree data...</p>
+{/if}
 
 <style>
     :root {
@@ -493,7 +522,7 @@
     }
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 1rem;
         margin-bottom: 1.5rem;
     }
@@ -605,9 +634,16 @@
     }
 
     /* Environmental ratings */
+    .sidecurb-ratings {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+    }
+
+    /* Environmental ratings */
     .env-ratings {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap: 0.8rem;
     }
     .env-item {

@@ -41,7 +41,7 @@
     if (!map) return;
 
     const zoom = map.getZoom();
-    if (zoom < 14) {
+    if (zoom < 12) {
       markers.clearLayers();
       loadedTreeIds.clear();
       showZoomMessage = true;
@@ -96,7 +96,10 @@
       }
     ).addTo(map);
 
-    markers = L.markerClusterGroup();
+    markers = L.markerClusterGroup({
+      disableClusteringAtZoom: 17,
+      maxClusterRadius: 40,
+    });
     map.addLayer(markers);
 
     loadTreesInView();

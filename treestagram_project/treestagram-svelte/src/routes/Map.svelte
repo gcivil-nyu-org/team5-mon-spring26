@@ -50,7 +50,7 @@
     showZoomMessage = false;
 
     const bounds = map.getBounds();
-    const limit = 300;
+    const limit = 750;
 
     const url = `/trees/api/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}&limit=${limit}&offset=0`;
 

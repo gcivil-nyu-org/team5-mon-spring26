@@ -24,7 +24,7 @@ def trees_api(request):
         max_lat = float(request.GET.get("max_lat", 90))
         min_lng = float(request.GET.get("min_lng", -180))
         max_lng = float(request.GET.get("max_lng", 180))
-        limit = int(request.GET.get("limit", 500))
+        limit = int(request.GET.get("limit", 750))
         offset = int(request.GET.get("offset", 0))
     except (ValueError, TypeError):
         return JsonResponse([], safe=False)

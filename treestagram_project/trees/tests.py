@@ -131,7 +131,7 @@ class TreeViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIsInstance(data, list)
-        self.assertEqual(len(data), 0) 
+        self.assertEqual(len(data), 0)
 
     def test_trees_api_with_offset(self):
         response1 = self.client.get(reverse("trees_api") + "?limit=1&offset=0")

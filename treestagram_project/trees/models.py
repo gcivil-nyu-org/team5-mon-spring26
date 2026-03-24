@@ -33,7 +33,7 @@ class Tree(models.Model):
 
     def __str__(self):
         return f"{self.spc_common} ({self.tree_id})"
-    
+
     class Meta:
         indexes = [
             models.Index(fields=["latitude", "longitude"]),

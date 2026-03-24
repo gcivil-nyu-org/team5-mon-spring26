@@ -29,13 +29,15 @@ def trees_api(request):
     except (ValueError, TypeError):
         return JsonResponse([], safe=False)
 
-    qs = Tree.objects.filter(
-        latitude__gte=min_lat,
-        latitude__lte=max_lat,
-        longitude__gte=min_lng,
-        longitude__lte=max_lng,
-    ).order_by("tree_id").values(
-        "tree_id", "latitude", "longitude", "spc_common"
+    qs = (
+        Tree.objects.filter(
+            latitude__gte=min_lat,
+            latitude__lte=max_lat,
+            longitude__gte=min_lng,
+            longitude__lte=max_lng,
+        )
+        .order_by("tree_id")
+        .values("tree_id", "latitude", "longitude", "spc_common")
     )
 
     return JsonResponse(list(qs[offset : offset + limit]), safe=False)
@@ -110,7 +112,14 @@ def search_trees_api(request):
 
     total_count = queryset.count()
     trees = queryset.values(
-        "tree_id", "spc_common", "spc_latin", "status", "health", "borough", "latitude", "longitude"
+        "tree_id",
+        "spc_common",
+        "spc_latin",
+        "status",
+        "health",
+        "borough",
+        "latitude",
+        "longitude",
     )[offset : offset + limit]
 
     return JsonResponse({"results": list(trees), "count": total_count})

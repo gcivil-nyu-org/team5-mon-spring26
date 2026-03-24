@@ -19,28 +19,29 @@ def tree_list_view(request):
 
 
 def trees_api(request):
-    limit = request.GET.get("limit", 10)
-    print("Limit param received:", limit)
-    try:
-        limit = int(limit)
-    except ValueError:
-        limit = 10
+    min_lat = request.GET.get("min_lat")
+    max_lat = request.GET.get("max_lat")
+    min_lng = request.GET.get("min_lng")
+    max_lng = request.GET.get("max_lng")
 
-    # slice queryset
-    trees = Tree.objects.all()[:limit]
-    print("Returning trees:", trees.count())
+    limit = int(request.GET.get("limit", 1000))
 
-    # serialize to JSON
-    data = [
-        {
-            "tree_id": t.tree_id,
-            "spc_common": t.spc_common,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-        }
-        for t in trees
-    ]
-    return JsonResponse(data, safe=False)
+    queryset = Tree.objects.all()
+
+    # ✅ Only get trees inside visible map area
+    if min_lat and max_lat and min_lng and max_lng:
+        queryset = queryset.filter(
+            latitude__gte=min_lat,
+            latitude__lte=max_lat,
+            longitude__gte=min_lng,
+            longitude__lte=max_lng,
+        )
+
+    queryset = queryset.order_by("tree_id")
+
+    trees = queryset.values("tree_id", "spc_common", "latitude", "longitude")[:limit]
+
+    return JsonResponse(list(trees), safe=False)
 
 
 def tree_detail_api(request, tree_id):
@@ -76,37 +77,6 @@ def tree_detail_api(request, tree_id):
         return JsonResponse(data)
     except Tree.DoesNotExist:
         raise Http404("Tree not found")
-
-
-# from django.db.models import Q
-
-# def search_trees_api(request):
-#     q = request.GET.get("q", "").strip()
-#     offset = int(request.GET.get("offset", 0))
-#     limit = int(request.GET.get("limit", 10))
-
-#     if not q:
-#         return JsonResponse({"results": [], "count": 0})
-
-#     # Search by spc_common or address (case-insensitive)
-#     queryset = Tree.objects.filter(
-#         spc_common__icontains=q
-#     ).order_by("tree_id")
-
-#     total_count = queryset.count()
-#     trees = queryset[offset: offset + limit]
-
-#     data = [
-#         {
-#             "tree_id": t.tree_id,
-#             "spc_common": t.spc_common,
-#             "latitude": t.latitude,
-#             "longitude": t.longitude,
-#         }
-#         for t in trees
-#     ]
-
-#     return JsonResponse({"results": data, "count": total_count})
 
 
 def search_trees_api(request):

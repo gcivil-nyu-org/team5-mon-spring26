@@ -24,11 +24,14 @@ def trees_api(request):
     min_lng = request.GET.get("min_lng")
     max_lng = request.GET.get("max_lng")
 
-    limit = int(request.GET.get("limit", 1000))
+    try:
+        limit = int(request.GET.get("limit", 1000))
+    except (ValueError, TypeError):
+        limit = 1000
 
     queryset = Tree.objects.all()
 
-    # ✅ Only get trees inside visible map area
+    # Only get trees inside visible map area
     if min_lat and max_lat and min_lng and max_lng:
         queryset = queryset.filter(
             latitude__gte=min_lat,

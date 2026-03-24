@@ -26,64 +26,67 @@
 
   let map;
   let markers;
-  let loadedTreeIds = new Set(); // avoid duplicates
+  let loadedTreeIds = new Set();
+  let showZoomMessage = true;
+
+  function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
 
   async function loadTreesInView() {
     if (!map) return;
 
-    const bounds = map.getBounds();
-    let offset = 0;
-    const pageLimit = 500;
-    let treesFetched = [];
-
-    while (true) {
-      const url = `/trees/api/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}&limit=${pageLimit}&offset=${offset}`;
-      try {
-        const res = await fetch(url, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch trees");
-
-        const trees = await res.json();
-        if (!trees.length) break;
-
-        treesFetched = treesFetched.concat(trees);
-        offset += trees.length;
-
-        if (trees.length < pageLimit) break; // last page
-      } catch (err) {
-        console.error("Error loading trees:", err);
-        break;
-      }
+    const zoom = map.getZoom();
+    if (zoom < 14) {
+      markers.clearLayers();
+      loadedTreeIds.clear();
+      showZoomMessage = true;
+      return;
     }
+    showZoomMessage = false;
 
-    // Clear old markers and cluster
-    markers.clearLayers();
-    loadedTreeIds.clear();
+    const bounds = map.getBounds();
+    const limit = 300;
 
-    treesFetched.forEach((tree) => {
-      if (loadedTreeIds.has(tree.tree_id)) return;
+    const url = `/trees/api/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}&limit=${limit}&offset=0`;
 
-      const lat = parseFloat(tree.latitude);
-      const lng = parseFloat(tree.longitude);
-      if (isNaN(lat) || isNaN(lng)) return;
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch trees");
+      const trees = await res.json();
 
-      const popupContent = `
-        <div>
-          <b>${tree.spc_common || "Unknown"}</b><br>
-          ID: ${tree.tree_id}<br>
-          <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">
-            Dashboard
-          </button>
-        </div>
-      `;
+      markers.clearLayers();
+      loadedTreeIds.clear();
 
-      const marker = L.marker([lat, lng]).bindPopup(popupContent);
-      markers.addLayer(marker);
-      loadedTreeIds.add(tree.tree_id);
-    });
+      trees.forEach((tree) => {
+        const lat = parseFloat(tree.latitude);
+        const lng = parseFloat(tree.longitude);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const popupContent = `
+          <div>
+            <b>${tree.spc_common || "Unknown"}</b><br>
+            ID: ${tree.tree_id}<br>
+            <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">
+              Dashboard
+            </button>
+          </div>
+        `;
+
+        const marker = L.marker([lat, lng]).bindPopup(popupContent);
+        markers.addLayer(marker);
+        loadedTreeIds.add(tree.tree_id);
+      });
+    } catch (err) {
+      console.error("Error loading trees:", err);
+    }
   }
 
   onMount(() => {
-    // Initialize map
     map = L.map("map").setView([40.7128, -74.0060], 12);
 
     L.tileLayer(
@@ -93,19 +96,15 @@
       }
     ).addTo(map);
 
-    // Create cluster group
     markers = L.markerClusterGroup();
     map.addLayer(markers);
 
-    // Initial load
     loadTreesInView();
 
-    // Reload when user moves map or zooms
-    map.on("moveend", () => {
+    map.on("moveend", debounce(() => {
       loadTreesInView();
-    });
+    }, 300));
 
-    // Handle popup button clicks
     map.on("popupopen", function (e) {
       const popupNode = e.popup.getElement();
       const btn = popupNode.querySelector(".popup-dashboard-btn");
@@ -125,6 +124,9 @@
   <LeftNav {navigate} activePage="map" />
 
   <div class="map-container">
+    {#if showZoomMessage}
+      <div class="zoom-hint">Zoom in to see individual trees</div>
+    {/if}
     <div id="map"></div>
   </div>
 </div>
@@ -139,11 +141,26 @@
 
   .map-container {
     height: 100vh;
+    position: relative;
   }
 
   #map {
     width: 100%;
     height: 100%;
     z-index: 1;
+  }
+
+  .zoom-hint {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 999;
+    pointer-events: none;
   }
 </style>

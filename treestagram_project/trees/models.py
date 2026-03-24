@@ -28,8 +28,13 @@ class Tree(models.Model):
     address = models.CharField(max_length=200)
     zip_city = models.CharField(max_length=50)
     borough = models.CharField(max_length=50)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
+    latitude = models.FloatField(db_index=True)
+    longitude = models.FloatField(db_index=True)
 
     def __str__(self):
         return f"{self.spc_common} ({self.tree_id})"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["latitude", "longitude"]),
+        ]

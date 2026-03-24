@@ -27,28 +27,18 @@ def trees_api(request):
         limit = int(request.GET.get("limit", 500))
         offset = int(request.GET.get("offset", 0))
     except (ValueError, TypeError):
-        return JsonResponse([], safe=False)  # fallback
+        return JsonResponse([], safe=False)
 
-    # Filter trees in the current viewport
     qs = Tree.objects.filter(
         latitude__gte=min_lat,
         latitude__lte=max_lat,
         longitude__gte=min_lng,
         longitude__lte=max_lng,
-    ).order_by("tree_id")
+    ).order_by("tree_id").values(
+        "tree_id", "latitude", "longitude", "spc_common"
+    )
 
-    trees = qs[offset : offset + limit]
-
-    tree_list = [
-        {
-            "tree_id": t.tree_id,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-            "spc_common": t.spc_common,
-        }
-        for t in trees
-    ]
-    return JsonResponse(tree_list, safe=False)
+    return JsonResponse(list(qs[offset : offset + limit]), safe=False)
 
 
 def tree_detail_api(request, tree_id):
@@ -119,23 +109,11 @@ def search_trees_api(request):
         queryset = queryset.filter(borough__icontains=borough)
 
     total_count = queryset.count()
-    trees = queryset[offset : offset + limit]
+    trees = queryset.values(
+        "tree_id", "spc_common", "spc_latin", "status", "health", "borough", "latitude", "longitude"
+    )[offset : offset + limit]
 
-    data = [
-        {
-            "tree_id": t.tree_id,
-            "spc_common": t.spc_common,
-            "spc_latin": t.spc_latin,
-            "status": t.status,
-            "health": t.health,
-            "borough": t.borough,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-        }
-        for t in trees
-    ]
-
-    return JsonResponse({"results": data, "count": total_count})
+    return JsonResponse({"results": list(trees), "count": total_count})
 
 
 def svelte_app(request):

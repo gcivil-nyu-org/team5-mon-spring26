@@ -129,6 +129,14 @@ class TreeViewsTest(TestCase):
     def test_trees_api_invalid_limit(self):
         response = self.client.get(reverse("trees_api") + "?limit=abc")
         self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 0) 
+
+    def test_trees_api_with_offset(self):
+        response1 = self.client.get(reverse("trees_api") + "?limit=1&offset=0")
+        response2 = self.client.get(reverse("trees_api") + "?limit=1&offset=1")
+        self.assertNotEqual(response1.json(), response2.json())
 
     # -------- tree_detail_api -------- #
     def test_tree_detail_success(self):

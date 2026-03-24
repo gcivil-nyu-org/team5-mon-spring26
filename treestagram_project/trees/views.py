@@ -19,32 +19,36 @@ def tree_list_view(request):
 
 
 def trees_api(request):
-    min_lat = request.GET.get("min_lat")
-    max_lat = request.GET.get("max_lat")
-    min_lng = request.GET.get("min_lng")
-    max_lng = request.GET.get("max_lng")
-
     try:
-        limit = int(request.GET.get("limit", 1000))
+        min_lat = float(request.GET.get("min_lat", -90))
+        max_lat = float(request.GET.get("max_lat", 90))
+        min_lng = float(request.GET.get("min_lng", -180))
+        max_lng = float(request.GET.get("max_lng", 180))
+        limit = int(request.GET.get("limit", 500))
+        offset = int(request.GET.get("offset", 0))
     except (ValueError, TypeError):
-        limit = 1000
+        return JsonResponse([], safe=False)  # fallback
 
-    queryset = Tree.objects.all()
+    # Filter trees in the current viewport
+    qs = Tree.objects.filter(
+        latitude__gte=min_lat,
+        latitude__lte=max_lat,
+        longitude__gte=min_lng,
+        longitude__lte=max_lng,
+    ).order_by("tree_id")
 
-    # Only get trees inside visible map area
-    if min_lat and max_lat and min_lng and max_lng:
-        queryset = queryset.filter(
-            latitude__gte=min_lat,
-            latitude__lte=max_lat,
-            longitude__gte=min_lng,
-            longitude__lte=max_lng,
-        )
+    trees = qs[offset : offset + limit]
 
-    queryset = queryset.order_by("tree_id")
-
-    trees = queryset.values("tree_id", "spc_common", "latitude", "longitude")[:limit]
-
-    return JsonResponse(list(trees), safe=False)
+    tree_list = [
+        {
+            "tree_id": t.tree_id,
+            "latitude": t.latitude,
+            "longitude": t.longitude,
+            "spc_common": t.spc_common,
+        }
+        for t in trees
+    ]
+    return JsonResponse(tree_list, safe=False)
 
 
 def tree_detail_api(request, tree_id):

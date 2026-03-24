@@ -26,44 +26,60 @@
 
   let map;
   let markers;
+  let loadedTreeIds = new Set(); // avoid duplicates
 
   async function loadTreesInView() {
     if (!map) return;
 
     const bounds = map.getBounds();
+    let offset = 0;
+    const pageLimit = 500;
+    let treesFetched = [];
 
-    const url = `/trees/api/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}&limit=1000`;
+    while (true) {
+      const url = `/trees/api/?min_lat=${bounds.getSouth()}&max_lat=${bounds.getNorth()}&min_lng=${bounds.getWest()}&max_lng=${bounds.getEast()}&limit=${pageLimit}&offset=${offset}`;
+      try {
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch trees");
 
-    try {
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch trees");
+        const trees = await res.json();
+        if (!trees.length) break;
 
-      const trees = await res.json();
+        treesFetched = treesFetched.concat(trees);
+        offset += trees.length;
 
-      // Clear old markers
-      markers.clearLayers();
-
-      trees.forEach((tree) => {
-        const lat = parseFloat(tree.latitude);
-        const lng = parseFloat(tree.longitude);
-        if (isNaN(lat) || isNaN(lng)) return;
-
-        const popupContent = `
-          <div>
-            <b>${tree.spc_common || "Unknown"}</b><br>
-            ID: ${tree.tree_id}<br>
-            <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">
-              Dashboard
-            </button>
-          </div>
-        `;
-
-        const marker = L.marker([lat, lng]).bindPopup(popupContent);
-        markers.addLayer(marker);
-      });
-    } catch (err) {
-      console.error("Error loading trees:", err);
+        if (trees.length < pageLimit) break; // last page
+      } catch (err) {
+        console.error("Error loading trees:", err);
+        break;
+      }
     }
+
+    // Clear old markers and cluster
+    markers.clearLayers();
+    loadedTreeIds.clear();
+
+    treesFetched.forEach((tree) => {
+      if (loadedTreeIds.has(tree.tree_id)) return;
+
+      const lat = parseFloat(tree.latitude);
+      const lng = parseFloat(tree.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const popupContent = `
+        <div>
+          <b>${tree.spc_common || "Unknown"}</b><br>
+          ID: ${tree.tree_id}<br>
+          <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">
+            Dashboard
+          </button>
+        </div>
+      `;
+
+      const marker = L.marker([lat, lng]).bindPopup(popupContent);
+      markers.addLayer(marker);
+      loadedTreeIds.add(tree.tree_id);
+    });
   }
 
   onMount(() => {
@@ -84,14 +100,8 @@
     // Initial load
     loadTreesInView();
 
-    // Reload when user moves map
+    // Reload when user moves map or zooms
     map.on("moveend", () => {
-      // Optional: prevent loading when zoomed too far out
-      if (map.getZoom() < 13) {
-        markers.clearLayers();
-        return;
-      }
-
       loadTreesInView();
     });
 

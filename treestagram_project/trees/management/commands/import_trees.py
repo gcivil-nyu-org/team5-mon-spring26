@@ -8,7 +8,7 @@ class Command(BaseCommand):
     help = "Import all trees from CSV stored in S3"
 
     def download_csv(self):
-        bucket = "treestagram-data-2026"
+        bucket = "treestagram-data-2026-ramsey"
         key = "cleaned_tree_data.csv"
         local_path = "/tmp/cleaned_tree_data.csv"
 

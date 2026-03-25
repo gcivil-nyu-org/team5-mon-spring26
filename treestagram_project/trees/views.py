@@ -139,6 +139,8 @@ def tree_dashboard_api(request, tree_id):
     data["photo_count"] = len(photos)
     data["follower_count"] = TreeFollow.objects.filter(tree__tree_id=tree_id).count()
 
+    return JsonResponse(data)
+
 
 def search_trees_api(request):
     # Get query parameters

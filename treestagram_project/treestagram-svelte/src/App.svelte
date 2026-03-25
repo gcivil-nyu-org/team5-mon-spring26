@@ -24,7 +24,7 @@
   // Simple router
   function navigate(path) {
     window.history.pushState({}, "", path);
-    route = path;
+    route = path.split("?")[0];
   }
 
   window.addEventListener("popstate", () => {

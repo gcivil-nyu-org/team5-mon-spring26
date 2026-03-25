@@ -5,7 +5,7 @@ from django.urls import reverse
 from unittest.mock import patch, MagicMock
 from django.core.signing import TimestampSigner
 
-from accounts.models import Post, Comment, Notification
+from posts.models import Post, Comment, Notification
 from accounts.adapter import TreestagramAccountAdapter
 from accounts.signals import activate_user_on_confirm
 from accounts.forms import SignupForm, LoginForm
@@ -80,9 +80,37 @@ class AccountAPITest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_create_post(self):
+        from trees.models import Tree
+
+        Tree.objects.create(
+            tree_id=99999,
+            spc_common="Oak",
+            spc_latin="Quercus",
+            created_at="2020-01-01",
+            tree_dbh=10,
+            stump_diam=0,
+            curb_loc="OnCurb",
+            status="Alive",
+            health="Good",
+            sidewalk="NoDamage",
+            root_stone=False,
+            root_grate=False,
+            root_other=False,
+            trunk_wire=False,
+            trnk_light=False,
+            trnk_other=False,
+            brch_light=False,
+            brch_shoe=False,
+            brch_other=False,
+            address="123 Test St",
+            zip_city="TestCity",
+            borough="Manhattan",
+            latitude=40.7,
+            longitude=-73.9,
+        )
         response = self.client.post(
             reverse("api-create-post"),
-            data=json.dumps({"tree_name": "Oak"}),
+            data=json.dumps({"tree_id": "99999"}),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)

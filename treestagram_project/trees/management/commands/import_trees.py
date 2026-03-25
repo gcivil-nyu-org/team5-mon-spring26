@@ -20,7 +20,7 @@ class Command(BaseCommand):
         return local_path
 
     def handle(self, *args, **kwargs):
-        # ✅ Prevent duplicate imports
+        # Prevent duplicate imports
         if Tree.objects.exists():
             self.stdout.write("Data already exists, skipping import.")
             return

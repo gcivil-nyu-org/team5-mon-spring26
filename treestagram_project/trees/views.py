@@ -19,28 +19,28 @@ def tree_list_view(request):
 
 
 def trees_api(request):
-    limit = request.GET.get("limit", 10)
-    print("Limit param received:", limit)
     try:
-        limit = int(limit)
-    except ValueError:
-        limit = 10
+        min_lat = float(request.GET.get("min_lat", -90))
+        max_lat = float(request.GET.get("max_lat", 90))
+        min_lng = float(request.GET.get("min_lng", -180))
+        max_lng = float(request.GET.get("max_lng", 180))
+        limit = int(request.GET.get("limit", 750))
+        offset = int(request.GET.get("offset", 0))
+    except (ValueError, TypeError):
+        return JsonResponse([], safe=False)
 
-    # slice queryset
-    trees = Tree.objects.all()[:limit]
-    print("Returning trees:", trees.count())
+    qs = (
+        Tree.objects.filter(
+            latitude__gte=min_lat,
+            latitude__lte=max_lat,
+            longitude__gte=min_lng,
+            longitude__lte=max_lng,
+        )
+        .order_by("tree_id")
+        .values("tree_id", "latitude", "longitude", "spc_common")
+    )
 
-    # serialize to JSON
-    data = [
-        {
-            "tree_id": t.tree_id,
-            "spc_common": t.spc_common,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-        }
-        for t in trees
-    ]
-    return JsonResponse(data, safe=False)
+    return JsonResponse(list(qs[offset : offset + limit]), safe=False)
 
 
 def tree_detail_api(request, tree_id):
@@ -78,37 +78,6 @@ def tree_detail_api(request, tree_id):
         raise Http404("Tree not found")
 
 
-# from django.db.models import Q
-
-# def search_trees_api(request):
-#     q = request.GET.get("q", "").strip()
-#     offset = int(request.GET.get("offset", 0))
-#     limit = int(request.GET.get("limit", 10))
-
-#     if not q:
-#         return JsonResponse({"results": [], "count": 0})
-
-#     # Search by spc_common or address (case-insensitive)
-#     queryset = Tree.objects.filter(
-#         spc_common__icontains=q
-#     ).order_by("tree_id")
-
-#     total_count = queryset.count()
-#     trees = queryset[offset: offset + limit]
-
-#     data = [
-#         {
-#             "tree_id": t.tree_id,
-#             "spc_common": t.spc_common,
-#             "latitude": t.latitude,
-#             "longitude": t.longitude,
-#         }
-#         for t in trees
-#     ]
-
-#     return JsonResponse({"results": data, "count": total_count})
-
-
 def search_trees_api(request):
     # Get query parameters
     tree_id = request.GET.get("tree_id", "").strip()
@@ -142,23 +111,18 @@ def search_trees_api(request):
         queryset = queryset.filter(borough__icontains=borough)
 
     total_count = queryset.count()
-    trees = queryset[offset : offset + limit]
+    trees = queryset.values(
+        "tree_id",
+        "spc_common",
+        "spc_latin",
+        "status",
+        "health",
+        "borough",
+        "latitude",
+        "longitude",
+    )[offset : offset + limit]
 
-    data = [
-        {
-            "tree_id": t.tree_id,
-            "spc_common": t.spc_common,
-            "spc_latin": t.spc_latin,
-            "status": t.status,
-            "health": t.health,
-            "borough": t.borough,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-        }
-        for t in trees
-    ]
-
-    return JsonResponse({"results": data, "count": total_count})
+    return JsonResponse({"results": list(trees), "count": total_count})
 
 
 def svelte_app(request):

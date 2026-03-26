@@ -27,7 +27,7 @@
         dispatch('statusChange', { status: 'connecting' });
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        socket = new WebSocket(`${protocol}//${window.location.host}/ws/chat/${treeId}/`);
+        socket = new WebSocket(`${protocol}//localhost:8000/ws/chat/${treeId}/`);
 
         socket.onopen = function() {
             connectionStatus = 'connected';

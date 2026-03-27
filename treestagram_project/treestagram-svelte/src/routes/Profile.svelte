@@ -113,6 +113,7 @@
     async function createPost() {
       const body = newPostBody.trim();
       if (treeValidationStatus !== "valid" || !validatedTree) return;
+      if (!newImage) return;
   
       posting = true;
       const res = await apiCreatePost({
@@ -179,8 +180,10 @@
   
     // Can advance from step 0 only if tree name is filled
     $: canAdvanceStep0 = treeValidationStatus === "valid";
-    // Can submit from step 2 (valid tree_id is required, rest optional)
-    $: canSubmit = treeValidationStatus === "valid" && !posting;
+    // Can advance from step 1 only if an image is uploaded
+    $: canAdvanceStep1 = newImage !== null;
+    // Can submit from step 2 (valid tree_id and image are required)
+    $: canSubmit = treeValidationStatus === "valid" && newImage !== null && !posting;
   
     function openPost(post) {
       selectedPost = post;
@@ -648,7 +651,7 @@
                       </label>
                     {/if}
                   </div>
-                  <p class="slide-skip">Photo is optional — you can skip this step</p>
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
                 </div>
               {:else}
                 <!-- Step 3: Observation + Tag + Submit -->
@@ -718,7 +721,7 @@
               <button
                 class="carousel-nav-btn next"
                 on:click={nextStep}
-                disabled={carouselStep === 0 && !canAdvanceStep0}
+                disabled={(carouselStep === 0 && !canAdvanceStep0) || (carouselStep === 1 && !canAdvanceStep1)}
               >
                 Next →
               </button>

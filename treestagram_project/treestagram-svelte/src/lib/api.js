@@ -151,9 +151,19 @@ export async function apiFetchMyTaggedPosts() {
   return res.json()
 }
 
+export async function apiFetchTreePosts(treeId) {
+  const res = await apiFetch(`/api/trees/${treeId}/posts/`)
+  return res.json()
+}
+
+export async function apiValidateTree(treeId) {
+  const res = await apiFetch(`/api/validate-tree/?tree_id=${encodeURIComponent(treeId)}`)
+  return res.json()
+}
+
 export async function apiCreatePost(data) {
   const formData = new FormData()
-  formData.append('tree_name', data.tree_name)
+  formData.append('tree_id', data.tree_id)
   if (data.body) formData.append('body', data.body)
   if (data.borough) formData.append('borough', data.borough)
   if (data.health) formData.append('health', data.health)
@@ -243,4 +253,16 @@ export async function searchTreesMulti(params = {}, offset = 0, limit = 10) {
     console.error("Search failed", err);
     return { results: [], count: 0 };
   }
+}
+
+// ── Tree Follow endpoints ────────────────────────────────────────────────────
+
+export async function apiToggleTreeFollow(treeId) {
+  const res = await apiFetch(`/api/trees/${treeId}/follow/`, { method: 'POST' })
+  return res.json()
+}
+
+export async function apiFetchFollowedTrees() {
+  const res = await apiFetch('/api/my-followed-trees/')
+  return res.json()
 }

@@ -8,6 +8,7 @@
     apiAddComment,
     apiEditComment,
     apiDeleteComment,
+    apiToggleTreeFollow,
   } from "../lib/api.js";
   import { theme, toggleTheme, cycleTheme } from "../theme.js";
   import LeftNav from "../components/LeftNav.svelte";
@@ -84,6 +85,18 @@
         likes_count: res.likes_count,
       };
       posts = [...posts];
+    }
+  }
+
+  async function toggleFollow(index) {
+    const post = posts[index];
+    if (!post || !post.tree_id) return;
+    const res = await apiToggleTreeFollow(post.tree_id);
+    if (res.success) {
+      // Update all posts with same tree_id
+      posts = posts.map(p => 
+        p.tree_id === post.tree_id ? { ...p, following: res.following } : p
+      );
     }
   }
 
@@ -182,9 +195,23 @@
           {#each posts as post, i}
             <div class="post-card" style="animation-delay:{i * 0.1}s">
               <div class="post-header">
-                <span class="post-tree-icon">{healthIcon(post.health)}</span>
                 <div>
-                  <div class="post-tree-name">{post.tree_name}</div>
+                  <!-- svelte-ignore a11y-click-events-have-key-events -->
+                  <!-- svelte-ignore a11y-no-static-element-interactions -->
+                  <div 
+                    class="tree-identity-badge" 
+                    class:clickable={post.tree_id}
+                    on:click={() => { if(post.tree_id) navigate('/treedashboard/' + post.tree_id); }}
+                  >
+                    <span class="badge-tree-icon">{healthIcon(post.health)}</span>
+                    <span class="t-name">{post.tree_name}</span>
+                    {#if post.tree_id}
+                      <span class="t-id">
+                        <span class="hash">#</span>{post.tree_id}
+                      </span>
+                    {/if}
+                    <div class="hover-sweep"></div>
+                  </div>
                   <div class="post-meta">
                     {#if post.borough}📍 {post.borough} · {/if}
                     <span class="health health-{post.health.toLowerCase()}"
@@ -193,7 +220,6 @@
                     · by <strong>{post.author.username}</strong>
                   </div>
                 </div>
-                <button class="follow-btn">+ Follow</button>
               </div>
               {#if post.body}
                 <div class="post-body">
@@ -497,13 +523,70 @@
     gap: 10px;
     padding: 14px 16px 10px;
   }
-  .post-tree-icon {
-    font-size: 2rem;
+  .badge-tree-icon {
+    font-size: 1.15rem;
+    margin-right: 2px;
+    margin-left: 2px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
   }
-  .post-tree-name {
+  .tree-identity-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(82,154,103,0.08), rgba(45,122,58,0.03));
+    border: 1px solid rgba(82,154,103,0.25);
+    border-radius: 20px;
+    padding: 3px 12px 3px 4px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: inset 0 1px 3px rgba(255,255,255,0.4);
+  }
+  .tree-identity-badge.clickable {
+    cursor: pointer;
+  }
+  .tree-identity-badge.clickable:hover {
+    background: linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.08));
+    border-color: rgba(82,154,103,0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45,122,58,0.1), inset 0 1px 3px rgba(255,255,255,0.6);
+  }
+  .tree-identity-badge .t-name {
     font-size: 0.92rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--t-text-brand);
+    margin: 0 8px 0 2px;
+    padding-right: 10px;
+    border-right: 1px dashed rgba(82,154,103,0.3);
+    text-transform: capitalize;
+  }
+  .tree-identity-badge .t-id {
+    font-family: 'DM Mono', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--t-text-brand);
+    letter-spacing: 0.5px;
+  }
+  .tree-identity-badge .t-id .hash {
+    color: rgba(82,154,103,0.6);
+    margin-right: 1px;
+    font-weight: 600;
+  }
+  .tree-identity-badge .hover-sweep {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.6), transparent);
+    transform: skewX(-20deg);
+  }
+  .tree-identity-badge.clickable:hover .hover-sweep {
+    animation: sweepLight 0.7s ease-in-out;
+  }
+  @keyframes sweepLight {
+    0% { left: -100%; }
+    100% { left: 200%; }
   }
   .post-meta {
     font-size: 0.76rem;
@@ -524,22 +607,7 @@
     color: var(--t-status-poor);
   }
 
-  .follow-btn {
-    margin-left: auto;
-    background: var(--t-bg-surface);
-    border: none;
-    border-radius: var(--t-radius-pill);
-    padding: 5px 13px;
-    color: var(--t-text-brand);
-    font-size: 0.78rem;
-    font-weight: 600;
-    font-family: var(--t-font-body);
-    cursor: pointer;
-    transition: background var(--t-transition);
-  }
-  .follow-btn:hover {
-    background: var(--t-brand-dim);
-  }
+
 
   .post-body {
     padding: 0 16px 10px;

@@ -5,8 +5,9 @@
     import {
       user,
       apiFetchMyPosts,
-      apiFetchMyTaggedPosts,
+      apiFetchFollowedTrees,
       apiCreatePost,
+      apiValidateTree,
       apiToggleLike,
       apiAddComment,
       apiEditComment,
@@ -18,14 +19,14 @@
   
     let mounted = false;
     let myPosts = [];
-    let taggedPosts = [];
+    let followedTrees = [];
     let loading = true;
-    let loadingTagged = false;
+    let loadingFollowed = false;
     let activeTab = "posts";
   
     // ── Create-post carousel modal ──
     let newPostBody = "";
-    let newTreeName = "";
+    let newTreeId = "";
     let newBorough = "";
     let newHealth = "Good";
     let newImage = null;
@@ -35,6 +36,12 @@
     let carouselStep = 0;            // 0 = tree info, 1 = photo, 2 = observation + submit
     let slideDirection = "next";      // "next" or "prev" for CSS animation direction
     let posting = false;              // spinner state while submitting
+
+    // Tree ID validation state
+    let treeValidationStatus = ""; // "", "checking", "valid", "invalid"
+    let treeValidationMsg = "";
+    let validatedTree = null;         // tree data from API when valid
+    let treeValidationTimer = null;
   
     // Modal state
     let selectedPost = null;
@@ -49,7 +56,7 @@
   
     onMount(async () => {
       setTimeout(() => (mounted = true), 50);
-      await Promise.all([loadMyPosts(), loadTaggedPosts()]);
+      await Promise.all([loadMyPosts(), loadFollowedTrees()]);
     });
   
     async function loadMyPosts() {
@@ -61,23 +68,56 @@
       loading = false;
     }
   
-    async function loadTaggedPosts() {
-      loadingTagged = true;
-      const res = await apiFetchMyTaggedPosts();
+    async function loadFollowedTrees() {
+      loadingFollowed = true;
+      const res = await apiFetchFollowedTrees();
       if (res.success) {
-        taggedPosts = res.posts;
+        followedTrees = res.trees;
       }
-      loadingTagged = false;
+      loadingFollowed = false;
     }
   
+    async function validateTreeId(value) {
+      const id = value.trim();
+      if (!id) {
+        treeValidationStatus = "";
+        treeValidationMsg = "";
+        validatedTree = null;
+        return;
+      }
+      treeValidationStatus = "checking";
+      treeValidationMsg = "Checking…";
+      validatedTree = null;
+      const res = await apiValidateTree(id);
+      if (res.exists) {
+        treeValidationStatus = "valid";
+        treeValidationMsg = `✅ ${res.tree.spc_common} — ${res.tree.address}, ${res.tree.borough}`;
+        validatedTree = res.tree;
+        // Auto-fill borough and health from the tree
+        if (res.tree.borough) newBorough = res.tree.borough;
+        if (res.tree.health) newHealth = res.tree.health;
+      } else {
+        treeValidationStatus = "invalid";
+        treeValidationMsg = `❌ ${res.error}`;
+        validatedTree = null;
+      }
+    }
+
+    function onTreeIdInput(e) {
+      const val = e.target.value;
+      newTreeId = val;
+      if (treeValidationTimer) clearTimeout(treeValidationTimer);
+      treeValidationTimer = setTimeout(() => validateTreeId(val), 400);
+    }
+
     async function createPost() {
       const body = newPostBody.trim();
-      const tree_name = newTreeName.trim();
-      if (!tree_name) return;
+      if (treeValidationStatus !== "valid" || !validatedTree) return;
+      if (!newImage) return;
   
       posting = true;
       const res = await apiCreatePost({
-        tree_name,
+        tree_id: newTreeId.trim(),
         borough: newBorough,
         health: newHealth,
         body,
@@ -116,13 +156,16 @@
       showCreateModal = false;
       carouselStep = 0;
       newPostBody = "";
-      newTreeName = "";
+      newTreeId = "";
       newBorough = "";
       newHealth = "Good";
       newImage = null;
       newImagePreview = null;
       newTaggedUsers = "";
       posting = false;
+      treeValidationStatus = "";
+      treeValidationMsg = "";
+      validatedTree = null;
     }
   
     function nextStep() {
@@ -136,9 +179,11 @@
     }
   
     // Can advance from step 0 only if tree name is filled
-    $: canAdvanceStep0 = newTreeName.trim().length > 0;
-    // Can submit from step 2 (tree name is required, rest optional)
-    $: canSubmit = newTreeName.trim().length > 0 && !posting;
+    $: canAdvanceStep0 = treeValidationStatus === "valid";
+    // Can advance from step 1 only if an image is uploaded
+    $: canAdvanceStep1 = newImage !== null;
+    // Can submit from step 2 (valid tree_id and image are required)
+    $: canSubmit = treeValidationStatus === "valid" && newImage !== null && !posting;
   
     function openPost(post) {
       selectedPost = post;
@@ -241,7 +286,6 @@
       const res = await apiDeletePost(postId);
       if (res.success) {
         myPosts = myPosts.filter((p) => p.id !== postId);
-        taggedPosts = taggedPosts.filter((p) => p.id !== postId);
         closeModal();
       }
       deleting = false;
@@ -336,9 +380,9 @@
           >Posts</button>
           <button
             class="profile-tab"
-            class:active={activeTab === "tagged"}
-            on:click={() => (activeTab = "tagged")}
-          >🏷️ Tagged</button>
+            class:active={activeTab === "followed"}
+            on:click={() => (activeTab = "followed")}
+          >🌿 Followed Trees</button>
         </div>
       </div>
     </div>
@@ -380,41 +424,46 @@
               {/each}
             </div>
           {/if}
-        {:else if activeTab === "tagged"}
-          {#if loadingTagged}
+        {:else if activeTab === "followed"}
+          {#if loadingFollowed}
             <div class="loading-area">
               <div class="loading-spinner"></div>
-              <p>Loading tagged posts…</p>
+              <p>Loading followed trees…</p>
             </div>
-          {:else if taggedPosts.length === 0}
-            <div class="empty-state tagged-empty">
-              <span class="empty-icon">🏷️</span>
-              <h3>No Tags Yet</h3>
-              <p>When someone tags you in a post, it will show up here.</p>
+          {:else if followedTrees.length === 0}
+            <div class="empty-state">
+              <span class="empty-icon">🌳</span>
+              <h3>No Followed Trees Yet</h3>
+              <p>When you follow a tree, it will show up here.</p>
             </div>
           {:else}
-            <div class="profile-grid">
-              {#each taggedPosts as post, i}
+            <div class="followed-trees-grid">
+              {#each followedTrees as tree, i}
                 <div
-                  class="profile-post n{i % 6}"
-                  on:click={() => openPost(post)}
-                  on:keydown={(e) => e.key === "Enter" && openPost(post)}
+                  class="followed-tree-card"
+                  style="animation-delay: {i * 0.05}s;"
+                  on:click={() => navigate('/treedashboard/' + tree.tree_id)}
+                  on:keydown={(e) => e.key === "Enter" && navigate('/treedashboard/' + tree.tree_id)}
                   role="button"
                   tabindex="0"
                 >
-                  {#if post.image}
-                    <img src={post.image} alt={post.tree_name} class="post-img" />
-                  {:else}
-                    <span class="post-emoji">{healthIcon(post.health)}</span>
-                  {/if}
-                  <div class="post-hover">
-                    <div class="tagged-by-badge">
-                      📸 by @{post.author?.username}
-                    </div>
-                    <div>
-                      ❤️ {post.likes_count} &nbsp; 💬 {post.comments?.length || 0}
+                  <div class="ft-header">
+                    <div class="ft-icon">🌿</div>
+                    <div class="ft-info">
+                      <h4 class="ft-name">{tree.tree_name}</h4>
+                      <span class="ft-id">#{tree.tree_id}</span>
                     </div>
                   </div>
+                  <div class="ft-body">
+                    <p class="ft-date">Followed {timeAgo(tree.followed_at)} ago</p>
+                    {#if tree.has_messages}
+                      <p class="ft-chat">💬 Active Community Chat</p>
+                    {/if}
+                  </div>
+                  <div class="ft-action">
+                    <button class="ft-btn">View Dashboard →</button>
+                  </div>
+                  <div class="ft-glow"></div>
                 </div>
               {/each}
             </div>
@@ -528,28 +577,32 @@
                 <div class="carousel-slide" key="step0">
                   <div class="slide-icon">🌳</div>
                   <h3 class="slide-title">What tree did you see?</h3>
-                  <p class="slide-subtitle">Start by telling us about the tree</p>
+                  <p class="slide-subtitle">Enter the Tree ID from the NYC Trees database</p>
                   <div class="slide-fields">
                     <label class="field-label">
-                      <span class="label-text">Tree Name <span class="required">*</span></span>
+                      <span class="label-text">Tree ID <span class="required">*</span></span>
                       <input
                         type="text"
-                        placeholder="e.g. London Planetree #4821"
-                        bind:value={newTreeName}
+                        placeholder="e.g. 180683"
+                        value={newTreeId}
+                        on:input={onTreeIdInput}
                         class="carousel-input"
+                        class:input-valid={treeValidationStatus === "valid"}
+                        class:input-invalid={treeValidationStatus === "invalid"}
                       />
+                      {#if treeValidationMsg}
+                        <span class="tree-validation-msg" class:valid={treeValidationStatus === "valid"} class:invalid={treeValidationStatus === "invalid"} class:checking={treeValidationStatus === "checking"}>
+                          {treeValidationMsg}
+                        </span>
+                      {/if}
                     </label>
-                    <label class="field-label">
-                      <span class="label-text">Borough</span>
-                      <select bind:value={newBorough} class="carousel-input">
-                        <option value="" disabled>Select a borough…</option>
-                        <option value="Manhattan">🏙️ Manhattan</option>
-                        <option value="Brooklyn">🏘️ Brooklyn</option>
-                        <option value="Queens">🌳 Queens</option>
-                        <option value="The Bronx">🌿 The Bronx</option>
-                        <option value="Staten Island">⛴️ Staten Island</option>
-                      </select>
-                    </label>
+                    {#if validatedTree}
+                      <div class="tree-info-card">
+                        <div class="tree-info-row"><strong>🌳 Species:</strong> {validatedTree.spc_common} <em>({validatedTree.spc_latin})</em></div>
+                        <div class="tree-info-row"><strong>📍 Location:</strong> {validatedTree.address}, {validatedTree.borough}</div>
+                        <div class="tree-info-row"><strong>💚 Health:</strong> {validatedTree.health}</div>
+                      </div>
+                    {/if}
                     <label class="field-label">
                       <span class="label-text">Health Status</span>
                       <div class="health-picker">
@@ -598,7 +651,7 @@
                       </label>
                     {/if}
                   </div>
-                  <p class="slide-skip">Photo is optional — you can skip this step</p>
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
                 </div>
               {:else}
                 <!-- Step 3: Observation + Tag + Submit -->
@@ -636,7 +689,7 @@
                     <div class="preview-header">
                       <span class="preview-icon">{healthIcon(newHealth)}</span>
                       <div>
-                        <strong>{newTreeName || "Tree Name"}</strong>
+                        <strong>{validatedTree?.spc_common || "Tree"} #{newTreeId || "?"}</strong>
                         <small>{newBorough || "NYC"} · {newHealth}</small>
                       </div>
                     </div>
@@ -668,7 +721,7 @@
               <button
                 class="carousel-nav-btn next"
                 on:click={nextStep}
-                disabled={carouselStep === 0 && !canAdvanceStep0}
+                disabled={(carouselStep === 0 && !canAdvanceStep0) || (carouselStep === 1 && !canAdvanceStep1)}
               >
                 Next →
               </button>
@@ -1357,6 +1410,42 @@
     select.carousel-input {
       cursor: pointer;
     }
+    .carousel-input.input-valid {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+    }
+    .carousel-input.input-invalid {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+    }
+    .tree-validation-msg {
+      display: block;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      color: #888;
+    }
+    .tree-validation-msg.valid { color: #22c55e; }
+    .tree-validation-msg.invalid { color: #ef4444; }
+    .tree-validation-msg.checking { color: #f59e0b; }
+    .tree-info-card {
+      background: color-mix(in srgb, var(--t-brand) 8%, var(--t-bg-card));
+      border: 1px solid color-mix(in srgb, var(--t-brand) 25%, transparent);
+      border-radius: var(--t-radius-md);
+      padding: 12px 16px;
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    .tree-info-row {
+      padding: 3px 0;
+      color: var(--t-text-body);
+    }
+    .tree-info-row strong {
+      color: var(--t-text-heading);
+    }
+    .tree-info-row em {
+      color: var(--t-text-muted);
+      font-style: italic;
+    }
     .carousel-textarea {
       width: 100%;
       background: var(--t-bg-input);
@@ -1596,11 +1685,12 @@
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: transform var(--t-transition);
+      transition: box-shadow var(--t-transition);
       border: 1px solid var(--t-border-soft);
+      min-width: 0;
     }
     .profile-post:hover {
-      transform: scale(0.97);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     }
     .profile-post.n0 { background: var(--t-bg-surface); }
     .profile-post.n1 { background: var(--t-bg-elevated); }
@@ -1615,6 +1705,9 @@
       object-fit: cover;
       position: absolute;
       inset: 0;
+      image-rendering: auto;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
     .post-emoji {
       font-size: 2.5rem;
@@ -2446,6 +2539,125 @@
       transform: none;
     }
   
+  /* ─── Followed Trees Grid (Scintillating UI) ────────── */
+  .followed-trees-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.2rem;
+    padding: 0.5rem 0;
+  }
+  .followed-tree-card {
+    background: linear-gradient(145deg, var(--t-bg-elevated), var(--t-bg-surface));
+    border: 1px solid var(--t-border-soft);
+    border-radius: 16px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: fadeUp 0.5s both;
+  }
+  .followed-tree-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 30px rgba(45, 122, 58, 0.12), inset 0 1px 2px rgba(255,255,255,0.4);
+    border-color: rgba(82, 154, 103, 0.4);
+  }
+  .ft-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ft-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+  }
+  .ft-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ft-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--t-text-heading);
+    text-transform: capitalize;
+  }
+  .ft-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--t-text-brand);
+    font-weight: 600;
+  }
+  .ft-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ft-date {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--t-text-muted);
+  }
+  .ft-chat {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--t-status-good);
+    background: rgba(45, 122, 58, 0.08);
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 8px;
+    align-self: flex-start;
+  }
+  .ft-action {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .ft-btn {
+    background: transparent;
+    border: none;
+    color: var(--t-text-brand);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 6px 0;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .followed-tree-card:hover .ft-btn {
+    transform: translateX(4px);
+  }
+  .ft-glow {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+    transform: skewX(-20deg);
+    transition: none;
+  }
+  .followed-tree-card:hover .ft-glow {
+    animation: ftSweep 0.8s ease-in-out;
+  }
+  @keyframes ftSweep {
+    0% { left: -100%; }
+    100% { left: 200%; }
+  }
+
+
     /* ─── Responsive ────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .profile-hero {

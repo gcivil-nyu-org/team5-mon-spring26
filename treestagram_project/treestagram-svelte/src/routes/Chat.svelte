@@ -1,7 +1,48 @@
 <script>
+    import { onMount } from "svelte";
     import LeftNav from "../components/LeftNav.svelte";
     import BackgroundRings from "../components/BackgroundRings.svelte";
+    import TreeChat from "../components/TreeChat.svelte";
     export let navigate;
+
+    let activeTreeId = null;
+    let chatStatus = 'connecting';
+    let followedChats = [];
+    let loadingChats = true;
+
+    onMount(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        activeTreeId = urlParams.get('tree');
+        fetchChats();
+    });
+
+    async function fetchChats() {
+        try {
+            const res = await fetch('/api/my-followed-trees/', { credentials: 'include' });
+            const data = await res.json();
+            if (data.success) {
+                // Show chats that have messages, OR match the currently active tree
+                followedChats = data.trees.filter(t => t.has_messages || String(t.tree_id) === String(activeTreeId));
+            }
+        } catch (e) {
+            console.error("Error fetching chats", e);
+        } finally {
+            loadingChats = false;
+        }
+    }
+
+    function selectTree(id) {
+        activeTreeId = id;
+        chatStatus = 'connecting';
+        window.history.pushState({}, "", `/chat?tree=${id}`);
+        
+        // If the chat isn't already the active one in the list UI, we don't strictly need to refetch yet,
+        // but ensuring it remains visible if it was just initiated is handled by the socket sending messages.
+    }
+
+    function handleStatusChange(e) {
+        chatStatus = e.detail.status;
+    }
 </script>
 
 <div class="page">
@@ -18,210 +59,92 @@
                     placeholder="Search chats..."
                 />
             </div>
-            <div class="section-label">Group Chats</div>
-            <div class="chat-item active">
-                <div class="chat-item-icon">🌳</div>
-                <div class="chat-item-info">
-                    <strong>Elm #00482 Fan Chat</strong>
-                    <small
-                        >brooklyn_botanist: ⚠️ Caretaker Update: Noticed...</small
-                    >
-                </div>
-                <div class="chat-item-right">
-                    <span class="chat-item-time">2h</span>
-                    <div class="unread-dot"></div>
-                </div>
-            </div>
-            <div class="chat-item">
-                <div class="chat-item-icon">🌿</div>
-                <div class="chat-item-info">
-                    <strong>Ginkgo #10293 Fans</strong>
-                    <small>treelover: Someone left trash bags again...</small>
-                </div>
-                <span class="chat-item-time">5h</span>
-            </div>
-            <div class="chat-item">
-                <div class="chat-item-icon">🍁</div>
-                <div class="chat-item-info">
-                    <strong>Maple #03312 Chat</strong>
-                    <small>You: The colors this fall were incredible!</small>
-                </div>
-                <span class="chat-item-time">1d</span>
-            </div>
-            <div class="chat-item">
-                <div class="chat-item-icon">🌲</div>
-                <div class="chat-item-info">
-                    <strong>Oak #55721 Community</strong>
-                    <small>admin: New caretaker applications open</small>
-                </div>
-                <span class="chat-item-time">2d</span>
-            </div>
-            <div class="section-label border-top">Direct Messages</div>
-            <div class="chat-item">
-                <div class="chat-item-icon dm">🧑</div>
-                <div class="chat-item-info">
-                    <strong>treewhisperer_nyc</strong>
-                    <small>Did you see the new growth on that elm?</small>
-                </div>
-                <span class="chat-item-time">3h</span>
-            </div>
-            <div class="chat-item">
-                <div class="chat-item-icon dm">👩</div>
-                <div class="chat-item-info">
-                    <strong>brooklyn_botanist</strong>
-                    <small>Thanks for the heads up on the roots!</small>
-                </div>
-                <span class="chat-item-time">1d</span>
+
+            <div class="chat-list-scroll" style="overflow-y: auto; flex: 1; padding-bottom: 1rem;">
+                {#if loadingChats}
+                    <div style="padding: 2.5rem 1.5rem; text-align: center; color: var(--sage); font-size: 0.9rem;">
+                        Loading your chats...
+                    </div>
+                {:else if followedChats.length > 0}
+                    <div class="section-label" style="padding: 1rem 1.5rem 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sage); font-weight: 600;">Active Group Chats</div>
+                    {#each followedChats as chat}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                        <div class="chat-item" class:active={String(activeTreeId) === String(chat.tree_id)} on:click={() => selectTree(chat.tree_id)}>
+                            <div class="chat-item-icon">🌳</div>
+                            <div class="chat-item-info">
+                                <strong>{chat.tree_name} Chat</strong>
+                                <small class="sidebar-status {String(activeTreeId) === String(chat.tree_id) ? chatStatus : ''}">
+                                    {#if String(activeTreeId) === String(chat.tree_id)}
+                                        {#if chatStatus === 'connected'}
+                                            ● Connected — Real-time
+                                        {:else if chatStatus === 'connecting'}
+                                            ◌ Connecting...
+                                        {:else if chatStatus === 'disconnected'}
+                                            ○ Disconnected
+                                        {:else}
+                                            ✕ Connection Error
+                                        {/if}
+                                    {:else}
+                                        <span style="color: var(--sage); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block;">
+                                            {chat.last_message || 'Start chatting...'}
+                                        </span>
+                                    {/if}
+                                </small>
+                            </div>
+                            <div class="chat-item-right">
+                                <span class="chat-item-time">
+                                    {chat.last_message_time ? new Date(chat.last_message_time).toLocaleDateString([], {month: 'short', day: 'numeric'}) : 'Now'}
+                                </span>
+                            </div>
+                        </div>
+                    {/each}
+                {:else}
+                    <div style="padding: 2.5rem 1.5rem; text-align: center; color: var(--sage); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+                        <div style="font-size: 2.5rem; opacity: 0.4;">💬</div>
+                        <h4 style="font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.95rem; color: #2c1810; margin: 0;">No Active Chats</h4>
+                        <p style="font-size: 0.8rem; line-height: 1.4; opacity: 0.8; margin: 0;">Visit any tree's dashboard and tap "Group Chat" to join the conversation!</p>
+                    </div>
+                {/if}
             </div>
         </div>
 
-        <div class="chat-main">
-            <div class="chat-header">
-                <div class="chat-header-icon">🌳</div>
-                <div class="chat-header-info">
-                    <strong>Elm #00482 Fan Chat</strong>
-                    <small
-                        >127 fans · American Elm, Central Park W & 72nd ·
-                        Health: Good</small
-                    >
+        <div class="chat-main" style="background: transparent;">
+            {#if activeTreeId}
+                <TreeChat treeId={activeTreeId} on:statusChange={handleStatusChange} />
+            {:else}
+                <div class="empty-chat" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--sage);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🌳</div>
+                    <h3 style="font-family: 'Playfair Display', serif; color: var(--bark);">Select a Chat</h3>
+                    <p>Choose a leaf from the community tree to start talking.</p>
                 </div>
-                <div class="chat-header-actions">
-                    <button
-                        class="chat-header-btn"
-                        on:click={() => navigate("/dashboard")}
-                        >🌳 View Tree</button
-                    >
-                    <button class="chat-header-btn">👥 Members</button>
-                </div>
-            </div>
-
-            <div class="chat-messages">
-                <div class="msg-system">📅 Today, February 27, 2026</div>
-
-                <div class="msg-announcement">
-                    <span class="ann-icon">📢</span>
-                    <div class="ann-text">
-                        <strong
-                            >🛡️ Caretaker Announcement from brooklyn_botanist</strong
-                        >
-                        <p>
-                            Health inspection completed. Tree is doing well but
-                            we need to watch the sidewalk crack near the base —
-                            filed a formal report with Parks Dept. Expires in
-                            24h.
-                        </p>
-                        <small>2 hours ago</small>
-                    </div>
-                </div>
-
-                <div class="msg-group">
-                    <div class="msg-sender-ava">🧑</div>
-                    <div>
-                        <div class="msg-bubble">
-                            <div class="msg-sender-name">
-                                treewhisperer_nyc · Credible
-                            </div>
-                            <div class="msg-text">
-                                Just walked by this morning — the new growth
-                                since last week is incredible! Anyone else
-                                noticing how fast it's bouncing back from the
-                                summer heat? 🌱
-                            </div>
-                            <div class="msg-time">10:32 AM</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="msg-group">
-                    <div class="msg-sender-ava">👩</div>
-                    <div>
-                        <div class="msg-bubble">
-                            <div class="msg-sender-name">central_park_fan</div>
-                            <div class="msg-text">
-                                Yes! I posted a photo yesterday. The bark is
-                                looking really clean too, no fungal patches.
-                                This tree is in great hands 🙌
-                            </div>
-                            <div class="msg-time">10:45 AM</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="msg-group mine">
-                    <div class="msg-sender-ava">🌿</div>
-                    <div>
-                        <div class="msg-bubble">
-                            <div class="msg-sender-name">You</div>
-                            <div class="msg-text">
-                                I measured the canopy spread last weekend — it's
-                                expanded by about 3 feet this season! Someone
-                                put a new bench nearby too which is nice. The
-                                roots might push through sidewalk though.
-                            </div>
-                            <div class="msg-time">11:02 AM</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="msg-group">
-                    <div class="msg-sender-ava caretaker">🧑</div>
-                    <div>
-                        <div class="msg-bubble">
-                            <div class="msg-sender-name">
-                                brooklyn_botanist · 🛡️ Caretaker
-                            </div>
-                            <div class="msg-text">
-                                That root growth is exactly what I reported! The
-                                Parks Dept has it on their radar now. In the
-                                meantime, please ask visitors not to lean bikes
-                                against the trunk 🙏
-                            </div>
-                            <div class="msg-time">11:18 AM</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="msg-system">
-                    🌧️ NYC rain forecast: 0.8 inches this weekend — good news
-                    for hydration!
-                </div>
-            </div>
-
-            <div class="chat-input-bar">
-                <div class="chat-input-wrap">
-                    <button class="chat-emoji-btn">📎</button>
-                    <textarea
-                        class="chat-input"
-                        rows="1"
-                        placeholder="Message Elm #00482 community..."
-                    ></textarea>
-                    <button class="chat-emoji-btn">😊</button>
-                </div>
-                <button class="chat-send-btn">➤</button>
-            </div>
+            {/if}
         </div>
     </div>
 </div>
 
 <style>
     :root {
-        --bark: #2c1810;
-        --moss: #3d5a3e;
-        --sage: #6b8f71;
-        --leaf: #8fbc8f;
-        --canopy: #c5d5c5;
-        --cream: #f5f0e8;
-        --mist: #e8ede8;
-        --sun: #d4a853;
-        --ink: #1a1108;
-        --shadow: rgba(44, 24, 16, 0.12);
+        --bark: #282119;
+        --moss: #2A4027;
+        --sage: #758F6F;
+        --leaf: #A7C5A3;
+        --canopy: #E5EDE3;
+        --cream: #FAF8F5;
+        --mist: #F2F5F0;
+        --sun: #DCAE5A;
+        --ink: #111511;
+        --shadow: rgba(40, 33, 25, 0.08);
+        --glass-bg: rgba(250, 248, 245, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.4);
     }
 
     .page {
-        background: #faf9f6; /* Warm White background */
+        background: url('/noise.png'), linear-gradient(145deg, var(--mist) 0%, #E8EFDF 100%);
+        box-shadow: inset 0 0 100px rgba(0,0,0,0.02);
         min-height: 100vh;
         padding-left: 60px;
-        color: #4a4a4a;
+        color: var(--ink);
         position: relative;
         z-index: 0;
         overflow: hidden;
@@ -229,96 +152,133 @@
     .chat-layout {
         height: calc(100vh - 60px);
         display: grid;
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: 320px 1fr;
+        padding: 1.5rem 1.5rem 1.5rem 0;
+        gap: 1.5rem;
+        max-width: 1600px;
+        margin: 0 auto;
     }
     .chat-list {
-        background: #cdd9af; /* Sage Mist sidebar */
-        border-right: 1px solid rgba(164, 74, 63, 0.15);
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: 0 10px 40px rgba(42, 64, 39, 0.06), 0 2px 10px rgba(0,0,0,0.02);
         display: flex;
         flex-direction: column;
         overflow: hidden;
     }
+    .sidebar-status {
+        transition: color 0.3s ease;
+        font-weight: 500;
+    }
+    .sidebar-status.connected { color: #3A8B49 !important; }
+    .sidebar-status.connecting { color: #CCA13A !important; }
+    .sidebar-status.disconnected { color: #D64545 !important; }
+    .sidebar-status.error { color: #D64545 !important; }
+
     .chat-list-header {
-        padding: 1.2rem;
-        border-bottom: 1px solid var(--mist);
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+        background: linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 100%);
     }
     .chat-list-header h2 {
-        font-family: "Playfair Display", serif;
-        font-size: 1.3rem;
-        color: var(--bark);
-        margin-bottom: 0.8rem;
+        font-family: "Outfit", "DM Sans", sans-serif;
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: var(--moss);
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
     }
     .chat-search {
         width: 100%;
-        padding: 0.5rem 0.8rem;
-        background: var(--mist);
-        border: none;
-        border-radius: 8px;
+        padding: 0.7rem 1rem;
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(117,143,111,0.2);
+        border-radius: 12px;
         font-family: "DM Sans", sans-serif;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         outline: none;
         color: var(--ink);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+    }
+    .chat-search:focus {
+        background: #fff;
+        border-color: var(--sage);
+        box-shadow: 0 0 0 3px rgba(117,143,111,0.15);
     }
     .section-label {
-        padding: 0.6rem 1.2rem;
+        padding: 1rem 1.5rem 0.5rem;
         font-size: 0.7rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         color: var(--sage);
-    }
-    .section-label.border-top {
-        border-top: 1px solid var(--mist);
     }
     .chat-item {
         display: flex;
         align-items: center;
-        gap: 0.8rem;
-        padding: 0.8rem 1.2rem;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
         cursor: pointer;
-        transition: background 0.15s;
-        border-bottom: 1px solid var(--mist);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+        position: relative;
     }
     .chat-item:hover {
-        background: var(--mist);
+        background: rgba(255,255,255,0.5);
     }
     .chat-item.active {
-        background: #36454f; /* Charcoal Gray active */
-        color: #faf9f6; /* Contrasting text */
-        border-left: 3px solid #8a9a5b;
+        background: linear-gradient(135deg, var(--mist), #fff);
+        box-shadow: inset 3px 0 0 var(--moss);
+    }
+    .chat-item.active::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(to right, rgba(42, 64, 39, 0.05) 0%, transparent 100%);
+        pointer-events: none;
     }
     .chat-item.active strong {
-        color: #8a9a5b;
+        color: var(--moss);
+        font-weight: 700;
     }
     .chat-item-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, var(--moss), var(--sage));
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #4F774A, var(--moss));
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.3rem;
+        font-size: 1.4rem;
         flex-shrink: 0;
-    }
-    .chat-item-icon.dm {
-        background: linear-gradient(135deg, var(--bark), #8b4513);
-        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(42, 64, 39, 0.2);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: white;
     }
     .chat-item-info {
         flex: 1;
         min-width: 0;
+        z-index: 1;
     }
     .chat-item-info strong {
         display: block;
-        font-size: 0.88rem;
-        color: #2b2b2b;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.95rem;
+        color: var(--ink);
+        font-weight: 500;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        margin-bottom: 0.1rem;
     }
     .chat-item-info small {
-        font-size: 0.75rem;
-        color: #a44a3f; /* Redwood Rust meta */
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.8rem;
+        color: var(--sage);
         display: block;
         white-space: nowrap;
         overflow: hidden;
@@ -326,19 +286,23 @@
     }
     .chat-item-time {
         font-size: 0.7rem;
-        color: var(--canopy);
+        font-weight: 600;
+        color: var(--sage);
+        letter-spacing: 0.05em;
     }
     .chat-item-right {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        gap: 0.3rem;
+        gap: 0.4rem;
+        z-index: 1;
     }
     .unread-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
-        background: var(--moss);
+        background: var(--sun);
+        box-shadow: 0 0 8px rgba(220, 174, 90, 0.5);
         flex-shrink: 0;
     }
 
@@ -346,14 +310,13 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-    }
-    .chat-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem 1.5rem;
-        background: #cdd9af; /* Sage Mist header */
-        border-bottom: 1px solid rgba(164, 74, 63, 0.15);
+        border-radius: 24px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 10px 40px rgba(42, 64, 39, 0.06);
+        overflow: hidden;
     }
     .chat-header-icon {
         width: 44px;

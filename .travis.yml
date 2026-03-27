@@ -47,3 +47,28 @@ deploy:
     on:
       branch: develop
 
+# # Ramsey's -----------------------------------------
+# deploy:
+#   provider: elasticbeanstalk
+#   region: us-east-1
+#   app: treestagram8
+#   env: treestagram-env8
+#   bucket_name: elasticbeanstalk-us-east-1-180382394287-1
+#   access_key_id: $AWS_ACCESS_KEY_ID
+#   secret_access_key: $AWS_SECRET_ACCESS_KEY
+#   on:
+#     branch: develop 
+# # Ramsey's -----------------------------------------
+
+
+# Sumit's -----------------------------------------
+# deploy:
+#   provider: elasticbeanstalk
+#   region: us-east-1
+#   app: treestagram
+#   env: treestagram-env
+#   bucket_name: elasticbeanstalk-us-east-1-563336977573
+#   access_key_id: $AWS_ACCESS_KEY_ID
+#   secret_access_key: $AWS_SECRET_ACCESS_KEY
+#   on:
+#     branch: develop 

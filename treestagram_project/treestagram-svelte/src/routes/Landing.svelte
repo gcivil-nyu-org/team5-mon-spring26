@@ -111,6 +111,14 @@
             >
         </div>
     </div>
+    <footer class="made-with-love">
+        <div class="love-line"></div>
+        <div class="love-text">
+            Made with <span class="love-word">Love</span> at
+            <span class="nyu-word">NYU</span>
+        </div>
+        <div class="love-leaf">🌿</div>
+    </footer>
 </div>
 
 <style>
@@ -470,6 +478,82 @@
         to {
             opacity: 1;
             transform: translateY(0);
+        }
+    }
+
+    /* ── Made with love footer ── */
+    .made-with-love {
+        background: var(--bark);
+        text-align: center;
+        padding: 1rem 1rem 1rem; /* compressed to fit 100vh */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: auto;
+    }
+    .love-line {
+        width: 50px;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--sage),
+            transparent
+        );
+        opacity: 0.4;
+    }
+    .love-text {
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--canopy);
+        opacity: 0.6;
+    }
+    .love-word {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 700;
+        color: #ef4444; /* red */
+        opacity: 1;
+    }
+    .nyu-word {
+        font-weight: 700;
+        font-size: 1.15rem; /* Increased size */
+        letter-spacing: 0.25em;
+        opacity: 1;
+        background: linear-gradient(
+            90deg,
+            #9b6fbf,
+            #d8b4fe,
+            #f0d0ff,
+            #d8b4fe,
+            #9b6fbf
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: nyuShimmer 2.5s linear infinite;
+    }
+    @keyframes nyuShimmer {
+        to {
+            background-position: 200% center;
+        }
+    }
+    .love-leaf {
+        font-size: 0.7rem;
+        opacity: 0.5;
+        animation: gentleSway 3s ease-in-out infinite;
+    }
+    @keyframes gentleSway {
+        0%,
+        100% {
+            transform: rotate(-5deg);
+        }
+        50% {
+            transform: rotate(5deg);
         }
     }
 </style>

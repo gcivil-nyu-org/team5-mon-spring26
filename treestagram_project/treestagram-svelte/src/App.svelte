@@ -11,6 +11,7 @@
   import ForgotPassword from "./routes/ForgotPassword.svelte";
   import ResetPassword from "./routes/ResetPassword.svelte";
   import Settings from "./routes/Settings.svelte";
+  import ApplyForCaretaker from "./routes/applyforcaretaker.svelte";
 
     import Map from "./routes/Map.svelte";
   import SearchPage from "./routes/SearchPage.svelte";
@@ -24,7 +25,7 @@
   // Simple router
   function navigate(path) {
     window.history.pushState({}, "", path);
-    route = path;
+    route = path.split("?")[0];
   }
 
   window.addEventListener("popstate", () => {
@@ -71,6 +72,8 @@
     <Chat {navigate} />
   {:else if route === "/profile"}
     <Profile {navigate} />
+    {:else if route === "/applyforcaretaker"}
+  <ApplyForCaretaker {navigate} />
   {:else if route === "/settings"}
     <Settings {navigate} />
   {:else if route === "/map"}

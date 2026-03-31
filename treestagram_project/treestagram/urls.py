@@ -37,6 +37,7 @@ def reset_password_redirect(request, uidb64, token):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("trees/", include("trees.urls")),
+    path("api/", include("caretaker.urls")),
     path("api/", include("accounts.api_urls")),
     path("api/", include("posts.urls")),
     path("api/confirm-email/<str:token>/", api_confirm_email, name="confirm_email"),

@@ -266,3 +266,37 @@ export async function apiFetchFollowedTrees() {
   const res = await apiFetch('/api/my-followed-trees/')
   return res.json()
 }
+
+// ------------------ apply for caretaker api -----------------------
+export async function apiApplyForCaretaker(data) {
+  const res = await apiFetch('/api/apply-for-caretaker/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return res.json()
+}
+
+export async function apiMyApplicationStatus() {
+  const res = await apiFetch('/api/my-application-status/')
+  return res.json()
+}
+
+export async function apiFetchPendingApplications() {
+  const res = await fetch("/api/pending-applications/", { // <-- Matches the new url path
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return { success: false };
+  const data = await res.json();
+  return { success: true, applications: data.applications };
+}
+
+export async function apiReviewApplication(applicationId, action) {
+  const res = await fetch("/api/review-application/", { // <-- Matches the url path
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ application_id: applicationId, action }),
+  });
+  if (!res.ok) return { success: false };
+  return { success: true };
+}
+

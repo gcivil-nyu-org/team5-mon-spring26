@@ -1,22 +1,48 @@
 <script>
-  import { user } from "../lib/api.js";
-  import { apiApplyForCaretaker } from "../lib/api.js";
+  import {
+    user,
+    apiApplyForCaretaker,
+    apiCheckTreeExists,
+  } from "../lib/api.js";
   export let navigate;
 
   let motivation = "";
   let treeExperience = "";
-  let treeId = ""; // <-- NEW: Added variable for Tree ID
+  let treeId = "";
   let submitted = false;
   let submitting = false;
   let errorMsg = "";
 
+  // --- NEW: State variables for real-time checking ---
+  let isCheckingTree = false;
+  let treeIsValid = null; // null = hasn't checked, true = exists, false = not found
+
   $: meetsRequirements =
     ($user?.post_count ?? 0) >= 30 && ($user?.total_likes_received ?? 0) >= 100;
 
+  // --- NEW: Function to check tree on blur ---
+  async function handleTreeCheck() {
+    const id = treeId.trim();
+    if (!id) {
+      treeIsValid = null;
+      return;
+    }
+
+    isCheckingTree = true;
+    const res = await apiCheckTreeExists(id);
+    treeIsValid = res.exists;
+    isCheckingTree = false;
+  }
+
   async function handleSubmit() {
-    // <-- NEW: Added treeId to the validation check
     if (!motivation.trim() || !treeExperience.trim() || !treeId.trim()) {
       errorMsg = "Please fill in all required fields.";
+      return;
+    }
+
+    // --- NEW: Block submission if tree is invalid ---
+    if (treeIsValid === false) {
+      errorMsg = "Cannot submit: Tree ID not found in the database.";
       return;
     }
 
@@ -27,7 +53,7 @@
       const result = await apiApplyForCaretaker({
         motivation,
         tree_experience: treeExperience,
-        tree_id: treeId, // <-- NEW: Added tree_id to the API payload
+        tree_id: treeId.trim(),
       });
 
       if (result.error) {
@@ -112,9 +138,9 @@
               {#if $user?.name}
                 <div class="snapshot-name">{$user.name}</div>
               {/if}
-              
+
               <div class="snapshot-username">@{$user?.username ?? "—"}</div>
-              
+
               {#if $user?.email}
                 <div class="snapshot-email">{$user.email}</div>
               {/if}
@@ -191,15 +217,29 @@
               <span class="required">*</span>
             </label>
             <p class="field-hint">
-              Please enter the unique ID of the tree you are applying to care for.
+              Please enter the unique ID of the tree you are applying to care
+              for.
             </p>
+
             <input
               type="text"
               id="tree-id"
               bind:value={treeId}
+              on:blur={handleTreeCheck}
               placeholder="e.g., TR-8492"
               maxlength="50"
+              class:input-error={treeIsValid === false}
             />
+
+            {#if isCheckingTree}
+              <div class="tree-status hint">Checking database...</div>
+            {:else if treeIsValid === true}
+              <div class="tree-status success">✓ Tree found!</div>
+            {:else if treeIsValid === false}
+              <div class="tree-status error">
+                ⚠️ Tree ID not found. Please check and try again.
+              </div>
+            {/if}
           </div>
         </section>
 
@@ -226,6 +266,25 @@
 
 <style>
   /* ── Layout ── */
+
+  .tree-status {
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    font-weight: 500;
+  }
+  .tree-status.hint {
+    color: var(--t-text-muted);
+  }
+  .tree-status.success {
+    color: var(--t-status-good);
+  }
+  .tree-status.error {
+    color: var(--t-status-poor);
+  }
+  .input-error {
+    border-color: var(--t-status-poor) !important;
+  }
+
   .page-wrapper {
     min-height: 100vh;
     background: #f5f7f2;
@@ -475,7 +534,7 @@
       box-shadow 0.2s;
     line-height: 1.6;
   }
-  
+
   textarea {
     resize: vertical;
   }

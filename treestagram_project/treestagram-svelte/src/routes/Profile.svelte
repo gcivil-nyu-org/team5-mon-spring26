@@ -13,6 +13,8 @@
     apiEditComment,
     apiDeleteComment,
     apiDeletePost,
+    apiFetchPendingApplications,
+    apiReviewApplication,
   } from "../lib/api.js";
 
   export let navigate;
@@ -55,35 +57,49 @@
   let editingCommentText = "";
 
   // ── Admin State & Mock Data ──
+  // let selectedApplication = null;
+  // let caretakerApplications = [
+  //   {
+  //     id: "app-1",
+  //     username: "nature_lover_99",
+  //     treeId: "TR-8492",
+  //     motivation: "I walk by this tree every single morning on my way to the subway. I've noticed it struggling during the summer droughts, and I'd love to take official responsibility for watering it, clearing the tree bed, and keeping an eye on its overall health. I think being a caretaker will allow me to give back to the community.",
+  //     treeExperience: "I grew up helping my grandmother in her garden, and I currently volunteer at the Brooklyn Botanic Garden once a month. I'm comfortable identifying basic urban tree species and knowing when a tree is stressed due to lack of water or soil compaction."
+  //   },
+  //   {
+  //     id: "app-2",
+  //     username: "greenleaf_nyc",
+  //     treeId: "TR-1024",
+  //     motivation: "This London Planetree is massive and provides shade to our entire block. However, people keep leaving trash in its bed, and dogs are constantly digging around the roots. I want to build a small tree guard and maintain it so it stays healthy for another century.",
+  //     treeExperience: "I don't have professional forestry experience, but I've successfully kept dozens of houseplants alive and I'm a fast learner. I've read the NYC Parks tree care guide thoroughly."
+  //   },
+  //   {
+  //     id: "app-3",
+  //     username: "botany_babe",
+  //     treeId: "TR-5511",
+  //     motivation: "I just moved to the neighborhood and want to get involved in local ecology. This young sapling was recently planted and needs crucial early-life care to establish a strong root system.",
+  //     treeExperience: "I have a B.S. in Environmental Science and worked as an intern at a state park where I helped with sapling planting and invasive species removal."
+  //   }
+  // ];
+
+  // ── Admin State ──
   let selectedApplication = null;
-  let caretakerApplications = [
-    {
-      id: "app-1",
-      username: "nature_lover_99",
-      treeId: "TR-8492",
-      motivation: "I walk by this tree every single morning on my way to the subway. I've noticed it struggling during the summer droughts, and I'd love to take official responsibility for watering it, clearing the tree bed, and keeping an eye on its overall health. I think being a caretaker will allow me to give back to the community.",
-      treeExperience: "I grew up helping my grandmother in her garden, and I currently volunteer at the Brooklyn Botanic Garden once a month. I'm comfortable identifying basic urban tree species and knowing when a tree is stressed due to lack of water or soil compaction."
-    },
-    {
-      id: "app-2",
-      username: "greenleaf_nyc",
-      treeId: "TR-1024",
-      motivation: "This London Planetree is massive and provides shade to our entire block. However, people keep leaving trash in its bed, and dogs are constantly digging around the roots. I want to build a small tree guard and maintain it so it stays healthy for another century.",
-      treeExperience: "I don't have professional forestry experience, but I've successfully kept dozens of houseplants alive and I'm a fast learner. I've read the NYC Parks tree care guide thoroughly."
-    },
-    {
-      id: "app-3",
-      username: "botany_babe",
-      treeId: "TR-5511",
-      motivation: "I just moved to the neighborhood and want to get involved in local ecology. This young sapling was recently planted and needs crucial early-life care to establish a strong root system.",
-      treeExperience: "I have a B.S. in Environmental Science and worked as an intern at a state park where I helped with sapling planting and invasive species removal."
-    }
-  ];
+  let caretakerApplications = [];
+  let loadingApplications = false;
 
   onMount(async () => {
     setTimeout(() => (mounted = true), 50);
-    await Promise.all([loadMyPosts(), loadFollowedTrees()]);
+    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications()]);
   });
+
+  async function loadApplications() {
+    loadingApplications = true;
+    const res = await apiFetchPendingApplications();
+    if (res.success) {
+      caretakerApplications = res.applications;
+    }
+    loadingApplications = false;
+  }
 
   async function loadMyPosts() {
     loading = true;
@@ -348,17 +364,19 @@
     selectedApplication = null;
   }
 
-  function handleApprove(appId) {
-    caretakerApplications = caretakerApplications.filter(a => a.id !== appId);
-    if (selectedApplication?.id === appId) {
-      closeApplicationModal();
+  async function handleApprove(appId) {
+    const res = await apiReviewApplication(appId, "approved");
+    if (res.success) {
+      caretakerApplications = caretakerApplications.filter(a => a.id !== appId);
+      if (selectedApplication?.id === appId) closeApplicationModal();
     }
   }
 
-  function handleReject(appId) {
-    caretakerApplications = caretakerApplications.filter(a => a.id !== appId);
-    if (selectedApplication?.id === appId) {
-      closeApplicationModal();
+  async function handleReject(appId) {
+    const res = await apiReviewApplication(appId, "rejected");
+    if (res.success) {
+      caretakerApplications = caretakerApplications.filter(a => a.id !== appId);
+      if (selectedApplication?.id === appId) closeApplicationModal();
     }
   }
 

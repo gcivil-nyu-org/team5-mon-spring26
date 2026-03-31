@@ -1,17 +1,15 @@
-from django.shortcuts import render
-
 # Create your views here.
 import json
-from django.contrib.auth import login, logout, authenticate
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.mail import send_mail
 from django.utils import timezone
-from django.core.signing import TimestampSigner
-from .models import CaretakerApplication
-import os
 from django.conf import settings
+from .models import CaretakerApplication, CaretakerAssignment
+from trees.models import Tree
+from django.views.decorators.http import require_GET
+from posts.models import TreeFollow
+
 
 @require_http_methods(["POST"])
 def api_apply_for_caretaker(request):
@@ -20,64 +18,53 @@ def api_apply_for_caretaker(request):
 
     user = request.user
 
-    if not user.is_credible:
-        return JsonResponse(
-            {"error": "You need 30+ posts and 100+ likes to apply."},
-            status=403,
-        )
-
-    if CaretakerApplication.objects.filter(user=user).exists():
-        return JsonResponse(
-            {"error": "You have already submitted an application."},
-            status=400,
-        )
-
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON."}, status=400)
 
+    # Cast to string before stripping in case the frontend sends an integer
+    tree_id = str(data.get("tree_id", "")).strip()
     motivation = data.get("motivation", "").strip()
     tree_experience = data.get("tree_experience", "").strip()
 
+    # --- Basic Validation ---
+    if not tree_id:
+        return JsonResponse({"error": "Tree ID is required."}, status=400)
     if not motivation:
         return JsonResponse({"error": "Motivation field is required."}, status=400)
 
+    # --- NEW: Check 1 - User already applied and is pending for THIS tree ---
+    if CaretakerApplication.objects.filter(
+        user=user, tree_id=tree_id, status="pending"
+    ).exists():
+        return JsonResponse(
+            {"error": "You already have a pending application for this tree."},
+            status=400,
+        )
+
+    # --- NEW: Check 2 - User is already a caretaker for THIS tree ---
+    if CaretakerAssignment.objects.filter(user=user, tree_id=tree_id).exists():
+        return JsonResponse(
+            {"error": "You are already a caretaker for this tree."}, status=400
+        )
+
+    tree = Tree.objects.filter(tree_id=tree_id).first()
+    is_following = TreeFollow.objects.filter(user=user, tree=tree).exists()
+
+    # CHECK 3 - Trigger the error if they are NOT following the tree
+    if not is_following:
+        return JsonResponse(
+            {"error": "You must follow the tree before applying as a caretaker."},
+            status=403,
+        )
+
+    # --- Save to database ---
     application = CaretakerApplication.objects.create(
         user=user,
+        tree_id=tree_id,
         motivation=motivation,
         experience=tree_experience,
-    )
-
-    # Generate signed approve/reject tokens
-    signer = TimestampSigner()
-    approve_token = signer.sign(f"approve:{application.id}")
-    reject_token = signer.sign(f"reject:{application.id}")
-
-    base_url = os.environ.get("DJANGO_SITE_DOMAIN", "localhost:8000")
-    approve_url = f"http://{base_url}/api/review-application/?token={approve_token}"
-    reject_url  = f"http://{base_url}/api/review-application/?token={reject_token}"
-
-    # Email to admin
-    send_mail(
-        subject=f"New Caretaker Application from @{user.username}",
-        message=f"""
-            New caretaker application received.
-
-            User: {user.username} ({user.email})
-            Posts: {user.post_count} | Likes: {user.total_likes_received}
-
-            --- Motivation ---
-            {motivation}
-
-            --- Tree Experience ---
-            {tree_experience}
-
-            APPROVE: {approve_url}
-            REJECT:  {reject_url}
-        """.strip(),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=["treestagramgetyourroots@gmail.com"],
     )
 
     return JsonResponse(
@@ -85,197 +72,118 @@ def api_apply_for_caretaker(request):
         status=201,
     )
 
-@require_http_methods(["GET"])
-def api_my_application_status(request):
+
+@require_GET
+def api_get_pending_applications(request):
     if not request.user.is_authenticated:
-        return JsonResponse({"error": "Login required."}, status=401)
+        return JsonResponse({"error": "Unauthorized. Login required."}, status=403)
 
-    try:
-        application = CaretakerApplication.objects.get(user=request.user)
-        return JsonResponse({
-            "status": application.status,
-            "submitted_at": application.submitted_at.isoformat(),
-        })
-    except CaretakerApplication.DoesNotExist:
-        return JsonResponse({"status": None})
+    applications = (
+        CaretakerApplication.objects.filter(status="pending")
+        .select_related("user")
+        .order_by("-submitted_at")
+    )
+
+    return JsonResponse(
+        {
+            "applications": [
+                {
+                    "id": app.id,
+                    "username": app.user.username,
+                    "treeId": app.tree_id,
+                    "motivation": app.motivation,
+                    "treeExperience": app.experience,
+                    "submitted_at": app.submitted_at.isoformat(),
+                }
+                for app in applications
+            ]
+        }
+    )
 
 
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 def api_review_application(request):
-    token = request.GET.get("token", "")
-    signer = TimestampSigner()
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Unauthorized. Login required."}, status=403)
 
     try:
-        # Token valid for 7 days (max_age in seconds)
-        value = signer.unsign(token, max_age=60 * 60 * 24 * 7)
-    except Exception:
-        return JsonResponse({"error": "Invalid or expired link."}, status=400)
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
 
-    decision, app_id = value.split(":")
-    
+    app_id = data.get("application_id")
+    action = data.get("action")  # Expected: "approved" or "rejected"
+
+    if action not in ["approved", "rejected"]:
+        return JsonResponse({"error": "Invalid action."}, status=400)
+
     try:
-        application = CaretakerApplication.objects.get(id=int(app_id))
+        application = CaretakerApplication.objects.get(id=app_id)
     except CaretakerApplication.DoesNotExist:
         return JsonResponse({"error": "Application not found."}, status=404)
 
     if application.status != "pending":
         return JsonResponse(
-            {"message": f"Application was already {application.status}."}
+            {"error": f"Application was already {application.status}."}, status=400
         )
 
-    application.status = decision  # "approve" or "reject"
+    # Update application
+    application.status = action
     application.reviewed_at = timezone.now()
+    application.reviewed_by = request.user
     application.save()
 
     applicant = application.user
 
-    if decision == "approve":
+    # Update user role if approved
+    if action == "approved":
         applicant.role = "caretaker"
         applicant.save(update_fields=["role"])
+
+        # Create assignment for the specific tree
+        if application.tree_id:
+            CaretakerAssignment.objects.get_or_create(
+                user=applicant, tree_id=application.tree_id
+            )
+
         subject = "🌿 You've been approved as a Caretaker on Treestagram!"
-        message = f"""
-Hi {applicant.username},
-
-Great news! Your application to become a Caretaker on Treestagram has been approved.
-
-You now have caretaker privileges. Welcome to the team! 🌳
-
-— The Treestagram Team
-        """.strip()
+        message = f"""Hi {applicant.username},\n\nGreat news! Your application to become a
+        Caretaker has been approved. Welcome to the team! 🌳"""
     else:
         subject = "Your Caretaker Application on Treestagram"
-        message = f"""
-Hi {applicant.username},
+        message = f"""Hi {applicant.username},\n\nThank you for applying. Unfortunately, your
+        application was not approved at this time. Keep contributing and try again later!"""
 
-Thank you for applying to be a Caretaker on Treestagram.
-
-Unfortunately, your application was not approved at this time. 
-You're welcome to apply again in the future as you continue contributing to the community.
-
-— The Treestagram Team
-        """.strip()
-
+    # We keep the email to the USER to let them know the decision
     send_mail(
         subject=subject,
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[applicant.email],
+        fail_silently=True,
     )
 
-    return JsonResponse({"message": f"Application {decision}d. User notified by email."})
-
-# import json
-# from django.http import JsonResponse
-# from django.views.decorators.http import require_http_methods
-# from django.utils import timezone
-# from .models import CaretakerApplication
-# from django.core.mail import send_mail
-# from django.conf import settings
-
-# @require_http_methods(["POST"])
-# def api_apply_for_caretaker(request):
-#     if not request.user.is_authenticated:
-#         return JsonResponse({"error": "Login required."}, status=401)
-
-#     user = request.user
-
-#     # Assuming you have a property or method to check credibility
-#     # if not user.is_credible:
-#     #     return JsonResponse({"error": "You need 30+ posts and 100+ likes to apply."}, status=403)
-
-#     if CaretakerApplication.objects.filter(user=user, status="pending").exists():
-#         return JsonResponse({"error": "You already have a pending application."}, status=400)
-
-#     try:
-#         data = json.loads(request.body)
-#     except json.JSONDecodeError:
-#         return JsonResponse({"error": "Invalid JSON."}, status=400)
-
-#     motivation = data.get("motivation", "").strip()
-#     tree_experience = data.get("tree_experience", "").strip()
-
-#     if not motivation:
-#         return JsonResponse({"error": "Motivation field is required."}, status=400)
-
-#     application = CaretakerApplication.objects.create(
-#         user=user,
-#         motivation=motivation,
-#         experience=tree_experience,
-#     )
-
-#     return JsonResponse({"message": "Application submitted successfully.", "id": application.id}, status=201)
+    return JsonResponse({"message": f"Application {action} successfully."})
 
 
-# @require_http_methods(["GET"])
-# def api_get_pending_applications(request):
-#     if not request.user.is_authenticated or request.user.role != "admin":
-#         return JsonResponse({"error": "Unauthorized. Admin access required."}, status=403)
+@require_http_methods(["GET"])
+def api_check_tree(request):
+    tree_id = request.GET.get("tree_id", "").strip()
 
-#     # Fetch pending apps and prefetch user data to avoid N+1 queries
-#     apps = CaretakerApplication.objects.filter(status="pending").select_related("user")
-    
-#     data = []
-#     for app in apps:
-#         data.append({
-#             "id": app.id,
-#             "username": app.user.username,
-#             "motivation": app.motivation,
-#             "treeExperience": app.experience,
-#             "submitted_at": app.submitted_at.isoformat(),
-#         })
+    # if not tree_id:
+    #     return JsonResponse({"exists": False})
+    queryset = Tree.objects.all()
+    if tree_id:
+        if tree_id.isdigit():
+            queryset = queryset.filter(tree_id=int(tree_id))
+        else:
+            return JsonResponse({"exists": False})
 
-#     return JsonResponse({"applications": data}, status=200)
+    count = queryset.count()
 
+    if count > 0:
+        exists = True
+        return JsonResponse({"exists": exists})
 
-# @require_http_methods(["POST"])
-# def api_review_application(request):
-#     if not request.user.is_authenticated or request.user.role != "admin":
-#         return JsonResponse({"error": "Unauthorized. Admin access required."}, status=403)
-
-#     try:
-#         data = json.loads(request.body)
-#     except json.JSONDecodeError:
-#         return JsonResponse({"error": "Invalid JSON."}, status=400)
-
-#     app_id = data.get("application_id")
-#     action = data.get("action")  # Expected: "approved" or "rejected"
-
-#     if action not in ["approved", "rejected"]:
-#         return JsonResponse({"error": "Invalid action."}, status=400)
-
-#     try:
-#         application = CaretakerApplication.objects.get(id=app_id)
-#     except CaretakerApplication.DoesNotExist:
-#         return JsonResponse({"error": "Application not found."}, status=404)
-
-#     if application.status != "pending":
-#         return JsonResponse({"error": f"Application was already {application.status}."}, status=400)
-
-#     # Update application
-#     application.status = action
-#     application.reviewed_at = timezone.now()
-#     application.reviewed_by = request.user
-#     application.save()
-
-#     applicant = application.user
-
-#     # Update user role if approved
-#     if action == "approved":
-#         applicant.role = "caretaker"
-#         applicant.save(update_fields=["role"])
-#         subject = "🌿 You've been approved as a Caretaker on Treestagram!"
-#         message = f"Hi {applicant.username},\n\nGreat news! Your application to become a Caretaker has been approved. Welcome to the team! 🌳"
-#     else:
-#         subject = "Your Caretaker Application on Treestagram"
-#         message = f"Hi {applicant.username},\n\nThank you for applying. Unfortunately, your application was not approved at this time. Keep contributing and try again later!"
-
-#     # We keep the email to the USER to let them know the decision
-#     send_mail(
-#         subject=subject,
-#         message=message,
-#         from_email=settings.DEFAULT_FROM_EMAIL,
-#         recipient_list=[applicant.email],
-#         fail_silently=True,
-#     )
-
-#     return JsonResponse({"message": f"Application {action} successfully."})
+    else:
+        return JsonResponse({"exists": False})

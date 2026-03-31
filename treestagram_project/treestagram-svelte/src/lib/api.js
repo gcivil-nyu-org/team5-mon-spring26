@@ -282,21 +282,34 @@ export async function apiMyApplicationStatus() {
 }
 
 export async function apiFetchPendingApplications() {
-  const res = await fetch("/api/pending-applications/", { // <-- Matches the new url path
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) return { success: false };
-  const data = await res.json();
-  return { success: true, applications: data.applications };
+  try {
+    const res = await apiFetch("/api/caretaker-applications/pending/");
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    return { success: true, applications: data.applications };
+  } catch {
+    return { success: false, error: "Network error" };
+  }
 }
 
 export async function apiReviewApplication(applicationId, action) {
-  const res = await fetch("/api/review-application/", { // <-- Matches the url path
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ application_id: applicationId, action }),
-  });
-  if (!res.ok) return { success: false };
-  return { success: true };
+  try {
+    const res = await apiFetch("/api/caretaker-applications/review/", {
+      method: "POST",
+      body: JSON.stringify({ application_id: applicationId, action }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    return { success: true };
+  } catch {
+    return { success: false, error: "Network error" };
+  }
+}
+
+export async function apiCheckTreeExists(treeId) {
+  const res = await fetch(`/api/check-tree/?tree_id=${encodeURIComponent(treeId)}`);
+  if (!res.ok) return { exists: false };
+  const data = await res.json();
+  return { exists: data.exists };
 }
 

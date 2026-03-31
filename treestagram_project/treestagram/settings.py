@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "posts",
     "chat",
     "trees",
-    'caretaker',
+    "caretaker",
 ]
 
 MIDDLEWARE = [

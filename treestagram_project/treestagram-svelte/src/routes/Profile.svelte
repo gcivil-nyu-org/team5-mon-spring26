@@ -532,7 +532,13 @@
           {:else}
             <div class="app-list">
               {#each caretakerApplications as app}
-                <div class="app-card" on:click={() => openApplication(app)} role="button" tabindex="0">
+                <div 
+                  class="app-card" 
+                  on:click={() => openApplication(app)} 
+                  on:keydown={(e) => e.key === 'Enter' && openApplication(app)}
+                  role="button" 
+                  tabindex="0"
+                >
                   <div class="app-avatar">
                     {app.username.charAt(0).toUpperCase()}
                   </div>
@@ -661,12 +667,15 @@
       class="modal-backdrop"
       on:click={closeApplicationModal}
       on:keydown={(e) => e.key === "Escape" && closeApplicationModal()}
+      role="button"
+      tabindex="0"
     >
       <div
         class="modal app-modal"
         on:click|stopPropagation
         on:keydown|stopPropagation
-        role="dialog"
+        role="button"
+        tabindex="0"
       >
         <button class="modal-close-btn" on:click={closeApplicationModal} title="Close">✕</button>
 
@@ -714,8 +723,10 @@
 
   <!-- ─── Create Post Carousel Modal ─── -->
   {#if showCreateModal}
-    <div class="carousel-backdrop" on:click={closeCreateModal} role="button" tabindex="0">
-      <div class="carousel-modal" on:click|stopPropagation role="dialog">
+    <div class="carousel-backdrop" on:click={closeCreateModal} on:keydown={(e) => e.key === "Escape" && closeCreateModal()} role="button" tabindex="0">
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <div class="carousel-modal" on:click|stopPropagation on:keydown|stopPropagation role="dialog">
         <div class="carousel-header">
           <button class="carousel-close" on:click={closeCreateModal}>✕</button>
           <h2>🌱 Plant a Post</h2>

@@ -56,32 +56,6 @@
   let editingCommentId = null;
   let editingCommentText = "";
 
-  // ── Admin State & Mock Data ──
-  // let selectedApplication = null;
-  // let caretakerApplications = [
-  //   {
-  //     id: "app-1",
-  //     username: "nature_lover_99",
-  //     treeId: "TR-8492",
-  //     motivation: "I walk by this tree every single morning on my way to the subway. I've noticed it struggling during the summer droughts, and I'd love to take official responsibility for watering it, clearing the tree bed, and keeping an eye on its overall health. I think being a caretaker will allow me to give back to the community.",
-  //     treeExperience: "I grew up helping my grandmother in her garden, and I currently volunteer at the Brooklyn Botanic Garden once a month. I'm comfortable identifying basic urban tree species and knowing when a tree is stressed due to lack of water or soil compaction."
-  //   },
-  //   {
-  //     id: "app-2",
-  //     username: "greenleaf_nyc",
-  //     treeId: "TR-1024",
-  //     motivation: "This London Planetree is massive and provides shade to our entire block. However, people keep leaving trash in its bed, and dogs are constantly digging around the roots. I want to build a small tree guard and maintain it so it stays healthy for another century.",
-  //     treeExperience: "I don't have professional forestry experience, but I've successfully kept dozens of houseplants alive and I'm a fast learner. I've read the NYC Parks tree care guide thoroughly."
-  //   },
-  //   {
-  //     id: "app-3",
-  //     username: "botany_babe",
-  //     treeId: "TR-5511",
-  //     motivation: "I just moved to the neighborhood and want to get involved in local ecology. This young sapling was recently planted and needs crucial early-life care to establish a strong root system.",
-  //     treeExperience: "I have a B.S. in Environmental Science and worked as an intern at a state park where I helped with sapling planting and invasive species removal."
-  //   }
-  // ];
-
   // ── Admin State ──
   let selectedApplication = null;
   let caretakerApplications = [];
@@ -665,7 +639,7 @@
 
       <div class="profile-right-card">
         <h3>Apply to be a Caretaker</h3>
-        {#if true}
+        {#if true} <!-- TODO: Add logic to check if user is credible -->
           <button class="caretaker-apply-btn" on:click={() => navigate('/applyforcaretaker')}>
             🌿 Apply Now
           </button>
@@ -918,13 +892,208 @@
     </div>
   {/if}
 
+  <!-- THIS PART WAS TOTALLY MISSING AFTER THE REBASE -->
   <!-- ─── Post Detail Modal ─── -->
   {#if selectedPost}
-    <div class="modal-backdrop" on:click={closeModal}>
-    </div>
-  {/if}
-</div>
-
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div
+        class="modal-backdrop"
+        on:click={closeModal}
+        on:keydown={(e) => e.key === "Escape" && closeModal()}
+      >
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div
+          class="modal"
+          on:click|stopPropagation
+          on:keydown|stopPropagation
+          role="dialog"
+        >
+          <!-- Close button floating on top-right -->
+          <button class="modal-close-btn" on:click={closeModal} title="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+  
+          <!-- Left: Image -->
+          <div class="modal-image">
+            {#if selectedPost.image}
+              <img src={selectedPost.image} alt={selectedPost.tree_name} />
+            {:else}
+              <div class="modal-placeholder">
+                <span class="modal-placeholder-emoji">{healthIcon(selectedPost.health)}</span>
+                <span class="modal-placeholder-label">{selectedPost.tree_name}</span>
+              </div>
+            {/if}
+          </div>
+  
+          <!-- Right: Details -->
+          <div class="modal-details">
+            <!-- Header -->
+            <div class="modal-header">
+              <div class="modal-author">
+                {#if selectedPost.author?.profile_picture || $user?.profile_picture}
+                  <img src={selectedPost.author?.profile_picture || $user?.profile_picture} alt="avatar" class="modal-avatar" />
+                {:else}
+                  <div class="modal-avatar-placeholder">
+                    {(selectedPost.author?.username || $user?.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                {/if}
+                <div class="modal-author-info">
+                  <strong>{selectedPost.author?.username || $user?.username}</strong>
+                  {#if selectedPost.borough}
+                    <span class="modal-loc">📍 {selectedPost.borough}</span>
+                  {/if}
+                </div>
+              </div>
+  
+              <!-- 3-dot menu -->
+              <div class="post-menu-wrapper">
+                <button class="post-menu-trigger" on:click={togglePostMenu} title="More options">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+  
+                {#if showPostMenu}
+                  <!-- svelte-ignore a11y-no-static-element-interactions -->
+                  <div class="post-menu-dropdown" on:click|stopPropagation on:keydown|stopPropagation>
+                    {#if !showDeleteConfirm}
+                      <button class="menu-item menu-item-danger" on:click={() => (showDeleteConfirm = true)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete Post
+                      </button>
+                      <button class="menu-item" on:click={closePostMenu}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Cancel
+                      </button>
+                    {:else}
+                      <div class="delete-confirm-panel">
+                        <div class="delete-confirm-icon">⚠️</div>
+                        <p class="delete-confirm-text">Delete this post permanently?</p>
+                        <div class="delete-confirm-actions">
+                          <button class="confirm-cancel-btn" on:click={() => (showDeleteConfirm = false)} disabled={deleting}>
+                            Keep
+                          </button>
+                          <button class="confirm-delete-btn" on:click={() => confirmDelete(selectedPost.id)} disabled={deleting}>
+                            {#if deleting}
+                              <span class="btn-spinner-sm"></span>
+                            {:else}
+                              Delete
+                            {/if}
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            </div>
+  
+            <!-- Body / Content -->
+            <div class="modal-body">
+              <div class="modal-tree-card">
+                <span class="modal-tree-icon">{healthIcon(selectedPost.health)}</span>
+                <div class="modal-tree-info">
+                  <span class="modal-tree-name">{selectedPost.tree_name}</span>
+                  <span class="health-badge health-{selectedPost.health.toLowerCase()}">{selectedPost.health}</span>
+                </div>
+              </div>
+  
+              {#if selectedPost.body}
+                <p class="modal-text">{selectedPost.body}</p>
+              {/if}
+  
+              {#if selectedPost.tagged_users?.length}
+                <div class="modal-tagged">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  <span>{selectedPost.tagged_users.map(u => "@" + u.username).join(", ")}</span>
+                </div>
+              {/if}
+  
+              <span class="modal-time">{timeAgo(selectedPost.created_at)}</span>
+  
+              <!-- Comments Section -->
+              <div class="modal-comments">
+                <div class="comments-header">
+                  <span class="comments-label">Comments</span>
+                  <span class="comments-count">{selectedPost.comments?.length || 0}</span>
+                </div>
+                {#if selectedPost.comments?.length}
+                  {#each selectedPost.comments as c}
+                    <div class="modal-comment">
+                      <div class="comment-avatar">
+                        {(c.author?.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                      {#if editingCommentId === c.id}
+                        <div class="comment-edit-row">
+                          <input
+                            type="text"
+                            class="comment-edit-input"
+                            bind:value={editingCommentText}
+                            on:keydown={(e) => e.key === "Enter" && saveEditComment()}
+                          />
+                          <button class="comment-action-btn save" on:click={saveEditComment}>✓</button>
+                          <button class="comment-action-btn" on:click={cancelEditComment}>✕</button>
+                        </div>
+                      {:else}
+                        <div class="comment-content">
+                          <strong>{c.author.username}</strong>
+                          <span>{c.text}</span>
+                        </div>
+                        {#if $user && (c.author.id === $user.id || selectedPost.author?.id === $user.id)}
+                          <span class="comment-actions">
+                            {#if c.author.id === $user.id}
+                              <button class="comment-action-btn" on:click={() => startEditComment(c)} title="Edit">✏️</button>
+                            {/if}
+                            <button class="comment-action-btn delete" on:click={() => deleteCommentOnSelected(c.id)} title="Delete">🗑️</button>
+                          </span>
+                        {/if}
+                      {/if}
+                    </div>
+                  {/each}
+                {:else}
+                  <div class="no-comments">
+                    <span class="no-comments-icon">💬</span>
+                    <span>No comments yet. Be the first!</span>
+                  </div>
+                {/if}
+              </div>
+            </div>
+  
+            <!-- Action Bar -->
+            <div class="modal-actions">
+              <div class="action-row">
+                <button
+                  class="like-btn"
+                  class:liked={selectedPost.liked}
+                  on:click={toggleLikeOnSelected}
+                >
+                  <svg class="like-icon" width="22" height="22" viewBox="0 0 24 24"
+                    fill={selectedPost.liked ? "currentColor" : "none"}
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+                <span class="likes-count">{selectedPost.likes_count} {selectedPost.likes_count === 1 ? "like" : "likes"}</span>
+              </div>
+              <div class="comment-input-row">
+                <input
+                  type="text"
+                  placeholder="Add a comment…"
+                  bind:value={commentDraft}
+                  on:keydown={(e) => e.key === "Enter" && addCommentOnSelected()}
+                />
+                <button
+                  class="post-comment-btn"
+                  on:click={addCommentOnSelected}
+                  disabled={!commentDraft.trim()}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
 <style>
   .page {
     background: var(--t-bg-base);

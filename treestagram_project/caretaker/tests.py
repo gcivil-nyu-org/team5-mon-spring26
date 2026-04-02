@@ -5,20 +5,15 @@ from trees.models import Tree
 from posts.models import TreeFollow
 from caretaker.models import CaretakerApplication, CaretakerAssignment
 
+
 class _BaseTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.alice = User.objects.create_user(
-            username="alice",
-            password="pass1234",
-            email="alice@test.com",
-            role="user"
+            username="alice", password="pass1234", email="alice@test.com", role="user"
         )
         cls.admin = User.objects.create_user(
-            username="admin",
-            password="pass1234",
-            email="admin@test.com",
-            role="admin"
+            username="admin", password="pass1234", email="admin@test.com", role="admin"
         )
         cls.tree = Tree.objects.create(
             tree_id=180683,
@@ -53,6 +48,7 @@ class _BaseTestCase(TestCase):
         c.login(username=user.username, password="pass1234")
         return c
 
+
 class CaretakerModelTests(_BaseTestCase):
     def test_create_application(self):
         app = CaretakerApplication.objects.create(
@@ -66,11 +62,11 @@ class CaretakerModelTests(_BaseTestCase):
 
     def test_create_assignment(self):
         assignment = CaretakerAssignment.objects.create(
-            user=self.alice,
-            tree_id=str(self.tree.tree_id)
+            user=self.alice, tree_id=str(self.tree.tree_id)
         )
         self.assertEqual(assignment.user.username, "alice")
         self.assertTrue("taking care of" in str(assignment))
+
 
 class CaretakerAPITests(_BaseTestCase):
     def test_apply_requires_authentication(self):
@@ -82,8 +78,10 @@ class CaretakerAPITests(_BaseTestCase):
         c = self._login(self.alice)
         resp = c.post(
             "/api/apply-for-caretaker/",
-            data=json.dumps({"tree_id": str(self.tree.tree_id), "motivation": "Because"}),
-            content_type="application/json"
+            data=json.dumps(
+                {"tree_id": str(self.tree.tree_id), "motivation": "Because"}
+            ),
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 403)
         self.assertIn("must follow the tree", resp.json()["error"])
@@ -93,38 +91,54 @@ class CaretakerAPITests(_BaseTestCase):
         c = self._login(self.alice)
         resp = c.post(
             "/api/apply-for-caretaker/",
-            data=json.dumps({"tree_id": str(self.tree.tree_id), "motivation": "Because I care"}),
-            content_type="application/json"
+            data=json.dumps(
+                {"tree_id": str(self.tree.tree_id), "motivation": "Because I care"}
+            ),
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 201)
-        self.assertTrue(CaretakerApplication.objects.filter(user=self.alice, tree_id=str(self.tree.tree_id)).exists())
+        self.assertTrue(
+            CaretakerApplication.objects.filter(
+                user=self.alice, tree_id=str(self.tree.tree_id)
+            ).exists()
+        )
 
     def test_prevent_duplicate_application(self):
         TreeFollow.objects.create(user=self.alice, tree=self.tree)
-        CaretakerApplication.objects.create(user=self.alice, tree_id=str(self.tree.tree_id), motivation="test")
+        CaretakerApplication.objects.create(
+            user=self.alice, tree_id=str(self.tree.tree_id), motivation="test"
+        )
         c = self._login(self.alice)
         resp = c.post(
             "/api/apply-for-caretaker/",
-            data=json.dumps({"tree_id": str(self.tree.tree_id), "motivation": "reapply"}),
-            content_type="application/json"
+            data=json.dumps(
+                {"tree_id": str(self.tree.tree_id), "motivation": "reapply"}
+            ),
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 400)
         self.assertIn("already have a pending", resp.json()["error"])
 
     def test_prevent_apply_if_already_caretaker(self):
         TreeFollow.objects.create(user=self.alice, tree=self.tree)
-        CaretakerAssignment.objects.create(user=self.alice, tree_id=str(self.tree.tree_id))
+        CaretakerAssignment.objects.create(
+            user=self.alice, tree_id=str(self.tree.tree_id)
+        )
         c = self._login(self.alice)
         resp = c.post(
             "/api/apply-for-caretaker/",
-            data=json.dumps({"tree_id": str(self.tree.tree_id), "motivation": "reapply"}),
-            content_type="application/json"
+            data=json.dumps(
+                {"tree_id": str(self.tree.tree_id), "motivation": "reapply"}
+            ),
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 400)
         self.assertIn("already a caretaker", resp.json()["error"])
 
     def test_get_pending_applications(self):
-        CaretakerApplication.objects.create(user=self.alice, tree_id=str(self.tree.tree_id), motivation="pending test")
+        CaretakerApplication.objects.create(
+            user=self.alice, tree_id=str(self.tree.tree_id), motivation="pending test"
+        )
         c = self._login(self.admin)
         resp = c.get("/api/pending-applications/")
         self.assertEqual(resp.status_code, 200)
@@ -133,12 +147,14 @@ class CaretakerAPITests(_BaseTestCase):
         self.assertEqual(data["applications"][0]["motivation"], "pending test")
 
     def test_review_application_approve(self):
-        app = CaretakerApplication.objects.create(user=self.alice, tree_id=str(self.tree.tree_id), motivation="review test")
+        app = CaretakerApplication.objects.create(
+            user=self.alice, tree_id=str(self.tree.tree_id), motivation="review test"
+        )
         c = self._login(self.admin)
         resp = c.post(
             "/api/review-application/",
             data=json.dumps({"application_id": app.id, "action": "approved"}),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
         app.refresh_from_db()
@@ -146,20 +162,30 @@ class CaretakerAPITests(_BaseTestCase):
         self.assertEqual(app.reviewed_by, self.admin)
         self.alice.refresh_from_db()
         self.assertEqual(self.alice.role, "caretaker")
-        self.assertTrue(CaretakerAssignment.objects.filter(user=self.alice, tree_id=str(self.tree.tree_id)).exists())
+        self.assertTrue(
+            CaretakerAssignment.objects.filter(
+                user=self.alice, tree_id=str(self.tree.tree_id)
+            ).exists()
+        )
 
     def test_review_application_reject(self):
-        app = CaretakerApplication.objects.create(user=self.alice, tree_id=str(self.tree.tree_id), motivation="review test 2")
+        app = CaretakerApplication.objects.create(
+            user=self.alice, tree_id=str(self.tree.tree_id), motivation="review test 2"
+        )
         c = self._login(self.admin)
         resp = c.post(
             "/api/review-application/",
             data=json.dumps({"application_id": app.id, "action": "rejected"}),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(resp.status_code, 200)
         app.refresh_from_db()
         self.assertEqual(app.status, "rejected")
-        self.assertFalse(CaretakerAssignment.objects.filter(user=self.alice, tree_id=str(self.tree.tree_id)).exists())
+        self.assertFalse(
+            CaretakerAssignment.objects.filter(
+                user=self.alice, tree_id=str(self.tree.tree_id)
+            ).exists()
+        )
 
     def test_check_tree(self):
         c = Client()

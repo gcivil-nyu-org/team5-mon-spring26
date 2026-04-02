@@ -659,7 +659,7 @@ def api_my_followed_trees(request):
 
     for f in follows:
         last_msg = (
-            ChatMessage.objects.filter(tree=f.tree).order_by("-timestamp").first()
+            ChatMessage.objects.filter(tree=f.tree).order_by("-timestamp", "-pk").first()
         )
         trees.append(
             {

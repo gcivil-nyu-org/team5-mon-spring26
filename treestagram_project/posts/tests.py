@@ -109,9 +109,16 @@ class PostModelTests(_BaseTestCase):
 
     def test_ordering_newest_first(self):
         """Posts are ordered by newest first (Meta.ordering = ['-created_at'])."""
+        from django.utils import timezone
+        from datetime import timedelta
+
+        now = timezone.now()
         p1 = Post.objects.create(author=self.alice, tree=self.tree, tree_name="first")
         p2 = Post.objects.create(author=self.alice, tree=self.tree, tree_name="second")
-        posts = list(Post.objects.all())
+        # Force distinct timestamps so ordering is deterministic
+        Post.objects.filter(pk=p1.pk).update(created_at=now - timedelta(minutes=5))
+        Post.objects.filter(pk=p2.pk).update(created_at=now)
+        posts = list(Post.objects.filter(id__in=[p1.id, p2.id]))
         self.assertEqual(posts[0].id, p2.id)
         self.assertEqual(posts[1].id, p1.id)
 
@@ -284,6 +291,8 @@ class PostFetchAPITests(_BaseTestCase):
             tree_name="red maple",
             body="Test",
         )
+        # User must follow the tree to see its posts in the feed
+        TreeFollow.objects.create(user=self.alice, tree=self.tree)
         c = self._login(self.alice)
         resp = c.get("/api/posts/")
         data = resp.json()

@@ -266,3 +266,50 @@ export async function apiFetchFollowedTrees() {
   const res = await apiFetch('/api/my-followed-trees/')
   return res.json()
 }
+
+// ------------------ apply for caretaker api -----------------------
+export async function apiApplyForCaretaker(data) {
+  const res = await apiFetch('/api/apply-for-caretaker/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return res.json()
+}
+
+export async function apiMyApplicationStatus() {
+  const res = await apiFetch('/api/my-application-status/')
+  return res.json()
+}
+
+export async function apiFetchPendingApplications() {
+  try {
+    const res = await apiFetch("/api/caretaker-applications/pending/");
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    return { success: true, applications: data.applications };
+  } catch {
+    return { success: false, error: "Network error" };
+  }
+}
+
+export async function apiReviewApplication(applicationId, action) {
+  try {
+    const res = await apiFetch("/api/caretaker-applications/review/", {
+      method: "POST",
+      body: JSON.stringify({ application_id: applicationId, action }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error };
+    return { success: true };
+  } catch {
+    return { success: false, error: "Network error" };
+  }
+}
+
+export async function apiCheckTreeExists(treeId) {
+  const res = await fetch(`/api/check-tree/?tree_id=${encodeURIComponent(treeId)}`);
+  if (!res.ok) return { exists: false };
+  const data = await res.json();
+  return { exists: data.exists };
+}
+

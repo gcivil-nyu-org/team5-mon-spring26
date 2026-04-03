@@ -3,6 +3,7 @@ from django.http import JsonResponse, Http404
 from .models import Tree
 from posts.models import Post, TreeFollow
 import json
+from caretaker.models import CaretakerAssignment
 
 
 def tree_map_view(request):
@@ -138,6 +139,17 @@ def tree_dashboard_api(request, tree_id):
     data["photos"] = photos
     data["photo_count"] = len(photos)
     data["follower_count"] = TreeFollow.objects.filter(tree__tree_id=tree_id).count()
+
+    # Get caretakers for this tree
+    caretaker_assignments = CaretakerAssignment.objects.filter(
+        tree_id=tree_id
+    ).select_related("user")
+    caretakers = []
+    for ca in caretaker_assignments:
+        caretakers.append(
+            {"username": ca.user.username, "assigned_at": ca.assigned_at.isoformat()}
+        )
+    data["caretakers"] = caretakers
 
     return JsonResponse(data)
 

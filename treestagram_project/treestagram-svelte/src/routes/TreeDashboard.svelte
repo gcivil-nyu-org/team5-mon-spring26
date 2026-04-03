@@ -300,10 +300,28 @@
         </div>
 
         <aside class="dash-right">
-            <div class="ct-card"><h3>Caretakers (2/2)</h3>
-                <div class="ct-profile"><div class="ct-avatar">🧑</div><div class="ct-info"><strong>@brooklyn_botanist</strong><small>Caretaker since Jan 2024</small></div><span class="ct-badge">Primary</span></div>
-                <div class="ct-profile"><div class="ct-avatar alt">👩</div><div class="ct-info"><strong>@treelover_nyc</strong><small>Caretaker since Mar 2024</small></div></div>
-                <div class="ct-notice">Slots full. You can join the waiting list.</div>
+            <div class="ct-card"><h3>Caretakers ({tree.caretakers?.length || 0}/2)</h3>
+                {#if tree.caretakers && tree.caretakers.length > 0}
+                    {#each tree.caretakers as ct, index}
+                        <div class="ct-profile">
+                            <div class="ct-avatar {index % 2 !== 0 ? 'alt' : ''}">
+                                {index % 2 === 0 ? '🧑' : '👩'}
+                            </div>
+                            <div class="ct-info">
+                                <strong>@{ct.username}</strong>
+                                <small>Caretaker since {new Date(ct.assigned_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</small>
+                            </div>
+                            {#if index === 0}
+                                <span class="ct-badge">Primary</span>
+                            {/if}
+                        </div>
+                    {/each}
+                    {#if tree.caretakers.length >= 2}
+                        <div class="ct-notice">Slots full. You can join the waiting list.</div>
+                    {/if}
+                {:else}
+                    <div class="ct-notice">No caretakers yet.</div>
+                {/if}
             </div>
             <div class="ct-card"><h3 style="color: #758f6f; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Tree Info</h3>
                 <table class="tree-info-table"><tr><td>Species</td><td>{tree.spc_common}</td></tr><tr><td>Latin Name</td><td>{tree.spc_latin}</td></tr><tr><td>Trunk Diameter</td><td>{tree.tree_dbh === 0 ? "Unknown" : `${tree.tree_dbh} in`}</td></tr><tr><td>Stump Diameter</td><td>{tree.stump_diam === 0 ? "Unknown" : `${tree.stump_diam} in`}</td></tr><tr><td>Zip City</td><td>{tree.zip_city}</td></tr><tr><td>Borough</td><td>{tree.borough}</td></tr><tr><td>Address</td><td>{tree.address}</td></tr></table>

@@ -58,49 +58,41 @@ def _post_to_dict(post, request_user):
 
 
 def api_fetch_posts(request):
-    """GET /api/posts/ — return all posts, followed-tree posts first, then same borough."""
-    posts = (
-        Post.objects.select_related("author", "tree")
-        .prefetch_related(
-            "likes",
-            "comments__author",
-            "tagged_users",
-        )
-        .all()
+    """GET /api/posts/ — followed-tree posts first, then same-borough posts (no duplicates)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": True, "posts": []})
+
+    # Tree PKs the user follows
+    followed_tree_pks = set(
+        TreeFollow.objects.filter(user=request.user).values_list("tree_id", flat=True)
     )
 
-    if request.user.is_authenticated:
-        # Get tree IDs the user follows
-        followed_tree_ids = set(
-            TreeFollow.objects.filter(user=request.user).values_list(
-                "tree_id", flat=True
-            )
+    prefetch_fields = ("likes", "comments__author", "tagged_users")
+
+    # 1) Posts from followed trees (newest first)
+    followed_posts = list(
+        Post.objects.filter(tree_id__in=followed_tree_pks)
+        .select_related("author", "tree")
+        .prefetch_related(*prefetch_fields)
+    )
+
+    # 2) Posts from the user's borough, excluding already-followed trees
+    borough_posts = []
+    user_borough = (request.user.borough or "").strip()
+    if user_borough:
+        borough_posts = list(
+            Post.objects.filter(borough__iexact=user_borough)
+            .exclude(tree_id__in=followed_tree_pks)
+            .select_related("author", "tree")
+            .prefetch_related(*prefetch_fields)
         )
-        user_borough = request.user.borough or ""
 
-        # Split into buckets
-        followed_posts = []
-        borough_posts = []
-        other_posts = []
-
-        for p in posts:
-            if p.tree_id and p.tree_id in followed_tree_ids:
-                followed_posts.append(p)
-            elif (
-                user_borough and p.borough and p.borough.lower() == user_borough.lower()
-            ):
-                borough_posts.append(p)
-            else:
-                other_posts.append(p)
-
-        ordered_posts = followed_posts + borough_posts + other_posts
-    else:
-        ordered_posts = list(posts)
+    all_posts = followed_posts + borough_posts
 
     return JsonResponse(
         {
             "success": True,
-            "posts": [_post_to_dict(p, request.user) for p in ordered_posts],
+            "posts": [_post_to_dict(p, request.user) for p in all_posts],
         }
     )
 
@@ -667,7 +659,9 @@ def api_my_followed_trees(request):
 
     for f in follows:
         last_msg = (
-            ChatMessage.objects.filter(tree=f.tree).order_by("-timestamp").first()
+            ChatMessage.objects.filter(tree=f.tree)
+            .order_by("-timestamp", "-pk")
+            .first()
         )
         trees.append(
             {

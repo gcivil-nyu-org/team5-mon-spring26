@@ -645,17 +645,15 @@
 
       <div class="profile-right-card">
         <h3>Apply to be a Caretaker</h3>
-        {#if true} <!-- TODO: Add logic to check if user is credible -->
-          <button class="caretaker-apply-btn" on:click={() => navigate('/applyforcaretaker')}>
-            🌿 Apply Now
-          </button>
-        {:else}
+        {#if $user?.role === 'standard'}
           <button class="caretaker-apply-btn disabled" disabled>
             🔒 Requirements Not Met
           </button>
-          <p class="caretaker-hint">
-            You need 30+ posts and 100+ likes to apply.
-          </p>
+          <p class="caretaker-hint">You need 30+ posts and 100+ likes to apply.</p>
+        {:else}
+          <button class="caretaker-apply-btn" on:click={() => navigate('/applyforcaretaker')}>
+            🌿 Apply Now
+          </button>
         {/if}
       </div>
     </aside>

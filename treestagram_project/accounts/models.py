@@ -33,10 +33,26 @@ class User(AbstractUser):
 
     @property
     def is_credible(self):
-        return self.post_count >= 30 and self.total_likes_received >= 100
+        return self.post_count >= 2 and self.total_likes_received >= 2
 
     def promote_if_eligible(self):
         """Promote standard user to credible if eligible."""
         if self.role == "standard" and self.is_credible:
             self.role = "credible"
             self.save(update_fields=["role"])
+
+    def demote_if_ineligible(self):
+        """Demote credible user back to standard if they no longer qualify."""
+        if self.role == "credible" and not self.is_credible:
+            self.role = "standard"
+            self.save(update_fields=["role"])
+
+    def sync_role(self):
+        """Call after any post_count / total_likes_received change.
+        Admins and caretakers are never touched."""
+        if self.role in ("admin", "caretaker"):
+            return
+        if self.is_credible:
+            self.promote_if_eligible()
+        else:
+            self.demote_if_ineligible()

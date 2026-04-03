@@ -523,6 +523,7 @@ def api_delete_account(request):
 
 # ── Profile-specific endpoints ───────────────────────────────────────────────
 
+
 # becoming an admin
 @require_http_methods(["POST"])
 def api_become_admin(request):
@@ -538,4 +539,6 @@ def api_become_admin(request):
         request.user.save(update_fields=["role"])
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "error": "Incorrect answer."}, status=403)
+
+
 # becoming an admin

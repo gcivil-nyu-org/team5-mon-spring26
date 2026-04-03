@@ -227,10 +227,6 @@
                 <div class="stat-card"><div class="s-icon">📝</div><div class="s-label">Total Posts</div><div class="s-val">{postCount}</div><div class="s-sub">community posts</div></div>
             </div>
 
-            <div class="content-card"><h3>Tree Problems</h3>
-                {#if problemList.length > 0}<div class="problem-grid">{#each problemList as problem}<div class="problem-item">⚠️ {problem}</div>{/each}</div>{:else}<div class="no-problem">🌿 No reported problems</div>{/if}
-            </div>
-
             <div class="content-card"><h3>Root Problems</h3><div class="env-ratings">
                 <div class="env-item"><div class="env-label">Caused by Stones</div><div class="env-score">{tree.root_stone ? "YES" : "NO"}</div></div>
                 <div class="env-item"><div class="env-label">Caused by Metal Grates</div><div class="env-score">{tree.root_grate ? "YES" : "NO"}</div></div>

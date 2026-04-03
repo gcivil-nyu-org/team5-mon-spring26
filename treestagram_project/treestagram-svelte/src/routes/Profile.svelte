@@ -820,27 +820,6 @@
                 </div>
               {/each}
 
-              <!-- Problems list -->
-              <div class="edit-section-title">Problems
-                <span class="edit-field-current" style="font-weight:400; text-transform:none; letter-spacing:0;">
-                  Current: <strong>{editTreeData.problems || "None"}</strong>
-                </span>
-              </div>
-              {#each edit_problems as prob, i}
-                <div class="edit-problem-row">
-                  <select class="carousel-input" bind:value={edit_problems[i]}
-                    on:change={(e) => { edit_problems[i] = e.target.value; edit_problems = [...edit_problems]; }}
-                  >
-                    <option value="">— select problem —</option>
-                    {#each PROBLEM_OPTIONS as opt}<option value={opt}>{opt}</option>{/each}
-                  </select>
-                  {#if edit_problems.length > 1}
-                    <button class="btn-reject" style="padding: 6px 10px;" on:click={() => removeProblem(i)}>✕</button>
-                  {/if}
-                </div>
-              {/each}
-              <button class="btn-secondary" style="margin-top: 0.4rem;" on:click={addProblem}>+ Add Problem</button>
-
               <!-- Save -->
               <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--t-border-soft);">
                 <button class="btn-approve" on:click={saveTreeEdits} disabled={editTreeSaving} style="padding: 0.7rem 2rem;">

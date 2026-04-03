@@ -209,6 +209,7 @@ def svelte_app(request):
     """
     return render(request, "index.html")
 
+
 @require_http_methods(["POST"])
 def tree_update_api(request, tree_id):
     """POST /trees/api/<tree_id>/update/ — admin only, update tree fields."""
@@ -235,12 +236,24 @@ def tree_update_api(request, tree_id):
     for field, valid in string_fields.items():
         if field in data and data[field] != "":
             if data[field] not in valid:
-                return JsonResponse({"success": False, "error": f"Invalid value for {field}."}, status=400)
+                return JsonResponse(
+                    {"success": False, "error": f"Invalid value for {field}."},
+                    status=400,
+                )
             setattr(t, field, data[field])
 
     # Boolean fields
-    bool_fields = ["root_stone", "root_grate", "root_other", "trunk_wire",
-                   "trnk_light", "trnk_other", "brch_light", "brch_shoe", "brch_other"]
+    bool_fields = [
+        "root_stone",
+        "root_grate",
+        "root_other",
+        "trunk_wire",
+        "trnk_light",
+        "trnk_other",
+        "brch_light",
+        "brch_shoe",
+        "brch_other",
+    ]
     for field in bool_fields:
         if field in data and data[field] != "":
             setattr(t, field, bool(data[field]))
@@ -256,7 +269,12 @@ def tree_update_api(request, tree_id):
             try:
                 setattr(t, field, int(data[field]))
             except ValueError:
-                return JsonResponse({"success": False, "error": f"Invalid value for {field}."}, status=400)
+                return JsonResponse(
+                    {"success": False, "error": f"Invalid value for {field}."},
+                    status=400,
+                )
 
     t.save()
-    return JsonResponse({"success": True, "message": f"Tree {tree_id} updated successfully."})
+    return JsonResponse(
+        {"success": True, "message": f"Tree {tree_id} updated successfully."}
+    )

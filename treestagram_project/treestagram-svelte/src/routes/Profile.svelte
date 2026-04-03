@@ -418,11 +418,25 @@
           class:active={activeTab === "followed"}
           on:click={() => (activeTab = "followed")}
         >🌿 Followed Trees</button>
-        <button
-          class="profile-tab"
-          class:active={activeTab === "admin"}
-          on:click={() => (activeTab = "admin")}
-        >🛡️ Admin</button>
+
+        {#if $user?.role === "admin"}
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin"}
+            on:click={() => (activeTab = "admin")}
+          >CT Apps</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin1"}
+            on:click={() => (activeTab = "admin1")}
+          >Admin1</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin2"}
+            on:click={() => (activeTab = "admin2")}
+          >Admin2</button>
+        {/if}
+
       </div>
     </div>
   </div>
@@ -550,6 +564,18 @@
             </div>
           {/if}
         </div>
+      {:else if activeTab === "admin1"}
+        <div class="admin-panel">
+          <h2 class="admin-panel-title">Admin1</h2>
+          <p style="color: var(--t-text-muted); font-size: 0.9rem;">Admin1 content coming soon.</p>
+        </div>
+
+      {:else if activeTab === "admin2"}
+        <div class="admin-panel">
+          <h2 class="admin-panel-title">Admin2</h2>
+          <p style="color: var(--t-text-muted); font-size: 0.9rem;">Admin2 content coming soon.</p>
+        </div>
+
       {/if}
     </div>
 

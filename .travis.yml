@@ -21,7 +21,8 @@ script:
   - black --check .
   - flake8 .
   - python manage.py migrate
-  - coverage run --source=accounts,trees,treestagram,caretaker manage.py test
+  - coverage run --source=accounts,caretaker,chat,posts,trees,treestagram manage.py test
+  # - coverage run --source=accounts,trees,treestagram,caretaker,posts manage.py test # This is the old one
 
 after_success:
   - coveralls

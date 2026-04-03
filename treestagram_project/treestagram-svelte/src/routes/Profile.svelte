@@ -63,7 +63,7 @@
 
   onMount(async () => {
     setTimeout(() => (mounted = true), 50);
-    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications()]);
+    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications(), loadMyCaretakerTrees()]);
   });
 
   async function loadApplications() {
@@ -462,7 +462,19 @@
       } catch { editTreeError = "Network error."; }
       editTreeSaving = false;
   }
-</script>
+  
+  // ── myTrees Editor ──
+  let myCaretakerTrees = [];
+  let loadingMyTrees = false;
+
+  async function loadMyCaretakerTrees() {
+    loadingMyTrees = true;
+    const res = await fetch("/api/my-caretaker-trees/", { credentials: "include" });
+    const data = await res.json();
+    if (data.success) myCaretakerTrees = data.trees;
+    loadingMyTrees = false;
+  }
+  </script>
 
 <div class="page" class:mounted>
   <BackgroundRings />
@@ -515,6 +527,20 @@
     </div>
     <div class="profile-stats-tabs">
       <div class="profile-tab-links">
+
+        {#if $user?.role === "caretaker" || $user?.role === "admin"}
+          <button
+            class="profile-tab"
+            class:active={activeTab === "ct1"}
+            on:click={() => (activeTab = "ct1")}
+          >CT1</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "myTrees"}
+            on:click={() => (activeTab = "myTrees")}
+          >🌳 My Trees</button>
+        {/if}
+
         <button
           class="profile-tab"
           class:active={activeTab === "posts"}
@@ -541,7 +567,7 @@
             class="profile-tab"
             class:active={activeTab === "admin2"}
             on:click={() => (activeTab = "admin2")}
-          >Admin2</button>
+          >Tree Editor</button>
         {/if}
 
       </div>
@@ -830,6 +856,59 @@
           {/if}
         </div>
 
+        {:else if activeTab === "ct1"}
+          <div class="admin-panel">
+            <h2 class="admin-panel-title">CT1</h2>
+            <p style="color: var(--t-text-muted); font-size: 0.9rem;">CT1 content coming soon.</p>
+          </div>
+
+        {:else if activeTab === "myTrees"}
+          <div class="admin-panel">
+            <h2 class="admin-panel-title">🌳 My Trees</h2>
+            {#if loadingMyTrees}
+              <div class="loading-area">
+                <div class="loading-spinner"></div>
+                <p>Loading your trees…</p>
+              </div>
+            {:else if myCaretakerTrees.length === 0}
+              <div class="empty-state">
+                <span class="empty-icon">🌱</span>
+                <h3>No Trees Yet</h3>
+                <p>Trees you're assigned to care for will appear here.</p>
+              </div>
+            {:else}
+              <div class="followed-trees-grid">
+                {#each myCaretakerTrees as tree, i}
+                  <div
+                    class="followed-tree-card"
+                    style="animation-delay: {i * 0.05}s;"
+                    on:click={() => navigate('/treedashboard/' + tree.tree_id)}
+                    on:keydown={(e) => e.key === "Enter" && navigate('/treedashboard/' + tree.tree_id)}
+                    role="button"
+                    tabindex="0"
+                  >
+                    <div class="ft-header">
+                      <div class="ft-icon">🌳</div>
+                      <div class="ft-info">
+                        <h4 class="ft-name">{tree.tree_name}</h4>
+                        <span class="ft-id">#{tree.tree_id}</span>
+                      </div>
+                    </div>
+                    <div class="ft-body">
+                      <p class="ft-date">Caretaker since {timeAgo(tree.assigned_at)} ago</p>
+                      <p class="ft-chat" style="background: rgba(45,122,58,0.12); color: var(--t-status-good);">
+                        🛡️ You are the caretaker
+                      </p>
+                    </div>
+                    <div class="ft-action">
+                      <button class="ft-btn">View Dashboard →</button>
+                    </div>
+                    <div class="ft-glow"></div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
       {/if}
     </div>
 

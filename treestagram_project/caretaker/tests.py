@@ -195,3 +195,79 @@ class CaretakerAPITests(_BaseTestCase):
 
         resp = c.get("/api/check-tree/?tree_id=999999")
         self.assertFalse(resp.json()["exists"])
+
+
+# ---------------- New CT Tests ---------------- #
+class CaretakerSlotLimitTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tree = Tree.objects.create(
+            tree_id=77777,
+            spc_common="Slot Tree",
+            spc_latin="Slotus testus",
+            created_at="2015",
+            tree_dbh=5,
+            stump_diam=0,
+            curb_loc="OnCurb",
+            status="Alive",
+            health="Good",
+            sidewalk="NoDamage",
+            root_stone=False,
+            root_grate=False,
+            root_other=False,
+            trunk_wire=False,
+            trnk_light=False,
+            trnk_other=False,
+            brch_light=False,
+            brch_shoe=False,
+            brch_other=False,
+            address="789 Slot St",
+            zip_city="TestCity",
+            borough="Queens",
+            latitude=40.7,
+            longitude=-73.8,
+        )
+        # Two existing caretakers fill the slots
+        for i in range(2):
+            u = User.objects.create_user(
+                username=f"ct{i}", password="TestPass123!", email=f"ct{i}@test.com"
+            )
+            CaretakerAssignment.objects.create(user=u, tree_id=77777)
+
+        # Applicant
+        self.applicant = User.objects.create_user(
+            username="applicant",
+            password="TestPass123!",
+            email="app@test.com",
+            role="credible",
+        )
+        TreeFollow.objects.create(user=self.applicant, tree=self.tree)
+        self.client.force_login(self.applicant)
+
+    def test_full_tree_rejects_application(self):
+        res = self.client.post(
+            "/api/apply-for-caretaker/",
+            data={
+                "tree_id": "77777",
+                "motivation": "I love this tree",
+                "tree_experience": "10 years",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 400)
+        data = res.json()
+        self.assertIn("full", data["error"].lower())
+
+    def test_tree_with_one_slot_accepts_application(self):
+        # Remove one caretaker to free a slot
+        CaretakerAssignment.objects.filter(tree_id=77777).first().delete()
+        res = self.client.post(
+            "/api/apply-for-caretaker/",
+            data={
+                "tree_id": "77777",
+                "motivation": "I love this tree",
+                "tree_experience": "10 years",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 201)

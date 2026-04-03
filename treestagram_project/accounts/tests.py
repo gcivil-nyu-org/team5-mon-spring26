@@ -1,5 +1,5 @@
 import json
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from unittest.mock import patch, MagicMock
@@ -9,6 +9,9 @@ from posts.models import Post, Comment, Notification
 from accounts.adapter import TreestagramAccountAdapter
 from accounts.signals import activate_user_on_confirm
 from accounts.forms import SignupForm, LoginForm
+
+from caretaker.models import CaretakerAssignment
+from trees.models import Tree
 
 User = get_user_model()
 
@@ -1164,3 +1167,100 @@ class NotificationsAPIExtraTest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
+
+
+# ============================================================
+# for becoming admins and such
+# ============================================================
+class BecomeAdminTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", password="TestPass123!", email="test@test.com"
+        )
+        self.client.force_login(self.user)
+
+    def test_correct_answer_promotes_to_admin(self):
+        res = self.client.post(
+            "/api/become-admin/",
+            data={"answer": "yEs i LOV3 trees"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.role, "admin")
+
+    def test_wrong_answer_rejected(self):
+        res = self.client.post(
+            "/api/become-admin/",
+            data={"answer": "wrong answer"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 403)
+        self.user.refresh_from_db()
+        self.assertNotEqual(self.user.role, "admin")
+
+    def test_unauthenticated_rejected(self):
+        self.client.logout()
+        res = self.client.post(
+            "/api/become-admin/",
+            data={"answer": "yEs i LOV3 trees"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 401)
+
+
+class MyCaretakerTreesTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="caretaker", password="TestPass123!", email="ct@test.com"
+        )
+        self.tree = Tree.objects.create(
+            tree_id=99999,
+            spc_common="Test Oak",
+            spc_latin="Quercus testus",
+            created_at="2015",
+            tree_dbh=10,
+            stump_diam=0,
+            curb_loc="OnCurb",
+            status="Alive",
+            health="Good",
+            sidewalk="NoDamage",
+            root_stone=False,
+            root_grate=False,
+            root_other=False,
+            trunk_wire=False,
+            trnk_light=False,
+            trnk_other=False,
+            brch_light=False,
+            brch_shoe=False,
+            brch_other=False,
+            address="123 Test St",
+            zip_city="TestCity",
+            borough="Manhattan",
+            latitude=40.7,
+            longitude=-74.0,
+        )
+        CaretakerAssignment.objects.create(user=self.user, tree_id=99999)
+        self.client.force_login(self.user)
+
+    def test_returns_assigned_trees(self):
+        res = self.client.get("/api/my-caretaker-trees/")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(len(data["trees"]), 1)
+        self.assertEqual(data["trees"][0]["tree_id"], "99999")
+        self.assertEqual(data["trees"][0]["tree_name"], "Test Oak")
+
+    def test_unauthenticated_rejected(self):
+        self.client.logout()
+        res = self.client.get("/api/my-caretaker-trees/")
+        self.assertEqual(res.status_code, 401)
+
+    def test_empty_if_no_assignments(self):
+        CaretakerAssignment.objects.all().delete()
+        res = self.client.get("/api/my-caretaker-trees/")
+        data = res.json()
+        self.assertEqual(data["trees"], [])

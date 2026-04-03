@@ -542,3 +542,33 @@ def api_become_admin(request):
 
 
 # becoming an admin
+
+
+# get trees user is taking care of
+def api_my_caretaker_trees(request):
+    """GET /api/my-caretaker-trees/ — trees the current user is assigned to care for."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Login required"}, status=401)
+
+    from caretaker.models import CaretakerAssignment
+    from trees.models import Tree
+
+    assignments = CaretakerAssignment.objects.filter(user=request.user)
+    trees = []
+    for a in assignments:
+        try:
+            t = Tree.objects.get(tree_id=a.tree_id)
+            trees.append(
+                {
+                    "tree_id": a.tree_id,
+                    "tree_name": t.spc_common or f"Tree #{a.tree_id}",
+                    "assigned_at": a.assigned_at.isoformat(),
+                }
+            )
+        except Tree.DoesNotExist:
+            pass
+
+    return JsonResponse({"success": True, "trees": trees})
+
+
+# get trees user is taking care of

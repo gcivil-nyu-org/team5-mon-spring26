@@ -40,6 +40,8 @@ def user_to_dict(user):
         "post_count": user.post_count,
         "total_likes_received": user.total_likes_received,
         "leaves": user.leaves,
+        "credible_post_threshold": user.CREDIBLE_POST_THRESHOLD,
+        "credible_like_threshold": user.CREDIBLE_LIKE_THRESHOLD,
     }
 
 

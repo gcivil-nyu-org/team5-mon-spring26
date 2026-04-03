@@ -601,9 +601,9 @@
         <div class="progress-item">
           <div class="progress-header">
             <span class="progress-label"
-              >Posts ({$user?.post_count ?? 0}/30)</span
+              >Posts ({$user?.post_count ?? 0}/{$user?.credible_post_threshold ?? 2})</span
             >
-            {#if ($user?.post_count ?? 0) >= 30}
+            {#if ($user?.post_count ?? 0) >= ($user?.credible_post_threshold ?? 2)}
               <span class="progress-met">✓ Met</span>
             {/if}
           </div>
@@ -612,7 +612,7 @@
               class="progress-fill"
               style="width:{Math.min(
                 100,
-                (($user?.post_count ?? 0) / 30) * 100,
+                (($user?.post_count ?? 0) / ($user?.credible_post_threshold ?? 2)) * 100,
               )}%"
             ></div>
           </div>
@@ -620,9 +620,9 @@
         <div class="progress-item">
           <div class="progress-header">
             <span class="progress-label"
-              >Likes ({$user?.total_likes_received ?? 0}/100)</span
+              >Likes ({$user?.total_likes_received ?? 0}/{$user?.credible_like_threshold ?? 2})</span
             >
-            {#if ($user?.total_likes_received ?? 0) >= 100}
+            {#if ($user?.total_likes_received ?? 0) >= ($user?.credible_like_threshold ?? 2)}
               <span class="progress-met">✓ Met</span>
             {/if}
           </div>
@@ -631,12 +631,12 @@
               class="progress-fill"
               style="width:{Math.min(
                 100,
-                (($user?.total_likes_received ?? 0) / 100) * 100,
+                (($user?.total_likes_received ?? 0) / ($user?.credible_like_threshold ?? 2)) * 100,
               )}%"
             ></div>
           </div>
         </div>
-        {#if ($user?.post_count ?? 0) >= 30 && ($user?.total_likes_received ?? 0) >= 100}
+        {#if ($user?.post_count ?? 0) >= ($user?.credible_post_threshold ?? 2) && ($user?.total_likes_received ?? 0) >= ($user?.credible_like_threshold ?? 2)}
           <div class="credible-banner">
             🎉 You're a Credible User! Apply to be a Caretaker now.
           </div>

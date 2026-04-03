@@ -28,12 +28,18 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    CREDIBLE_POST_THRESHOLD = 2
+    CREDIBLE_LIKE_THRESHOLD = 2
+
     def __str__(self):
         return self.username
 
     @property
     def is_credible(self):
-        return self.post_count >= 2 and self.total_likes_received >= 2
+        return (
+            self.post_count >= self.CREDIBLE_POST_THRESHOLD
+            and self.total_likes_received >= self.CREDIBLE_LIKE_THRESHOLD
+        )
 
     def promote_if_eligible(self):
         """Promote standard user to credible if eligible."""

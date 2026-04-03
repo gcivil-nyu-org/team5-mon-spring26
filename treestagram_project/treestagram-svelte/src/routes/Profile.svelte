@@ -407,15 +407,6 @@
       </button>
     </div>
     <div class="profile-stats-tabs">
-      <div class="p-stat">
-        <span class="n">{$user?.post_count ?? myPosts.length}</span><span class="l">Posts</span>
-      </div>
-      <div class="p-stat">
-        <span class="n">{$user?.total_likes_received ?? totalLikes}</span><span class="l">Likes Received</span>
-      </div>
-      <div class="p-stat">
-        <span class="n">🌱</span><span class="l">{$user?.leaves ?? 0} leaves</span>
-      </div>
       <div class="profile-tab-links">
         <button
           class="profile-tab"

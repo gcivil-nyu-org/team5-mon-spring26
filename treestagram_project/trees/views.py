@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
+from django.views.decorators.http import require_http_methods
 from .models import Tree
 from posts.models import Post, TreeFollow
 import json
@@ -207,3 +208,73 @@ def svelte_app(request):
     Svelte takes over routing (login, signup, home) from here.
     """
     return render(request, "index.html")
+
+
+@require_http_methods(["POST"])
+def tree_update_api(request, tree_id):
+    """POST /trees/api/<tree_id>/update/ — admin only, update tree fields."""
+    if not request.user.is_authenticated or request.user.role != "admin":
+        return JsonResponse({"success": False, "error": "Admin required."}, status=403)
+
+    try:
+        t = Tree.objects.get(tree_id=tree_id)
+    except Tree.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Tree not found."}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON."}, status=400)
+
+    # String fields
+    string_fields = {
+        "curb_loc": ["OnCurb", "OffsetFromCurb"],
+        "status": ["Alive", "Dead", "Stump"],
+        "health": ["Good", "Fair", "Poor"],
+        "sidewalk": ["Damage", "NoDamage"],
+    }
+    for field, valid in string_fields.items():
+        if field in data and data[field] != "":
+            if data[field] not in valid:
+                return JsonResponse(
+                    {"success": False, "error": f"Invalid value for {field}."},
+                    status=400,
+                )
+            setattr(t, field, data[field])
+
+    # Boolean fields
+    bool_fields = [
+        "root_stone",
+        "root_grate",
+        "root_other",
+        "trunk_wire",
+        "trnk_light",
+        "trnk_other",
+        "brch_light",
+        "brch_shoe",
+        "brch_other",
+    ]
+    for field in bool_fields:
+        if field in data and data[field] != "":
+            setattr(t, field, bool(data[field]))
+
+    # Problems — list of strings joined by comma
+    if "problems" in data and data["problems"] is not None:
+        problems_list = [p.strip() for p in data["problems"] if p.strip()]
+        t.problems = ",".join(problems_list) if problems_list else None
+
+    # tree_dbh and stump_diam are also editable integers
+    for field in ["tree_dbh", "stump_diam"]:
+        if field in data and data[field] != "" and data[field] is not None:
+            try:
+                setattr(t, field, int(data[field]))
+            except ValueError:
+                return JsonResponse(
+                    {"success": False, "error": f"Invalid value for {field}."},
+                    status=400,
+                )
+
+    t.save()
+    return JsonResponse(
+        {"success": True, "message": f"Tree {tree_id} updated successfully."}
+    )

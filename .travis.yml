@@ -21,7 +21,8 @@ script:
   - black --check .
   - flake8 .
   - python manage.py migrate
-  - coverage run --source=accounts,trees,treestagram,caretaker manage.py test
+  - coverage run --source=accounts,caretaker,chat,posts,trees,treestagram manage.py test
+  # - coverage run --source=accounts,trees,treestagram,caretaker,posts manage.py test # This is the old one
 
 after_success:
   - coveralls
@@ -51,8 +52,8 @@ deploy:
 # deploy:
 #   provider: elasticbeanstalk
 #   region: us-east-1
-#   app: treestagram8
-#   env: treestagram-env8
+#   app: treestagram11
+#   env: treestagram-env11
 #   bucket_name: elasticbeanstalk-us-east-1-180382394287-1
 #   access_key_id: $AWS_ACCESS_KEY_ID
 #   secret_access_key: $AWS_SECRET_ACCESS_KEY

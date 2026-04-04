@@ -63,7 +63,7 @@
 
   onMount(async () => {
     setTimeout(() => (mounted = true), 50);
-    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications()]);
+    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications(), loadMyCaretakerTrees()]);
   });
 
   async function loadApplications() {
@@ -355,7 +355,126 @@
   }
 
   $: totalLikes = myPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
-</script>
+
+  // ── Admin2: Tree Editor ──
+  let editTreeId = "";
+  let editTreeData = null;
+  let editTreeLoading = false;
+  let editTreeError = "";
+  let editTreeSuccess = "";
+  let editTreeSaving = false;
+
+  // editable fields
+  let edit_curb_loc = "";
+  let edit_status = "";
+  let edit_health = "";
+  let edit_sidewalk = "";
+  let edit_root_stone = "";
+  let edit_root_grate = "";
+  let edit_root_other = "";
+  let edit_trunk_wire = "";
+  let edit_trnk_light = "";
+  let edit_trnk_other = "";
+  let edit_brch_light = "";
+  let edit_brch_shoe = "";
+  let edit_brch_other = "";
+  let edit_tree_dbh = "";
+  let edit_stump_diam = "";
+  let edit_problems = [""]; // array of problem strings
+
+  const PROBLEM_OPTIONS = [
+    "Stones", "MetalGrates", "RootOther", "BranchOther", "TrunkLights",
+    "BranchLights", "TrunkOther", "WiresRope", "Sneakers", "TrunkWire", "BranchShoe"
+  ];
+
+  async function loadTreeForEdit() {
+      if (!editTreeId.trim()) return;
+      editTreeLoading = true;
+      editTreeError = "";
+      editTreeData = null;
+      try {
+          const res = await fetch(`/trees/api/${editTreeId.trim()}/dashboard/`, { credentials: "include" });
+          if (!res.ok) { editTreeError = "Tree not found."; editTreeLoading = false; return; }
+          const data = await res.json();
+          editTreeData = data;
+          // pre-fill fields with current values
+          edit_curb_loc = data.curb_loc || "";
+          edit_status = data.status || "";
+          edit_health = data.health || "";
+          edit_sidewalk = data.sidewalk || "";
+          edit_root_stone = data.root_stone !== undefined ? String(data.root_stone) : "";
+          edit_root_grate = data.root_grate !== undefined ? String(data.root_grate) : "";
+          edit_root_other = data.root_other !== undefined ? String(data.root_other) : "";
+          edit_trunk_wire = data.trunk_wire !== undefined ? String(data.trunk_wire) : "";
+          edit_trnk_light = data.trnk_light !== undefined ? String(data.trnk_light) : "";
+          edit_trnk_other = data.trnk_other !== undefined ? String(data.trnk_other) : "";
+          edit_brch_light = data.brch_light !== undefined ? String(data.brch_light) : "";
+          edit_brch_shoe = data.brch_shoe !== undefined ? String(data.brch_shoe) : "";
+          edit_brch_other = data.brch_other !== undefined ? String(data.brch_other) : "";
+          edit_tree_dbh = data.tree_dbh !== undefined ? String(data.tree_dbh) : "";
+          edit_stump_diam = data.stump_diam !== undefined ? String(data.stump_diam) : "";
+          edit_problems = data.problems ? data.problems.split(",").map(p => p.trim()) : [""];
+      } catch { editTreeError = "Failed to load tree."; }
+      editTreeLoading = false;
+  }
+
+  function addProblem() { edit_problems = [...edit_problems, ""]; }
+  function removeProblem(i) { edit_problems = edit_problems.filter((_, idx) => idx !== i); }
+
+  async function saveTreeEdits() {
+      if (!editTreeData) return;
+      editTreeSaving = true;
+      editTreeError = "";
+      editTreeSuccess = "";
+      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+      const payload = {
+          ...(edit_curb_loc !== "" && { curb_loc: edit_curb_loc }),
+          ...(edit_status !== "" && { status: edit_status }),
+          ...(edit_health !== "" && { health: edit_health }),
+          ...(edit_sidewalk !== "" && { sidewalk: edit_sidewalk }),
+          ...(edit_root_stone !== "" && { root_stone: edit_root_stone === "true" }),
+          ...(edit_root_grate !== "" && { root_grate: edit_root_grate === "true" }),
+          ...(edit_root_other !== "" && { root_other: edit_root_other === "true" }),
+          ...(edit_trunk_wire !== "" && { trunk_wire: edit_trunk_wire === "true" }),
+          ...(edit_trnk_light !== "" && { trnk_light: edit_trnk_light === "true" }),
+          ...(edit_trnk_other !== "" && { trnk_other: edit_trnk_other === "true" }),
+          ...(edit_brch_light !== "" && { brch_light: edit_brch_light === "true" }),
+          ...(edit_brch_shoe !== "" && { brch_shoe: edit_brch_shoe === "true" }),
+          ...(edit_brch_other !== "" && { brch_other: edit_brch_other === "true" }),
+          ...(edit_tree_dbh !== "" && { tree_dbh: edit_tree_dbh }),
+          ...(edit_stump_diam !== "" && { stump_diam: edit_stump_diam }),
+          problems: edit_problems.filter(p => p.trim()),
+      };
+      try {
+          const res = await fetch(`/trees/api/${editTreeData.tree_id}/update/`, {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+              body: JSON.stringify(payload),
+          });
+          const result = await res.json();
+          if (result.success) {
+              editTreeSuccess = "✅ Tree updated successfully!";
+              await loadTreeForEdit(); // refresh to show new values
+          } else {
+              editTreeError = result.error || "Update failed.";
+          }
+      } catch { editTreeError = "Network error."; }
+      editTreeSaving = false;
+  }
+  
+  // ── myTrees Editor ──
+  let myCaretakerTrees = [];
+  let loadingMyTrees = false;
+
+  async function loadMyCaretakerTrees() {
+    loadingMyTrees = true;
+    const res = await fetch("/api/my-caretaker-trees/", { credentials: "include" });
+    const data = await res.json();
+    if (data.success) myCaretakerTrees = data.trees;
+    loadingMyTrees = false;
+  }
+  </script>
 
 <div class="page" class:mounted>
   <BackgroundRings />
@@ -407,16 +526,21 @@
       </button>
     </div>
     <div class="profile-stats-tabs">
-      <div class="p-stat">
-        <span class="n">{$user?.post_count ?? myPosts.length}</span><span class="l">Posts</span>
-      </div>
-      <div class="p-stat">
-        <span class="n">{$user?.total_likes_received ?? totalLikes}</span><span class="l">Likes Received</span>
-      </div>
-      <div class="p-stat">
-        <span class="n">🌱</span><span class="l">{$user?.leaves ?? 0} leaves</span>
-      </div>
       <div class="profile-tab-links">
+
+        {#if $user?.role === "caretaker" || $user?.role === "admin"}
+          <button
+            class="profile-tab"
+            class:active={activeTab === "ct1"}
+            on:click={() => (activeTab = "ct1")}
+          >CT1</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "myTrees"}
+            on:click={() => (activeTab = "myTrees")}
+          >🌳 My Trees</button>
+        {/if}
+
         <button
           class="profile-tab"
           class:active={activeTab === "posts"}
@@ -427,11 +551,25 @@
           class:active={activeTab === "followed"}
           on:click={() => (activeTab = "followed")}
         >🌿 Followed Trees</button>
-        <button
-          class="profile-tab"
-          class:active={activeTab === "admin"}
-          on:click={() => (activeTab = "admin")}
-        >🛡️ Admin</button>
+
+        {#if $user?.role === "admin"}
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin"}
+            on:click={() => (activeTab = "admin")}
+          >CT Apps</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin1"}
+            on:click={() => (activeTab = "admin1")}
+          >Admin1</button>
+          <button
+            class="profile-tab"
+            class:active={activeTab === "admin2"}
+            on:click={() => (activeTab = "admin2")}
+          >Tree Editor</button>
+        {/if}
+
       </div>
     </div>
   </div>
@@ -559,6 +697,218 @@
             </div>
           {/if}
         </div>
+      {:else if activeTab === "admin1"}
+        <div class="admin-panel">
+          <h2 class="admin-panel-title">Admin1</h2>
+          <p style="color: var(--t-text-muted); font-size: 0.9rem;">Admin1 content coming soon.</p>
+        </div>
+
+      {:else if activeTab === "admin2"}
+        <div class="admin-panel">
+          <h2 class="admin-panel-title">🌳 Tree Editor</h2>
+
+          <!-- Tree ID lookup -->
+          <div class="tree-edit-lookup">
+            <input
+              type="text"
+              class="carousel-input"
+              placeholder="Enter Tree ID…"
+              bind:value={editTreeId}
+              on:keydown={(e) => e.key === "Enter" && loadTreeForEdit()}
+              style="max-width: 260px;"
+            />
+            <button class="btn-approve" on:click={loadTreeForEdit} disabled={editTreeLoading}>
+              {editTreeLoading ? "Loading…" : "Load Tree"}
+            </button>
+          </div>
+
+          {#if editTreeError}
+            <p style="color: var(--t-status-poor); margin-top: 0.8rem;">{editTreeError}</p>
+          {/if}
+          {#if editTreeSuccess}
+            <p style="color: var(--t-status-good); margin-top: 0.8rem;">{editTreeSuccess}</p>
+          {/if}
+
+          {#if editTreeData}
+            <div class="tree-edit-form">
+
+              <!-- Read-only info banner -->
+              <div class="tree-edit-info-card">
+                <strong>🌳 {editTreeData.spc_common}</strong>
+                <em>{editTreeData.spc_latin}</em>
+                <span>#{editTreeData.tree_id} · {editTreeData.address}, {editTreeData.borough}</span>
+              </div>
+
+              <!-- Dropdown fields -->
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Curb Location</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.curb_loc || "—"}</strong></span>
+                </div>
+                <select class="carousel-input edit-select" bind:value={edit_curb_loc}>
+                  <option value="">— no change —</option>
+                  <option value="OnCurb">OnCurb</option>
+                  <option value="OffsetFromCurb">OffsetFromCurb</option>
+                </select>
+              </div>
+
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Status</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.status || "—"}</strong></span>
+                </div>
+                <select class="carousel-input edit-select" bind:value={edit_status}>
+                  <option value="">— no change —</option>
+                  <option value="Alive">Alive</option>
+                  <option value="Dead">Dead</option>
+                  <option value="Stump">Stump</option>
+                </select>
+              </div>
+
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Health</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.health || "—"}</strong></span>
+                </div>
+                <select class="carousel-input edit-select" bind:value={edit_health}>
+                  <option value="">— no change —</option>
+                  <option value="Good">Good</option>
+                  <option value="Fair">Fair</option>
+                  <option value="Poor">Poor</option>
+                </select>
+              </div>
+
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Sidewalk</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.sidewalk || "—"}</strong></span>
+                </div>
+                <select class="carousel-input edit-select" bind:value={edit_sidewalk}>
+                  <option value="">— no change —</option>
+                  <option value="Damage">Damage</option>
+                  <option value="NoDamage">NoDamage</option>
+                </select>
+              </div>
+
+              <!-- Integer fields -->
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Trunk Diameter (inches)</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.tree_dbh ?? "—"}</strong></span>
+                </div>
+                <input type="number" class="carousel-input edit-select" placeholder="no change" bind:value={edit_tree_dbh} />
+              </div>
+
+              <div class="edit-field-row">
+                <div class="edit-field-past">
+                  <span class="edit-field-label">Stump Diameter (inches)</span>
+                  <span class="edit-field-current">Current: <strong>{editTreeData.stump_diam ?? "—"}</strong></span>
+                </div>
+                <input type="number" class="carousel-input edit-select" placeholder="no change" bind:value={edit_stump_diam} />
+              </div>
+
+              <!-- Boolean fields -->
+              <div class="edit-section-title">Root / Trunk / Branch Problems</div>
+              {#each [
+                ["root_stone", "Root: Stones",        "edit_root_stone",  edit_root_stone],
+                ["root_grate", "Root: Metal Grates",  "edit_root_grate",  edit_root_grate],
+                ["root_other", "Root: Other",         "edit_root_other",  edit_root_other],
+                ["trunk_wire", "Trunk: Wires/Rope",   "edit_trunk_wire",  edit_trunk_wire],
+                ["trnk_light", "Trunk: Lights",       "edit_trnk_light",  edit_trnk_light],
+                ["trnk_other", "Trunk: Other",        "edit_trnk_other",  edit_trnk_other],
+                ["brch_light", "Branch: Lights",      "edit_brch_light",  edit_brch_light],
+                ["brch_shoe",  "Branch: Sneakers",    "edit_brch_shoe",   edit_brch_shoe],
+                ["brch_other", "Branch: Other",       "edit_brch_other",  edit_brch_other],
+              ] as [key, label, bindKey, bindVal]}
+                <div class="edit-field-row">
+                  <div class="edit-field-past">
+                    <span class="edit-field-label">{label}</span>
+                    <span class="edit-field-current">Current: <strong>{editTreeData[key] ? "Yes" : "No"}</strong></span>
+                  </div>
+                  <select class="carousel-input edit-select"
+                    value={bindVal}
+                    on:change={(e) => {
+                      if (bindKey === "edit_root_stone") edit_root_stone = e.target.value;
+                      else if (bindKey === "edit_root_grate") edit_root_grate = e.target.value;
+                      else if (bindKey === "edit_root_other") edit_root_other = e.target.value;
+                      else if (bindKey === "edit_trunk_wire") edit_trunk_wire = e.target.value;
+                      else if (bindKey === "edit_trnk_light") edit_trnk_light = e.target.value;
+                      else if (bindKey === "edit_trnk_other") edit_trnk_other = e.target.value;
+                      else if (bindKey === "edit_brch_light") edit_brch_light = e.target.value;
+                      else if (bindKey === "edit_brch_shoe") edit_brch_shoe = e.target.value;
+                      else if (bindKey === "edit_brch_other") edit_brch_other = e.target.value;
+                    }}
+                  >
+                    <option value="">— no change —</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+              {/each}
+
+              <!-- Save -->
+              <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--t-border-soft);">
+                <button class="btn-approve" on:click={saveTreeEdits} disabled={editTreeSaving} style="padding: 0.7rem 2rem;">
+                  {editTreeSaving ? "Saving…" : "💾 Save Changes"}
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        {:else if activeTab === "ct1"}
+          <div class="admin-panel">
+            <h2 class="admin-panel-title">CT1</h2>
+            <p style="color: var(--t-text-muted); font-size: 0.9rem;">CT1 content coming soon.</p>
+          </div>
+
+        {:else if activeTab === "myTrees"}
+          <div class="admin-panel">
+            <h2 class="admin-panel-title">🌳 My Trees</h2>
+            {#if loadingMyTrees}
+              <div class="loading-area">
+                <div class="loading-spinner"></div>
+                <p>Loading your trees…</p>
+              </div>
+            {:else if myCaretakerTrees.length === 0}
+              <div class="empty-state">
+                <span class="empty-icon">🌱</span>
+                <h3>No Trees Yet</h3>
+                <p>Trees you're assigned to care for will appear here.</p>
+              </div>
+            {:else}
+              <div class="followed-trees-grid">
+                {#each myCaretakerTrees as tree, i}
+                  <div
+                    class="followed-tree-card"
+                    style="animation-delay: {i * 0.05}s;"
+                    on:click={() => navigate('/treedashboard/' + tree.tree_id)}
+                    on:keydown={(e) => e.key === "Enter" && navigate('/treedashboard/' + tree.tree_id)}
+                    role="button"
+                    tabindex="0"
+                  >
+                    <div class="ft-header">
+                      <div class="ft-icon">🌳</div>
+                      <div class="ft-info">
+                        <h4 class="ft-name">{tree.tree_name}</h4>
+                        <span class="ft-id">#{tree.tree_id}</span>
+                      </div>
+                    </div>
+                    <div class="ft-body">
+                      <p class="ft-date">Caretaker since {timeAgo(tree.assigned_at)} ago</p>
+                      <p class="ft-chat" style="background: rgba(45,122,58,0.12); color: var(--t-status-good);">
+                        🛡️ You are the caretaker
+                      </p>
+                    </div>
+                    <div class="ft-action">
+                      <button class="ft-btn">View Dashboard →</button>
+                    </div>
+                    <div class="ft-glow"></div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
       {/if}
     </div>
 
@@ -601,9 +951,9 @@
         <div class="progress-item">
           <div class="progress-header">
             <span class="progress-label"
-              >Posts ({$user?.post_count ?? 0}/30)</span
+              >Posts ({$user?.post_count ?? 0}/{$user?.credible_post_threshold ?? 2})</span
             >
-            {#if ($user?.post_count ?? 0) >= 30}
+            {#if ($user?.post_count ?? 0) >= ($user?.credible_post_threshold ?? 2)}
               <span class="progress-met">✓ Met</span>
             {/if}
           </div>
@@ -612,7 +962,7 @@
               class="progress-fill"
               style="width:{Math.min(
                 100,
-                (($user?.post_count ?? 0) / 30) * 100,
+                (($user?.post_count ?? 0) / ($user?.credible_post_threshold ?? 2)) * 100,
               )}%"
             ></div>
           </div>
@@ -620,9 +970,9 @@
         <div class="progress-item">
           <div class="progress-header">
             <span class="progress-label"
-              >Likes ({$user?.total_likes_received ?? 0}/100)</span
+              >Likes ({$user?.total_likes_received ?? 0}/{$user?.credible_like_threshold ?? 2})</span
             >
-            {#if ($user?.total_likes_received ?? 0) >= 100}
+            {#if ($user?.total_likes_received ?? 0) >= ($user?.credible_like_threshold ?? 2)}
               <span class="progress-met">✓ Met</span>
             {/if}
           </div>
@@ -631,12 +981,12 @@
               class="progress-fill"
               style="width:{Math.min(
                 100,
-                (($user?.total_likes_received ?? 0) / 100) * 100,
+                (($user?.total_likes_received ?? 0) / ($user?.credible_like_threshold ?? 2)) * 100,
               )}%"
             ></div>
           </div>
         </div>
-        {#if ($user?.post_count ?? 0) >= 30 && ($user?.total_likes_received ?? 0) >= 100}
+        {#if ($user?.post_count ?? 0) >= ($user?.credible_post_threshold ?? 2) && ($user?.total_likes_received ?? 0) >= ($user?.credible_like_threshold ?? 2)}
           <div class="credible-banner">
             🎉 You're a Credible User! Apply to be a Caretaker now.
           </div>
@@ -645,17 +995,15 @@
 
       <div class="profile-right-card">
         <h3>Apply to be a Caretaker</h3>
-        {#if true} <!-- TODO: Add logic to check if user is credible -->
-          <button class="caretaker-apply-btn" on:click={() => navigate('/applyforcaretaker')}>
-            🌿 Apply Now
-          </button>
-        {:else}
+        {#if $user?.role === 'standard'}
           <button class="caretaker-apply-btn disabled" disabled>
             🔒 Requirements Not Met
           </button>
-          <p class="caretaker-hint">
-            You need 30+ posts and 100+ likes to apply.
-          </p>
+          <p class="caretaker-hint">You need 30+ posts and 100+ likes to apply.</p>
+        {:else}
+          <button class="caretaker-apply-btn" on:click={() => navigate('/applyforcaretaker')}>
+            🌿 Apply Now
+          </button>
         {/if}
       </div>
     </aside>
@@ -3174,5 +3522,78 @@
       width: 96vw;
     }
     .modal-close-btn { top: 8px; right: 8px; width: 30px; height: 30px; }
+  }
+
+  /* ─── Tree Editor (Admin2) ──────────────────────────────────────── */
+  .tree-edit-lookup {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .tree-edit-info-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--t-brand-dim);
+    border: 1px solid var(--t-brand-muted);
+    border-radius: var(--t-radius-md);
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.88rem;
+    color: var(--t-text-body);
+  }
+  .tree-edit-info-card strong { color: var(--t-text-heading); font-size: 1rem; }
+  .tree-edit-info-card em { color: var(--t-text-muted); font-style: italic; }
+  .tree-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .edit-field-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--t-border-soft);
+  }
+  .edit-field-past {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .edit-field-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--t-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .edit-field-current {
+    font-size: 0.82rem;
+    color: var(--t-text-body);
+  }
+  .edit-select {
+    width: 180px;
+    flex-shrink: 0;
+  }
+  .edit-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--t-text-brand);
+    margin-top: 1rem;
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .edit-problem-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
   }
 </style>

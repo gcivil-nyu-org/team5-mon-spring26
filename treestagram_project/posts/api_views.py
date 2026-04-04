@@ -260,7 +260,7 @@ def api_create_post(request):
 
     # Check promotion (and notify if promoted)
     old_role = request.user.role
-    request.user.promote_if_eligible()
+    request.user.sync_role()
     if request.user.role != old_role:
         _create_notification(
             recipient=request.user,
@@ -300,6 +300,7 @@ def api_delete_post(request, post_id):
         post__author=request.user
     ).count()
     request.user.save(update_fields=["post_count", "total_likes_received"])
+    request.user.sync_role()
 
     return JsonResponse({"success": True})
 
@@ -339,7 +340,7 @@ def api_toggle_like(request, post_id):
 
     # Check promotion (and notify if promoted)
     old_role = post.author.role
-    post.author.promote_if_eligible()
+    post.author.sync_role()
     if post.author.role != old_role:
         _create_notification(
             recipient=post.author,

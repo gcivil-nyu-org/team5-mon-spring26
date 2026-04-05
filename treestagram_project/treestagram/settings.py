@@ -29,6 +29,8 @@ SECRET_KEY = "django-insecure-^6mmku6r49r2@*(%p7(bys*c)35$swil%+)-u%jc2(724m-16g
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["*"]
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 
 # Application definition

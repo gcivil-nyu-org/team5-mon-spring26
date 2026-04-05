@@ -31,4 +31,10 @@ urlpatterns = [
     path("change-password/", api_views.api_change_password, name="api-change-password"),
     path("verify-password/", api_views.api_verify_password, name="api-verify-password"),
     path("delete-account/", api_views.api_delete_account, name="api-delete-account"),
+    path("become-admin/", api_views.api_become_admin, name="api-become-admin"),
+    path(
+        "my-caretaker-trees/",
+        api_views.api_my_caretaker_trees,
+        name="api-my-caretaker-trees",
+    ),
 ]

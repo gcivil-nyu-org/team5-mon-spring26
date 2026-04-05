@@ -49,6 +49,12 @@ def api_apply_for_caretaker(request):
             {"error": "You are already a caretaker for this tree."}, status=400
         )
 
+    # --- Check 3 - Tree already has 2 caretakers ---
+    if CaretakerAssignment.objects.filter(tree_id=tree_id).count() >= 2:
+        return JsonResponse(
+            {"error": "Caretaker slots for this tree are full."}, status=400
+        )
+
     tree = Tree.objects.filter(tree_id=tree_id).first()
     is_following = TreeFollow.objects.filter(user=user, tree=tree).exists()
 

@@ -18,4 +18,5 @@ urlpatterns = [
         name="tree_dashboard_api",
     ),
     path("api/search/", views.search_trees_api, name="search_trees_api"),
+    path("api/<int:tree_id>/update/", views.tree_update_api, name="tree_update_api"),
 ]

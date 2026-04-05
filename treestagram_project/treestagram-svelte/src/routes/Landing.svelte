@@ -540,12 +540,12 @@
         flex-shrink: 0;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    .mock-card-header div small {
+    .mock-card-header small {
         display: block;
         color: var(--sage);
         font-size: 0.75rem;
     }
-    .mock-card-header div strong {
+    .mock-card-header strong {
         color: #faf9f6;
         font-size: 0.95rem;
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);

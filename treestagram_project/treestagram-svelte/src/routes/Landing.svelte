@@ -542,15 +542,16 @@
     }
     .mock-card-header div small {
         display: block;
-        color: var(--canopy);
+        color: var(--sage);
         font-size: 0.75rem;
     }
     .mock-card-header div strong {
-        color: var(--leaf);
-        font-size: 0.9rem;
+        color: #faf9f6;
+        font-size: 0.95rem;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
     }
     .highlight {
-        color: var(--leaf);
+        color: var(--sage);
     }
     .mock-img {
         width: 100%;

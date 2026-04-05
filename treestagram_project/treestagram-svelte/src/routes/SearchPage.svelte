@@ -453,7 +453,7 @@
   .filter-section-id label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--t-text-muted);
+    color: var(--t-text-heading);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -507,7 +507,7 @@
   .filter-group label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--t-text-muted);
+    color: var(--t-text-heading);
     display: flex;
     align-items: center;
     gap: 4px;

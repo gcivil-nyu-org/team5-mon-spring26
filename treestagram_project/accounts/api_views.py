@@ -129,8 +129,8 @@ def api_confirm_email(request, token):
         user.save(update_fields=["is_active"])
         logger.info("Email confirmed for user %s", user.email)
 
-        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-        return redirect(f"{frontend_url}/login?confirmed=true")
+        # redirect directly to the relative path so it keeps the same host
+        return redirect("/login?confirmed=true")
 
     except SignatureExpired:
         return JsonResponse(

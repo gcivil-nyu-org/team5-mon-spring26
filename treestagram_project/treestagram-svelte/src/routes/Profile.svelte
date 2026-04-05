@@ -1176,7 +1176,9 @@
                     </label>
                   {/if}
                 </div>
-                <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
+                {#if !newImagePreview}
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
+                {/if}
               </div>
             {:else}
               <!-- Step 3: Observation + Tag + Submit -->

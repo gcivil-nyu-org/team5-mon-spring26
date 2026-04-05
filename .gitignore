@@ -76,7 +76,4 @@ treestagram_project/treestagram-svelte/node_modules/
 
 *.csv
 cleaned_tree_data.csv
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
+treestagram_project/db.sqlite3

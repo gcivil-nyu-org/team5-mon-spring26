@@ -19,6 +19,7 @@
 
     // Tab State
     let activeTab = 'overview';
+    let selectedPost = null;
 
     onMount(() => {
         // any one-time setup
@@ -193,7 +194,7 @@
                 <div class="tree-species">{tree.spc_latin}</div>
                 <h1>{tree.spc_common} #{tree.tree_id}<br />{tree.zip_city}</h1>
                 <div class="tree-meta-chips">
-                    <span class="chip chip-fans">👥 {followerCount} fan{followerCount !== 1 ? 's' : ''}</span>
+
                     <span class="chip chip-health-good">Health: {tree.health}</span>
                     <span class="chip chip-health-good">Status: {tree.status}</span>
                     <span class="chip chip-health-good">Borough: {tree.borough}</span>
@@ -223,7 +224,7 @@
         <div class="dash-main">
             <div class="stat-grid">
                 <div class="stat-card"><div class="s-icon">💧</div><div class="s-label">Stormwater Savings</div><div class="s-val">{#if stormwaterSavings}${stormwaterSavings.toLocaleString()}{:else}Unknown{/if}</div><div class="s-sub">per year</div></div>
-                <div class="stat-card"><div class="s-icon">📸</div><div class="s-label">Photos</div><div class="s-val">{photoCount}</div><div class="s-sub">community photos</div></div>
+                <div class="stat-card"><div class="s-icon">👥</div><div class="s-label">Tree Fans</div><div class="s-val">{followerCount}</div><div class="s-sub">followers</div></div>
                 <div class="stat-card"><div class="s-icon">📝</div><div class="s-label">Total Posts</div><div class="s-val">{postCount}</div><div class="s-sub">community posts</div></div>
             </div>
 
@@ -335,7 +336,14 @@
                     <div class="posts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
                         {#each posts as post}
                             <div class="post-card" style="border: 1px solid var(--mist); border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                                {#if post.image_url}<div class="post-img" style="height: 200px; width: 100%; background: #f0f0f0;"><img src={post.image_url} alt="Tree post" style="width: 100%; height: 100%; object-fit: cover;"/></div>{/if}
+                                {#if post.image_url}
+                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                    <div class="post-img clickable" on:click={() => selectedPost = post} style="height: 200px; width: 100%; background: #f0f0f0; cursor: pointer; position: relative; overflow: hidden;">
+                                        <div class="img-overlay"><span>🔍 View Post</span></div>
+                                        <img src={post.image_url} alt="Tree post" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;"/>
+                                    </div>
+                                {/if}
                                 <div class="post-body" style="padding: 1.2rem;">
                                     <div class="post-header" style="display: flex; justify-content: space-between; margin-bottom: 0.8rem;"><strong style="color: var(--moss);">{post.author_username}</strong><small style="color: var(--sage);">{timeAgo(post.created_at)}</small></div>
                                     <p style="margin: 0 0 1rem 0; color: #4a4a4a; line-height: 1.5;">{post.content}</p>
@@ -371,6 +379,34 @@
                     const res = await apiToggleTreeFollow(treeId);
                     if (res.success) { followingTree = res.following; followerCount = res.follower_count; showLockModal = false; }
                 }}>🌟 Follow Tree Now</button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if selectedPost}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="lightbox-overlay" on:click={() => selectedPost = null}>
+        <div class="lightbox-close-btn">✕ Close</div>
+        <div class="lightbox-card" on:click|stopPropagation>
+            {#if selectedPost.image_url}
+                <div class="lightbox-img-container">
+                    <img src={selectedPost.image_url} alt="Expanded view" class="lightbox-full-img" />
+                </div>
+            {/if}
+            <div class="lightbox-details">
+                <div class="lb-header">
+                    <strong>@{selectedPost.author_username}</strong>
+                    <small>{timeAgo(selectedPost.created_at)}</small>
+                </div>
+                <div class="lb-content">
+                    {selectedPost.content}
+                </div>
+                <div class="lb-actions">
+                    <span>❤️ {selectedPost.likes_count}</span>
+                    <span>💬 {selectedPost.comments_count}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -482,5 +518,31 @@
     .btn-cancel { background: var(--mist); border: none; padding: 0.7rem 1.5rem; border-radius: 999px; cursor: pointer; font-family: "DM Sans", sans-serif; font-weight: 600; }
     .btn-follow-modal { background: #3c7d4c; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 999px; cursor: pointer; font-family: "DM Sans", sans-serif; font-weight: 700; }
     .btn-primary { background: var(--moss); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 999px; font-family: "DM Sans", sans-serif; font-weight: 600; cursor: pointer; }
-    @media (max-width: 900px) { .dendro-container { grid-template-columns: 1fr; gap: 2rem; } .svg-wrapper { max-width: 350px; margin: 0 auto; } }
+    
+    .post-img.clickable:hover img { transform: scale(1.05); }
+    .img-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; z-index: 10; color: white; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .post-img.clickable:hover .img-overlay { opacity: 1; }
+    
+    .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; animation: fadeIn 0.2s ease-out; }
+    .lightbox-card { background: white; max-width: 900px; width: 100%; max-height: 85vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: row; box-shadow: 0 10px 40px rgba(0,0,0,0.5); cursor: default; animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); }
+    .lightbox-img-container { flex: 1.5; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 300px; }
+    .lightbox-full-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .lightbox-details { flex: 1; padding: 2rem; background: #faf9f6; display: flex; flex-direction: column; overflow-y: auto; }
+    .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--mist); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    .lb-header strong { color: var(--moss); font-size: 1.1rem; }
+    .lb-header small { color: var(--sage); }
+    .lb-content { flex: 1; font-size: 1rem; line-height: 1.6; color: var(--bark); margin-bottom: 2rem; white-space: pre-wrap; }
+    .lb-actions { display: flex; gap: 1.5rem; border-top: 1px solid var(--mist); padding-top: 1rem; color: var(--sage); font-weight: 500; }
+    .lightbox-close-btn { position: absolute; top: 2rem; right: 2rem; color: white; font-weight: 700; font-family: "DM Sans", sans-serif; font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-radius: 40px; background: rgba(255,255,255,0.1); transition: background 0.2s; z-index: 2010; }
+    .lightbox-close-btn:hover { background: rgba(255,255,255,0.25); }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    @media (max-width: 900px) { 
+        .dendro-container { grid-template-columns: 1fr; gap: 2rem; } 
+        .svg-wrapper { max-width: 350px; margin: 0 auto; } 
+        .lightbox-card { flex-direction: column; }
+        .lightbox-img-container { flex: none; height: 50vh; }
+    }
 </style>

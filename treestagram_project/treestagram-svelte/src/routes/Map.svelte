@@ -13,15 +13,13 @@
   import "leaflet.markercluster/dist/MarkerCluster.Default.css";
   import "leaflet.markercluster";
 
-  // Fix default Leaflet icons
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl:
-      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-    iconUrl:
-      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    shadowUrl:
-      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  // Custom tree icon
+  const treeIcon = L.divIcon({
+    html: '<span style="font-size:1.2rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));cursor:pointer;">🌳</span>',
+    className: 'tree-div-icon',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
   });
 
   let map;
@@ -67,17 +65,24 @@
         const lng = parseFloat(tree.longitude);
         if (isNaN(lat) || isNaN(lng)) return;
 
+        const name = tree.spc_common || "Unknown";
+        const capitalName = name.charAt(0).toUpperCase() + name.slice(1);
         const popupContent = `
-          <div>
-            <b>${tree.spc_common || "Unknown"}</b><br>
-            ID: ${tree.tree_id}<br>
+          <div class="tree-popup">
+            <div class="tree-popup-header">
+              <span class="tree-popup-emoji">🌳</span>
+              <div class="tree-popup-title">
+                <strong>${capitalName}</strong>
+                <span class="tree-popup-id">#${tree.tree_id}</span>
+              </div>
+            </div>
             <button class="popup-dashboard-btn" data-treeid="${tree.tree_id}">
-              Dashboard
+              View Dashboard →
             </button>
           </div>
         `;
 
-        const marker = L.marker([lat, lng]).bindPopup(popupContent);
+        const marker = L.marker([lat, lng], { icon: treeIcon }).bindPopup(popupContent);
         markers.addLayer(marker);
         loadedTreeIds.add(tree.tree_id);
       });
@@ -153,6 +158,7 @@
     z-index: 1;
   }
 
+
   .zoom-hint {
     position: absolute;
     top: 16px;
@@ -165,5 +171,93 @@
     font-size: 13px;
     z-index: 999;
     pointer-events: none;
+  }
+
+  /* ─── Leaflet Popup Overrides (global because Leaflet injects outside Svelte) ── */
+  :global(.leaflet-popup-content-wrapper) {
+    background: #faf9f6 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06) !important;
+    padding: 0 !important;
+    border: 1px solid rgba(82,154,103,0.2);
+  }
+  :global(.leaflet-popup-content) {
+    margin: 0 !important;
+    min-width: 180px;
+  }
+  :global(.leaflet-popup-tip) {
+    background: #faf9f6 !important;
+    border: 1px solid rgba(82,154,103,0.2);
+    border-top: none;
+    border-left: none;
+  }
+  :global(.leaflet-popup-close-button) {
+    color: #999 !important;
+    font-size: 20px !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 4px 6px 0 0 !important;
+    transition: color 0.15s;
+  }
+  :global(.leaflet-popup-close-button:hover) {
+    color: #333 !important;
+  }
+
+  :global(.tree-popup) {
+    padding: 14px 16px;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+  :global(.tree-popup-header) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  :global(.tree-popup-emoji) {
+    font-size: 1.6rem;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+    flex-shrink: 0;
+  }
+  :global(.tree-popup-title) {
+    display: flex;
+    flex-direction: column;
+  }
+  :global(.tree-popup-title strong) {
+    font-size: 0.92rem;
+    color: #2b2b2b;
+    line-height: 1.2;
+  }
+  :global(.tree-popup-id) {
+    display: inline-block;
+    margin-top: 2px;
+    background: linear-gradient(135deg, rgba(82,154,103,0.1), rgba(45,122,58,0.05));
+    border: 1px solid rgba(82,154,103,0.25);
+    border-radius: 50px;
+    padding: 1px 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #529a67;
+    font-family: 'DM Mono', 'Courier New', monospace;
+    letter-spacing: 0.3px;
+    width: fit-content;
+  }
+  :global(.popup-dashboard-btn) {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #529a67, #3d7a4e);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 2px 6px rgba(82,154,103,0.25);
+  }
+  :global(.popup-dashboard-btn:hover) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(82,154,103,0.35);
   }
 </style>

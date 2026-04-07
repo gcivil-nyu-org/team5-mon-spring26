@@ -12,7 +12,8 @@
     let searchQuery = '';
 
     $: filteredChats = followedChats.filter(chat => 
-        chat.tree_name.toLowerCase().includes(searchQuery.toLowerCase())
+        (chat.tree_name && chat.tree_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        String(chat.tree_id).includes(searchQuery)
     );
 
     $: activeTree = followedChats.find(t => String(t.tree_id) === String(activeTreeId));
@@ -102,7 +103,7 @@
                         >
                             <div class="chat-item-icon">🌳</div>
                             <div class="chat-item-info">
-                                <strong>{chat.tree_name} Chat</strong>
+                                <strong>{chat.tree_name} #{chat.tree_id}</strong>
                                 <small class="sidebar-status {String(activeTreeId) === String(chat.tree_id) ? chatStatus : ''}">
                                     {#if String(activeTreeId) === String(chat.tree_id)}
                                         {#if chatStatus === 'connected'}

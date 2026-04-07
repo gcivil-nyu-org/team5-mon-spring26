@@ -819,23 +819,26 @@
         }
     }
     .nyu-word {
-        font-weight: 700;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 800;
         font-size: 1.15rem;
-        letter-spacing: 0.25em;
+        letter-spacing: 0.2em;
         opacity: 1;
         background: linear-gradient(
             90deg,
+            #7209b7,
             #9b6fbf,
-            #d8b4fe,
-            #f0d0ff,
-            #d8b4fe,
-            #9b6fbf
+            #e4baff,
+            #9b6fbf,
+            #7209b7
         );
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        animation: nyuShimmer 2.5s linear infinite;
+        filter: drop-shadow(0 0 5px rgba(155, 111, 191, 0.4));
+        animation: nyuShimmer 3s linear infinite;
+        padding-left: 0.3rem;
     }
     @keyframes nyuShimmer {
         to {

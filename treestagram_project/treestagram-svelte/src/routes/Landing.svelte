@@ -140,7 +140,7 @@
     <footer class="made-with-love">
         <div class="love-line"></div>
         <div class="love-text">
-            Made with <span class="love-word">Love</span> at
+            Made with <span class="love-word">❤</span> at
             <span class="nyu-word">NYU</span>
         </div>
         <div class="love-leaf">🌿</div>
@@ -784,11 +784,39 @@
         opacity: 0.6;
     }
     .love-word {
-        font-family: "Playfair Display", serif;
-        font-style: italic;
-        font-weight: 700;
-        color: #ef4444;
-        opacity: 1;
+        font-style: normal;
+        font-size: 1.1rem;
+        color: transparent;
+        background: linear-gradient(
+            120deg,
+            #ef4444 0%,
+            #ef4444 40%,
+            #ffb3b3 50%,
+            #ef4444 60%,
+            #ef4444 100%
+        );
+        background-size: 200% auto;
+        background-position: 200% center;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: heartShine 1.5s ease-in-out forwards 1.2s;
+        display: inline-block;
+        transform-origin: center;
+    }
+    @keyframes heartShine {
+        0% {
+            background-position: 200% center;
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.15);
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+        100% {
+            background-position: -200% center;
+            transform: scale(1);
+        }
     }
     .nyu-word {
         font-weight: 700;

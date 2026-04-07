@@ -164,7 +164,7 @@
     };
 
     function getEarthyColor(name) {
-        if (!name) return '#8a9a5b';
+        if (!name) return 'hsl(80, 30%, 42%)';
         if (TREE_COLORS[name]) return TREE_COLORS[name];
         const lowerName = name.toLowerCase();
         for (const [key, color] of Object.entries(TREE_COLORS)) {
@@ -180,15 +180,25 @@
         return `hsl(${h}, ${s}%, ${l}%)`;
     }
     
-    $: heroBackgroundColor = tree ? getEarthyColor(tree.spc_common) : '#8a9a5b';
+    function getEarthyColorValues(name) {
+        const colorStr = getEarthyColor(name);
+        const match = colorStr.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+        if (match) {
+            return { h: parseInt(match[1]), s: parseInt(match[2]), l: parseInt(match[3]) };
+        }
+        return { h: 80, s: 30, l: 42 };
+    }
+    
+    $: treeColorVals = tree ? getEarthyColorValues(tree.spc_common) : {h:80, s:30, l:42};
+    $: cssVars = `--tree-main: hsl(${treeColorVals.h}, ${treeColorVals.s}%, ${treeColorVals.l}%); --tree-card: hsl(${treeColorVals.h}, ${Math.max(0, treeColorVals.s - 15)}%, ${Math.min(85, treeColorVals.l + 45)}%); --tree-bg: hsl(${treeColorVals.h}, ${Math.max(0, treeColorVals.s - 25)}%, ${Math.min(94, treeColorVals.l + 55)}%);`;
 </script>
 
 {#if tree}
-<div class="page">
+<div class="page" style={cssVars}>
     <BackgroundRings />
     <LeftNav {navigate} activePage="explore" />
 
-    <div class="dashboard-hero" style="background-color: {heroBackgroundColor};">
+    <div class="dashboard-hero" style="background-color: var(--tree-main);">
         <div class="dash-hero-content">
             <div class="tree-title-block">
                 <div class="tree-species">{tree.spc_latin}</div>
@@ -450,16 +460,16 @@
     .dash-tab.active { color: #2b2b2b; background: #faf9f6; font-weight: 600; }
     .dashboard-body { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; }
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { background: #cdd9af; border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08); }
+    .stat-card { background: var(--tree-card); border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); }
     .stat-card .s-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a44a3f; margin-bottom: 0.5rem; }
     .stat-card .s-val { font-family: "Playfair Display", serif; font-size: 1.8rem; color: var(--ink); line-height: 1; }
     .stat-card .s-sub { font-size: 0.75rem; color: var(--sage); margin-top: 0.2rem; }
     .stat-card .s-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
-    .content-card { background: #cdd9af; border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08); margin-bottom: 1.5rem; }
+    .content-card { background: var(--tree-card); border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); margin-bottom: 1.5rem; }
     .content-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a44a3f; margin-bottom: 1rem; }
     .sidecurb-ratings { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
     .env-ratings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
-    .env-item { background: var(--mist); border-radius: 10px; padding: 0.8rem; }
+    .env-item { background: var(--tree-bg); border-radius: 10px; padding: 0.8rem; }
     .env-item .env-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a44a3f; display: block; margin-bottom: 0.4rem; }
     .env-score { font-weight: 700; font-size: 0.88rem; color: var(--ink); margin-top: 0.3rem; }
     .ct-card { background: white; border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px var(--shadow); margin-bottom: 1rem; }

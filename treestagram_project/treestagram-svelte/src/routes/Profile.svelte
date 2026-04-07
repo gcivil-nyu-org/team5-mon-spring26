@@ -1965,7 +1965,7 @@
   .ft-btn {
     background: transparent;
     border: none;
-    color: var(--tree-main, var(--t-text-brand));
+    color: var(--t-text-brand);
     font-weight: 700;
     font-size: 0.8rem;
     padding: 6px 0;
@@ -3046,7 +3046,7 @@
   .ft-btn {
     background: transparent;
     border: none;
-    color: var(--tree-main, var(--t-text-brand));
+    color: var(--t-text-brand);
     font-weight: 700;
     font-size: 0.8rem;
     padding: 6px 0;

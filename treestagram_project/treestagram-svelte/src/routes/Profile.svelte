@@ -33,6 +33,7 @@
   let newHealth = "Good";
   let newImage = null;
   let newImagePreview = null;
+  let imageUploadError = "";
   let newTaggedUsers = "";           // comma-separated @usernames
   let showCreateModal = false;
   let carouselStep = 0;            // 0 = tree info, 1 = photo, 2 = observation + submit
@@ -151,7 +152,15 @@
 
   function handleImageSelect(event) {
     const file = event.target.files[0];
+    imageUploadError = "";
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        imageUploadError = "Photo size cannot be more than 5 MB";
+        event.target.value = "";
+        newImage = null;
+        newImagePreview = null;
+        return;
+      }
       newImage = file;
       newImagePreview = URL.createObjectURL(file);
     }
@@ -160,6 +169,7 @@
   function removeImage() {
     newImage = null;
     newImagePreview = null;
+    imageUploadError = "";
   }
 
   function triggerNewPost() {
@@ -177,6 +187,7 @@
     newHealth = "Good";
     newImage = null;
     newImagePreview = null;
+    imageUploadError = "";
     newTaggedUsers = "";
     posting = false;
     treeValidationStatus = "";
@@ -1224,7 +1235,7 @@
                     <label class="photo-dropzone">
                       <span class="dropzone-icon">📷</span>
                       <span class="dropzone-text">Click to upload a photo</span>
-                      <span class="dropzone-hint">JPG, PNG, GIF up to 10MB</span>
+                      <span class="dropzone-hint">JPG, PNG, GIF up to 5MB</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -1234,7 +1245,10 @@
                     </label>
                   {/if}
                 </div>
-                {#if !newImagePreview}
+                {#if imageUploadError}
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">{imageUploadError}</p>
+                {/if}
+                {#if !newImagePreview && !imageUploadError}
                   <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
                 {/if}
               </div>

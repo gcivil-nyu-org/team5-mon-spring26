@@ -646,11 +646,40 @@
                     {#if selectedPost.comments && selectedPost.comments.length > 0}
                         {#each selectedPost.comments as comment}
                             <div class="comment-item" style="background: rgba(255,255,255,0.6); padding: 0.8rem; border-radius: 8px; font-size: 0.9rem;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-                                    <strong style="color: var(--moss);">@{comment.author_username}</strong>
-                                    <span style="color: #888; font-size: 0.75rem;">{timeAgo(comment.created_at)}</span>
-                                </div>
-                                <div style="color: var(--ink); line-height: 1.4;">{comment.text}</div>
+                                {#if editingCommentId === comment.id}
+                                    <div class="ic-edit-row">
+                                        <input
+                                            type="text"
+                                            class="ic-edit-input"
+                                            bind:value={editingCommentText}
+                                            on:keydown={(e) => { if (e.key === 'Enter') { saveEditComment(selectedPost.id); selectedPost = posts.find(p => p.id === selectedPost.id); } }}
+                                        />
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button class="ic-action-btn save" on:click={() => { saveEditComment(selectedPost.id); setTimeout(() => selectedPost = posts.find(p => p.id === selectedPost.id), 50); }}>✓</button>
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button class="ic-action-btn" on:click={cancelEditComment}>✕</button>
+                                    </div>
+                                {:else}
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                        <strong style="color: var(--moss);">@{comment.author_username}</strong>
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <span style="color: #888; font-size: 0.75rem;">{timeAgo(comment.created_at)}</span>
+                                            {#if $user && comment.author_username === $user.username}
+                                                <span class="ic-actions" style="opacity: 1;">
+                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                    <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                    <button class="ic-action-btn delete" on:click={() => { deleteComment(selectedPost.id, comment.id); setTimeout(() => selectedPost = posts.find(p => p.id === selectedPost.id), 50); }} title="Delete">🗑️</button>
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                    <div style="color: var(--ink); line-height: 1.4;">{comment.text}</div>
+                                {/if}
                             </div>
                         {/each}
                     {:else}

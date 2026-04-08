@@ -118,17 +118,42 @@ def tree_dashboard_api(request, tree_id):
     }
 
     # Posts for this tree (using tree__tree_id because the URL passes the public NYC tree_id, not the internal DB id)
-    tree_posts = Post.objects.filter(tree__tree_id=tree_id).order_by("-created_at")
+    tree_posts = (
+        Post.objects.filter(tree__tree_id=tree_id)
+        .select_related("author")
+        .prefetch_related("likes", "comments__author")
+        .order_by("-created_at")
+    )
     posts_list = []
     photos = []
     for p in tree_posts:
+        # Check if the current user liked this post
+        liked = False
+        if request.user.is_authenticated:
+            liked = p.likes.filter(user=request.user).exists()
+
+        # Build comment list with all fields needed for edit/delete controls
+        comments = [
+            {
+                "id": c.id,
+                "text": c.text,
+                "author_username": c.author.username,
+                "author_id": c.author_id,
+                "created_at": c.created_at.isoformat(),
+            }
+            for c in p.comments.select_related("author").all()
+        ]
+
         post_data = {
             "id": p.id,
             "content": p.body or "",
             "author_username": p.author.username,
+            "author_id": p.author_id,
             "created_at": p.created_at.isoformat(),
             "likes_count": p.likes.count(),
-            "comments_count": p.comments.count(),
+            "liked": liked,
+            "comments_count": len(comments),
+            "comments": comments,
             "image_url": p.image if p.image else None,
         }
         posts_list.append(post_data)

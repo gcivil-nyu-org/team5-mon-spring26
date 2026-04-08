@@ -638,8 +638,6 @@
                         {selectedPost.liked ? '❤️' : '🤍'} {selectedPost.likes_count}
                     </button>
                     <span class="action-btn static">💬 {selectedPost.comments_count}</span>
-                    <!-- svelte-ignore a11y-invalid-attribute -->
-                    <a href="#" style="font-size: 0.85rem; color: var(--sage); margin-left: auto;" on:click|preventDefault={() => { document.querySelector('.comment-input')?.focus() }}>Reply</a>
                 </div>
                 
                 <div class="lb-comments-section" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; padding-right: 0.5rem; min-height: 150px; max-height: 40vh;">

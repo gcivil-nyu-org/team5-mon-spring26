@@ -33,6 +33,7 @@
   let newHealth = "Good";
   let newImage = null;
   let newImagePreview = null;
+  let imageUploadError = "";
   let newTaggedUsers = "";           // comma-separated @usernames
   let showCreateModal = false;
   let carouselStep = 0;            // 0 = tree info, 1 = photo, 2 = observation + submit
@@ -151,7 +152,15 @@
 
   function handleImageSelect(event) {
     const file = event.target.files[0];
+    imageUploadError = "";
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        imageUploadError = "Photo size cannot be more than 5 MB";
+        event.target.value = "";
+        newImage = null;
+        newImagePreview = null;
+        return;
+      }
       newImage = file;
       newImagePreview = URL.createObjectURL(file);
     }
@@ -160,6 +169,7 @@
   function removeImage() {
     newImage = null;
     newImagePreview = null;
+    imageUploadError = "";
   }
 
   function triggerNewPost() {
@@ -177,6 +187,7 @@
     newHealth = "Good";
     newImage = null;
     newImagePreview = null;
+    imageUploadError = "";
     newTaggedUsers = "";
     posting = false;
     treeValidationStatus = "";
@@ -474,6 +485,58 @@
     if (data.success) myCaretakerTrees = data.trees;
     loadingMyTrees = false;
   }
+
+  const TREE_COLORS = {
+      'honeylocust': 'hsl(40, 70%, 42%)', 'golden raintree': 'hsl(45, 80%, 45%)',
+      'ginkgo': 'hsl(50, 85%, 44%)', 'red maple': 'hsl(355, 58%, 38%)',
+      'red pine': 'hsl(0, 45%, 35%)', 'crimson king maple': 'hsl(340, 55%, 30%)',
+      'northern red oak': 'hsl(8, 50%, 36%)', 'scarlet oak': 'hsl(5, 60%, 38%)',
+      'cherry': 'hsl(340, 55%, 65%)', 'black cherry': 'hsl(345, 40%, 30%)',
+      'flowering dogwood': 'hsl(350, 40%, 75%)', 'crab apple': 'hsl(350, 50%, 55%)',
+      'purple-leaf plum': 'hsl(290, 40%, 32%)', 'sweetgum': 'hsl(20, 50%, 40%)',
+      'tulip-poplar': 'hsl(45, 55%, 42%)', 'English oak': 'hsl(30, 45%, 34%)',
+      'black oak': 'hsl(25, 35%, 25%)', 'pin oak': 'hsl(22, 42%, 35%)',
+      'white oak': 'hsl(38, 25%, 50%)', 'silver maple': 'hsl(210, 12%, 55%)',
+      'paper birch': 'hsl(40, 10%, 75%)', 'Scots pine': 'hsl(145, 50%, 28%)',
+      'white pine': 'hsl(135, 35%, 38%)', 'Norway spruce': 'hsl(155, 50%, 25%)',
+      'blue spruce': 'hsl(195, 40%, 40%)', 'Douglas-fir': 'hsl(148, 55%, 26%)',
+      'bald cypress': 'hsl(100, 30%, 38%)', 'dawn redwood': 'hsl(15, 40%, 35%)',
+      'American elm': 'hsl(100, 35%, 40%)', 'London planetree': 'hsl(75, 28%, 38%)',
+      'Japanese zelkova': 'hsl(80, 30%, 42%)', 'green ash': 'hsl(105, 40%, 38%)',
+      'weeping willow': 'hsl(85, 45%, 42%)', 'horse chestnut': 'hsl(20, 55%, 32%)',
+      'black locust': 'hsl(220, 10%, 28%)', 'black walnut': 'hsl(30, 20%, 25%)',
+      'Japanese maple': 'hsl(350, 55%, 40%)', 'Norway maple': 'hsl(90, 30%, 38%)',
+      'sugar maple': 'hsl(30, 60%, 42%)', 'boxelder': 'hsl(95, 30%, 42%)',
+      'American beech': 'hsl(35, 20%, 52%)', 'magnolia': 'hsl(330, 20%, 60%)',
+      'Callery pear': 'hsl(0, 0%, 72%)', 'eastern cottonwood': 'hsl(60, 20%, 48%)',
+      'river birch': 'hsl(25, 30%, 42%)', 'Unknown': 'hsl(0, 0%, 45%)',
+  };
+
+  function getEarthyColor(name) {
+      if (!name) return 'hsl(80, 30%, 42%)';
+      if (TREE_COLORS[name]) return TREE_COLORS[name];
+      const lowerName = name.toLowerCase();
+      for (const [key, color] of Object.entries(TREE_COLORS)) {
+          if (key.toLowerCase() === lowerName) return color;
+      }
+      let hash = 0;
+      for (let i = 0; i < lowerName.length; i++) {
+          hash = lowerName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const h = Math.abs(hash) % 130 + 30;
+      const s = Math.abs(hash * 2) % 20 + 25;
+      const l = Math.abs(hash * 3) % 15 + 35;
+      return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
+  function getEarthyColorValues(name) {
+      const colorStr = getEarthyColor(name);
+      const match = colorStr.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+      if (match) {
+          return { h: parseInt(match[1]), s: parseInt(match[2]), l: parseInt(match[3]) };
+      }
+      return { h: 80, s: 30, l: 42 };
+  }
   </script>
 
 <div class="page" class:mounted>
@@ -627,9 +690,15 @@
         {:else}
           <div class="followed-trees-grid">
             {#each followedTrees as tree, i}
+              {@const treeColorVals = getEarthyColorValues(tree.tree_name)}
               <div
                 class="followed-tree-card"
-                style="animation-delay: {i * 0.05}s;"
+                style="
+                  animation-delay: {i * 0.05}s;
+                  --tree-main: hsl({treeColorVals.h}, {treeColorVals.s}%, {treeColorVals.l}%);
+                  --tree-card: hsl({treeColorVals.h}, {Math.max(0, treeColorVals.s - 15)}%, {Math.min(85, treeColorVals.l + 45)}%);
+                  --tree-bg: hsl({treeColorVals.h}, {Math.max(0, treeColorVals.s - 25)}%, {Math.min(94, treeColorVals.l + 55)}%);
+                "
                 on:click={() => navigate('/treedashboard/' + tree.tree_id)}
                 on:keydown={(e) => e.key === "Enter" && navigate('/treedashboard/' + tree.tree_id)}
                 role="button"
@@ -1166,7 +1235,7 @@
                     <label class="photo-dropzone">
                       <span class="dropzone-icon">📷</span>
                       <span class="dropzone-text">Click to upload a photo</span>
-                      <span class="dropzone-hint">JPG, PNG, GIF up to 10MB</span>
+                      <span class="dropzone-hint">JPG, PNG, GIF up to 5MB</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -1176,7 +1245,12 @@
                     </label>
                   {/if}
                 </div>
-                <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
+                {#if imageUploadError}
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">{imageUploadError}</p>
+                {/if}
+                {#if !newImagePreview && !imageUploadError}
+                  <p class="slide-skip" style="color: var(--danger, #ff4444)">A photo is required to submit.</p>
+                {/if}
               </div>
             {:else}
               <!-- Step 3: Observation + Tag + Submit -->
@@ -1823,8 +1897,8 @@
     padding: 0.5rem 0;
   }
   .followed-tree-card {
-    background: linear-gradient(145deg, var(--t-bg-elevated), var(--t-bg-surface));
-    border: 1px solid var(--t-border-soft);
+    background: var(--tree-card, linear-gradient(145deg, var(--t-bg-elevated), var(--t-bg-surface)));
+    border: 1px solid var(--tree-bg, var(--t-border-soft));
     border-radius: 16px;
     padding: 18px;
     position: relative;
@@ -1839,8 +1913,8 @@
   }
   .followed-tree-card:hover {
     transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 12px 30px rgba(45, 122, 58, 0.12), inset 0 1px 2px rgba(255,255,255,0.4);
-    border-color: rgba(82, 154, 103, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(255,255,255,0.4);
+    border-color: var(--tree-main, var(--t-brand));
   }
   .ft-header {
     display: flex;
@@ -1851,7 +1925,7 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.05));
+    background: var(--tree-bg, linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.05)));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1873,7 +1947,7 @@
   .ft-id {
     font-family: 'DM Mono', monospace;
     font-size: 0.75rem;
-    color: var(--t-text-brand);
+    color: var(--tree-main, var(--t-text-brand));
     font-weight: 600;
   }
   .ft-body {
@@ -1891,8 +1965,8 @@
     margin: 0;
     font-size: 0.72rem;
     font-weight: 600;
-    color: var(--t-status-good);
-    background: rgba(45, 122, 58, 0.08);
+    color: var(--tree-main, var(--t-status-good));
+    background: var(--tree-bg, rgba(45, 122, 58, 0.08));
     display: inline-block;
     padding: 3px 8px;
     border-radius: 8px;
@@ -2904,8 +2978,8 @@
     padding: 0.5rem 0;
   }
   .followed-tree-card {
-    background: linear-gradient(145deg, var(--t-bg-elevated), var(--t-bg-surface));
-    border: 1px solid var(--t-border-soft);
+    background: var(--tree-card, linear-gradient(145deg, var(--t-bg-elevated), var(--t-bg-surface)));
+    border: 1px solid var(--tree-bg, var(--t-border-soft));
     border-radius: 16px;
     padding: 18px;
     position: relative;
@@ -2920,8 +2994,8 @@
   }
   .followed-tree-card:hover {
     transform: translateY(-4px) scale(1.01);
-    box-shadow: 0 12px 30px rgba(45, 122, 58, 0.12), inset 0 1px 2px rgba(255,255,255,0.4);
-    border-color: rgba(82, 154, 103, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(255,255,255,0.4);
+    border-color: var(--tree-main, var(--t-brand));
   }
   .ft-header {
     display: flex;
@@ -2932,7 +3006,7 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.05));
+    background: var(--tree-bg, linear-gradient(135deg, rgba(82,154,103,0.15), rgba(45,122,58,0.05)));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2954,7 +3028,7 @@
   .ft-id {
     font-family: 'DM Mono', monospace;
     font-size: 0.75rem;
-    color: var(--t-text-brand);
+    color: var(--tree-main, var(--t-text-brand));
     font-weight: 600;
   }
   .ft-body {
@@ -2972,8 +3046,8 @@
     margin: 0;
     font-size: 0.72rem;
     font-weight: 600;
-    color: var(--t-status-good);
-    background: rgba(45, 122, 58, 0.08);
+    color: var(--tree-main, var(--t-status-good));
+    background: var(--tree-bg, rgba(45, 122, 58, 0.08));
     display: inline-block;
     padding: 3px 8px;
     border-radius: 8px;

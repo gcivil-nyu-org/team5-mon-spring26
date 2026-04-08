@@ -1,7 +1,7 @@
 <script>
     import LeftNav from "../components/LeftNav.svelte";
     import BackgroundRings from "../components/BackgroundRings.svelte";
-    import { apiToggleTreeFollow } from "../lib/api.js";
+    import { apiToggleTreeFollow, apiToggleLike, apiAddComment, apiDeleteComment, apiEditComment, user } from "../lib/api.js";
     export let navigate;
     export let treeId;
 
@@ -19,6 +19,139 @@
 
     // Tab State
     let activeTab = 'overview';
+    let selectedPost = null;
+    let newCommentText = "";
+    let isSubmittingComment = false;
+
+    // Per-post comment state
+    let showComments = {};  // { [postId]: boolean }
+    let commentInputs = {}; // { [postId]: string }
+    let submittingComment = {}; // { [postId]: boolean }
+
+    // Edit comment state
+    let editingCommentId = null;
+    let editingCommentText = "";
+
+    function startEditComment(comment) {
+        editingCommentId = comment.id;
+        editingCommentText = comment.text;
+    }
+    function cancelEditComment() {
+        editingCommentId = null;
+        editingCommentText = "";
+    }
+    async function saveEditComment(postId) {
+        if (!editingCommentText.trim()) return;
+        const res = await apiEditComment(editingCommentId, editingCommentText.trim());
+        if (res.success) {
+            const idx = posts.findIndex(p => p.id === postId);
+            if (idx !== -1) {
+                posts[idx].comments = posts[idx].comments.map(c =>
+                    c.id === editingCommentId ? { ...c, text: res.comment.text } : c
+                );
+                posts = [...posts];
+            }
+            cancelEditComment();
+        }
+    }
+    async function deleteComment(postId, commentId) {
+        const res = await apiDeleteComment(commentId);
+        if (res.success) {
+            const idx = posts.findIndex(p => p.id === postId);
+            if (idx !== -1) {
+                posts[idx].comments = posts[idx].comments.filter(c => c.id !== commentId);
+                posts[idx].comments_count = Math.max(0, (posts[idx].comments_count || 1) - 1);
+                posts = [...posts];
+            }
+        }
+    }
+
+    function toggleComments(postId) {
+        showComments[postId] = !showComments[postId];
+        showComments = { ...showComments };
+        if (!commentInputs[postId]) commentInputs[postId] = '';
+    }
+
+    async function submitComment(post) {
+        const text = (commentInputs[post.id] || '').trim();
+        if (!text || submittingComment[post.id]) return;
+        submittingComment[post.id] = true;
+        submittingComment = { ...submittingComment };
+        try {
+            const res = await apiAddComment(post.id, text);
+            if (res.success) {
+                const idx = posts.findIndex(p => p.id === post.id);
+                if (idx !== -1) {
+                    if (!posts[idx].comments) posts[idx].comments = [];
+                    posts[idx].comments = [
+                        ...posts[idx].comments,
+                        {
+                            id: res.comment.id,
+                            text: res.comment.text,
+                            author_username: res.comment.author?.username || res.comment.author_username,
+                            created_at: res.comment.created_at
+                        }
+                    ];
+                    posts[idx].comments_count = (posts[idx].comments_count || 0) + 1;
+                    posts = [...posts];
+                }
+                commentInputs[post.id] = '';
+                commentInputs = { ...commentInputs };
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            submittingComment[post.id] = false;
+            submittingComment = { ...submittingComment };
+        }
+    }
+
+    async function toggleLike(post) {
+        try {
+            const res = await apiToggleLike(post.id);
+            if (res.success) {
+                const idx = posts.findIndex(p => p.id === post.id);
+                if (idx !== -1) {
+                    posts[idx].liked = res.liked;
+                    posts[idx].likes_count = res.likes_count;
+                    posts = [...posts];
+                    if (selectedPost && selectedPost.id === post.id) {
+                        selectedPost = posts[idx];
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function addComment(e) {
+        e.preventDefault();
+        if (!newCommentText.trim() || isSubmittingComment) return;
+        isSubmittingComment = true;
+        try {
+            const res = await apiAddComment(selectedPost.id, newCommentText);
+            if (res.success) {
+                const idx = posts.findIndex(p => p.id === selectedPost.id);
+                if (idx !== -1) {
+                    posts[idx].comments.push({
+                        id: res.comment.id,
+                        text: res.comment.text,
+                        author_username: res.comment.author.username,
+                        created_at: res.comment.created_at
+                    });
+                    posts[idx].comments_count++;
+                    posts = [...posts];
+                    selectedPost = posts[idx];
+                }
+                newCommentText = "";
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            isSubmittingComment = false;
+        }
+    }
 
     onMount(() => {
         // any one-time setup
@@ -163,7 +296,7 @@
     };
 
     function getEarthyColor(name) {
-        if (!name) return '#8a9a5b';
+        if (!name) return 'hsl(80, 30%, 42%)';
         if (TREE_COLORS[name]) return TREE_COLORS[name];
         const lowerName = name.toLowerCase();
         for (const [key, color] of Object.entries(TREE_COLORS)) {
@@ -179,21 +312,31 @@
         return `hsl(${h}, ${s}%, ${l}%)`;
     }
     
-    $: heroBackgroundColor = tree ? getEarthyColor(tree.spc_common) : '#8a9a5b';
+    function getEarthyColorValues(name) {
+        const colorStr = getEarthyColor(name);
+        const match = colorStr.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+        if (match) {
+            return { h: parseInt(match[1]), s: parseInt(match[2]), l: parseInt(match[3]) };
+        }
+        return { h: 80, s: 30, l: 42 };
+    }
+    
+    $: treeColorVals = tree ? getEarthyColorValues(tree.spc_common) : {h:80, s:30, l:42};
+    $: cssVars = `--tree-main: hsl(${treeColorVals.h}, ${treeColorVals.s}%, ${treeColorVals.l}%); --tree-card: hsl(${treeColorVals.h}, ${Math.max(0, treeColorVals.s - 15)}%, ${Math.min(85, treeColorVals.l + 45)}%); --tree-bg: hsl(${treeColorVals.h}, ${Math.max(0, treeColorVals.s - 25)}%, ${Math.min(94, treeColorVals.l + 55)}%);`;
 </script>
 
 {#if tree}
-<div class="page">
+<div class="page" style={cssVars}>
     <BackgroundRings />
     <LeftNav {navigate} activePage="explore" />
 
-    <div class="dashboard-hero" style="background-color: {heroBackgroundColor};">
+    <div class="dashboard-hero" style="background-color: var(--tree-main);">
         <div class="dash-hero-content">
             <div class="tree-title-block">
                 <div class="tree-species">{tree.spc_latin}</div>
                 <h1>{tree.spc_common} #{tree.tree_id}<br />{tree.zip_city}</h1>
                 <div class="tree-meta-chips">
-                    <span class="chip chip-fans">👥 {followerCount} fan{followerCount !== 1 ? 's' : ''}</span>
+
                     <span class="chip chip-health-good">Health: {tree.health}</span>
                     <span class="chip chip-health-good">Status: {tree.status}</span>
                     <span class="chip chip-health-good">Borough: {tree.borough}</span>
@@ -223,7 +366,7 @@
         <div class="dash-main">
             <div class="stat-grid">
                 <div class="stat-card"><div class="s-icon">💧</div><div class="s-label">Stormwater Savings</div><div class="s-val">{#if stormwaterSavings}${stormwaterSavings.toLocaleString()}{:else}Unknown{/if}</div><div class="s-sub">per year</div></div>
-                <div class="stat-card"><div class="s-icon">📸</div><div class="s-label">Photos</div><div class="s-val">{photoCount}</div><div class="s-sub">community photos</div></div>
+                <div class="stat-card"><div class="s-icon">👥</div><div class="s-label">Tree Fans</div><div class="s-val">{followerCount}</div><div class="s-sub">followers</div></div>
                 <div class="stat-card"><div class="s-icon">📝</div><div class="s-label">Total Posts</div><div class="s-val">{postCount}</div><div class="s-sub">community posts</div></div>
             </div>
 
@@ -332,14 +475,109 @@
             <div class="content-card">
                 <!-- <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;"><h3>Tree Gallery & Posts</h3><button class="btn-primary" on:click={() => navigate('/home')}>+ Create Post</button></div> -->
                 {#if posts.length > 0}
-                    <div class="posts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <div class="posts-grid">
                         {#each posts as post}
-                            <div class="post-card" style="border: 1px solid var(--mist); border-radius: 12px; overflow: hidden; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                                {#if post.image_url}<div class="post-img" style="height: 200px; width: 100%; background: #f0f0f0;"><img src={post.image_url} alt="Tree post" style="width: 100%; height: 100%; object-fit: cover;"/></div>{/if}
+                            <div class="post-card-interactive">
+                                {#if post.image_url}
+                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                    <div class="post-img clickable" on:click={() => selectedPost = post} style="height: 200px; width: 100%; background: #f0f0f0; cursor: pointer; position: relative; overflow: hidden;">
+                                        <div class="img-overlay"><span>🔍 View Post</span></div>
+                                        <img src={post.image_url} alt="Tree post" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;"/>
+                                    </div>
+                                {/if}
                                 <div class="post-body" style="padding: 1.2rem;">
-                                    <div class="post-header" style="display: flex; justify-content: space-between; margin-bottom: 0.8rem;"><strong style="color: var(--moss);">{post.author_username}</strong><small style="color: var(--sage);">{timeAgo(post.created_at)}</small></div>
-                                    <p style="margin: 0 0 1rem 0; color: #4a4a4a; line-height: 1.5;">{post.content}</p>
-                                    <div class="post-actions" style="display: flex; gap: 1rem; color: var(--sage); font-size: 0.9rem;"><span>❤️ {post.likes_count}</span><span>💬 {post.comments_count}</span></div>
+                                    <div class="post-header-row">
+                                        <strong class="post-author">{post.author_username}</strong>
+                                        <small class="post-time">{timeAgo(post.created_at)}</small>
+                                    </div>
+                                    {#if post.content}
+                                        <p class="post-content-text">{post.content}</p>
+                                    {/if}
+                                    <div class="post-action-bar">
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button
+                                            class="action-pill {post.liked ? 'liked' : ''}"
+                                            on:click={() => toggleLike(post)}
+                                            title={post.liked ? 'Unlike' : 'Like'}
+                                        >
+                                            {post.liked ? '❤️' : '🤍'} {post.likes_count || 0}
+                                        </button>
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button
+                                            class="action-pill {showComments[post.id] ? 'active' : ''}"
+                                            on:click={() => toggleComments(post.id)}
+                                            title="Toggle comments"
+                                        >
+                                            💬 {post.comments_count || 0}
+                                        </button>
+                                    </div>
+
+                                    {#if showComments[post.id]}
+                                        <div class="inline-comments">
+                                            {#if post.comments && post.comments.length > 0}
+                                                {#each post.comments as comment}
+                                                    <div class="inline-comment-item">
+                                                        {#if editingCommentId === comment.id}
+                                                            <!-- Edit mode -->
+                                                            <div class="ic-edit-row">
+                                                                <input
+                                                                    type="text"
+                                                                    class="ic-edit-input"
+                                                                    bind:value={editingCommentText}
+                                                                    on:keydown={(e) => e.key === 'Enter' && saveEditComment(post.id)}
+                                                                />
+                                                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                                <button class="ic-action-btn save" on:click={() => saveEditComment(post.id)}>✓</button>
+                                                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                                <button class="ic-action-btn" on:click={cancelEditComment}>✕</button>
+                                                            </div>
+                                                        {:else}
+                                                            <!-- View mode -->
+                                                            <span class="ic-comment-text">
+                                                                <strong class="comment-author">@{comment.author_username}</strong>
+                                                                {comment.text}
+                                                            </span>
+                                                            <small class="comment-time">{timeAgo(comment.created_at)}</small>
+                                                            {#if $user && comment.author_username === $user.username}
+                                                                <span class="ic-actions">
+                                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                                    <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                                    <button class="ic-action-btn delete" on:click={() => deleteComment(post.id, comment.id)} title="Delete">🗑️</button>
+                                                                </span>
+                                                            {/if}
+                                                        {/if}
+                                                    </div>
+                                                {/each}
+                                            {:else}
+                                                <div class="no-comments-hint">No comments yet. Be the first!</div>
+                                            {/if}
+                                            <div class="inline-comment-form">
+                                                <input
+                                                    type="text"
+                                                    class="inline-comment-input"
+                                                    placeholder="Write a comment…"
+                                                    bind:value={commentInputs[post.id]}
+                                                    on:keydown={(e) => e.key === 'Enter' && submitComment(post)}
+                                                    disabled={submittingComment[post.id]}
+                                                />
+                                                <button
+                                                    class="inline-comment-btn"
+                                                    on:click={() => submitComment(post)}
+                                                    disabled={!commentInputs[post.id]?.trim() || submittingComment[post.id]}
+                                                >
+                                                    {submittingComment[post.id] ? '…' : 'Post'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {/if}
                                 </div>
                             </div>
                         {/each}
@@ -371,6 +609,86 @@
                     const res = await apiToggleTreeFollow(treeId);
                     if (res.success) { followingTree = res.following; followerCount = res.follower_count; showLockModal = false; }
                 }}>🌟 Follow Tree Now</button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if selectedPost}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="lightbox-overlay" on:click={() => selectedPost = null}>
+        <div class="lightbox-close-btn">✕ Close</div>
+        <div class="lightbox-card" on:click|stopPropagation>
+            {#if selectedPost.image_url}
+                <div class="lightbox-img-container">
+                    <img src={selectedPost.image_url} alt="Expanded view" class="lightbox-full-img" />
+                </div>
+            {/if}
+            <div class="lightbox-details">
+                <div class="lb-header">
+                    <strong>@{selectedPost.author_username}</strong>
+                    <small>{timeAgo(selectedPost.created_at)}</small>
+                </div>
+                <div class="lb-content">
+                    {selectedPost.content}
+                </div>
+                <div class="lb-actions">
+                    <button class="action-btn" class:liked={selectedPost.liked} on:click={() => toggleLike(selectedPost)}>
+                        {selectedPost.liked ? '❤️' : '🤍'} {selectedPost.likes_count}
+                    </button>
+                    <span class="action-btn static">💬 {selectedPost.comments_count}</span>
+                </div>
+                
+                <div class="lb-comments-section" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; padding-right: 0.5rem; min-height: 150px; max-height: 40vh;">
+                    {#if selectedPost.comments && selectedPost.comments.length > 0}
+                        {#each selectedPost.comments as comment}
+                            <div class="comment-item" style="background: rgba(255,255,255,0.6); padding: 0.8rem; border-radius: 8px; font-size: 0.9rem;">
+                                {#if editingCommentId === comment.id}
+                                    <div class="ic-edit-row">
+                                        <input
+                                            type="text"
+                                            class="ic-edit-input"
+                                            bind:value={editingCommentText}
+                                            on:keydown={(e) => { if (e.key === 'Enter') { saveEditComment(selectedPost.id); selectedPost = posts.find(p => p.id === selectedPost.id); } }}
+                                        />
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button class="ic-action-btn save" on:click={() => { saveEditComment(selectedPost.id); setTimeout(() => selectedPost = posts.find(p => p.id === selectedPost.id), 50); }}>✓</button>
+                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                        <button class="ic-action-btn" on:click={cancelEditComment}>✕</button>
+                                    </div>
+                                {:else}
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                        <strong style="color: var(--moss);">@{comment.author_username}</strong>
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <span style="color: #888; font-size: 0.75rem;">{timeAgo(comment.created_at)}</span>
+                                            {#if $user && comment.author_username === $user.username}
+                                                <span class="ic-actions" style="opacity: 1;">
+                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                    <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                    <button class="ic-action-btn delete" on:click={() => { deleteComment(selectedPost.id, comment.id); setTimeout(() => selectedPost = posts.find(p => p.id === selectedPost.id), 50); }} title="Delete">🗑️</button>
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                    <div style="color: var(--ink); line-height: 1.4;">{comment.text}</div>
+                                {/if}
+                            </div>
+                        {/each}
+                    {:else}
+                        <div style="font-size: 0.9rem; color: var(--sage); text-align: center; margin-top: 2rem;">No comments yet. Be the first to start the conversation!</div>
+                    {/if}
+                </div>
+                
+                <form class="comment-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;" on:submit|preventDefault={addComment}>
+                    <input type="text" class="comment-input" bind:value={newCommentText} placeholder="Add a comment..." style="flex: 1; padding: 0.8rem; border-radius: 20px; border: 1px solid var(--mist); background: white; outline: none; font-family: 'DM Sans', sans-serif; font-size: 0.9rem;" disabled={isSubmittingComment} />
+                    <button type="submit" disabled={!newCommentText.trim() || isSubmittingComment} style="background: var(--moss); color: white; border: none; border-radius: 20px; padding: 0 1.2rem; font-weight: 600; cursor: {newCommentText.trim() ? 'pointer' : 'not-allowed'}; opacity: {newCommentText.trim() ? 1 : 0.5}; font-family: 'DM Sans', sans-serif;">Post</button>
+                </form>
             </div>
         </div>
     </div>
@@ -414,16 +732,16 @@
     .dash-tab.active { color: #2b2b2b; background: #faf9f6; font-weight: 600; }
     .dashboard-body { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; }
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { background: #cdd9af; border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08); }
+    .stat-card { background: var(--tree-card); border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); }
     .stat-card .s-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a44a3f; margin-bottom: 0.5rem; }
     .stat-card .s-val { font-family: "Playfair Display", serif; font-size: 1.8rem; color: var(--ink); line-height: 1; }
     .stat-card .s-sub { font-size: 0.75rem; color: var(--sage); margin-top: 0.2rem; }
     .stat-card .s-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
-    .content-card { background: #cdd9af; border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px rgba(138, 154, 91, 0.08); margin-bottom: 1.5rem; }
+    .content-card { background: var(--tree-card); border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); margin-bottom: 1.5rem; }
     .content-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #a44a3f; margin-bottom: 1rem; }
     .sidecurb-ratings { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
     .env-ratings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
-    .env-item { background: var(--mist); border-radius: 10px; padding: 0.8rem; }
+    .env-item { background: var(--tree-bg); border-radius: 10px; padding: 0.8rem; }
     .env-item .env-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a44a3f; display: block; margin-bottom: 0.4rem; }
     .env-score { font-weight: 700; font-size: 0.88rem; color: var(--ink); margin-top: 0.3rem; }
     .ct-card { background: white; border-radius: 16px; padding: 1.4rem; box-shadow: 0 2px 12px var(--shadow); margin-bottom: 1rem; }
@@ -482,5 +800,173 @@
     .btn-cancel { background: var(--mist); border: none; padding: 0.7rem 1.5rem; border-radius: 999px; cursor: pointer; font-family: "DM Sans", sans-serif; font-weight: 600; }
     .btn-follow-modal { background: #3c7d4c; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 999px; cursor: pointer; font-family: "DM Sans", sans-serif; font-weight: 700; }
     .btn-primary { background: var(--moss); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 999px; font-family: "DM Sans", sans-serif; font-weight: 600; cursor: pointer; }
-    @media (max-width: 900px) { .dendro-container { grid-template-columns: 1fr; gap: 2rem; } .svg-wrapper { max-width: 350px; margin: 0 auto; } }
+    
+    .post-img.clickable:hover img { transform: scale(1.05); }
+    .img-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; z-index: 10; color: white; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .post-img.clickable:hover .img-overlay { opacity: 1; }
+    
+    .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; animation: fadeIn 0.2s ease-out; }
+    .lightbox-card { background: white; max-width: 900px; width: 100%; max-height: 85vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: row; box-shadow: 0 10px 40px rgba(0,0,0,0.5); cursor: default; animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); }
+    .lightbox-img-container { flex: 1.5; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 300px; }
+    .lightbox-full-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .lightbox-details { flex: 1; padding: 2rem; background: #faf9f6; display: flex; flex-direction: column; overflow-y: auto; }
+    .lb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--mist); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    .lb-header strong { color: var(--moss); font-size: 1.1rem; }
+    .lb-header small { color: var(--sage); }
+    .lb-content { font-size: 1rem; line-height: 1.6; color: var(--bark); margin-bottom: 1rem; white-space: pre-wrap; }
+    .lb-actions { display: flex; gap: 1.5rem; border-top: 1px solid var(--mist); padding-top: 1rem; color: var(--sage); font-weight: 500; align-items: center; }
+    .action-btn { background: none; border: none; padding: 0; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--sage); cursor: pointer; display: flex; align-items: center; gap: 0.3rem; transition: transform 0.2s; }
+    .action-btn:hover:not(.static) { transform: translateY(-2px); }
+    .action-btn.liked { color: #e0245e; }
+    .action-btn.static { cursor: default; }
+    .lightbox-close-btn { position: absolute; top: 2rem; right: 2rem; color: white; font-weight: 700; font-family: "DM Sans", sans-serif; font-size: 1.1rem; cursor: pointer; padding: 0.5rem 1rem; border-radius: 40px; background: rgba(255,255,255,0.1); transition: background 0.2s; z-index: 2010; }
+    .lightbox-close-btn:hover { background: rgba(255,255,255,0.25); }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    @media (max-width: 900px) { 
+        .dendro-container { grid-template-columns: 1fr; gap: 2rem; } 
+        .svg-wrapper { max-width: 350px; margin: 0 auto; } 
+        .lightbox-card { flex-direction: column; }
+        .lightbox-img-container { flex: none; height: 50vh; }
+    }
+
+    /* ── Interactive Post Cards (Posts tab) ─────────────────────────── */
+    .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+
+    .post-card-interactive {
+        border: 1px solid var(--mist);
+        border-radius: 14px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .post-card-interactive:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+    }
+
+    .post-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.7rem;
+    }
+    .post-author { color: var(--moss); font-size: 0.95rem; }
+    .post-time   { color: var(--sage); font-size: 0.78rem; }
+    .post-content-text { margin: 0 0 0.9rem 0; color: #4a4a4a; line-height: 1.55; font-size: 0.93rem; }
+
+    .post-action-bar {
+        display: flex;
+        gap: 0.6rem;
+        margin-top: 0.4rem;
+    }
+    .action-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: var(--mist);
+        border: none;
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--sage);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, transform 0.15s;
+    }
+    .action-pill:hover { background: #d8ead9; color: var(--moss); transform: scale(1.04); }
+    .action-pill.liked  { color: #e0245e; background: #fce8ef; }
+    .action-pill.active { background: #d8ead9; color: var(--moss); }
+
+    /* Inline comments */
+    .inline-comments {
+        margin-top: 0.9rem;
+        border-top: 1px solid var(--mist);
+        padding-top: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        animation: fadeIn 0.18s ease-out;
+    }
+    .inline-comment-item {
+        background: #f6faf6;
+        border-radius: 8px;
+        padding: 0.55rem 0.8rem;
+        font-size: 0.88rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .comment-author { color: var(--moss); font-size: 0.82rem; font-weight: 700; }
+    .ic-comment-text { flex: 1; min-width: 0; color: #3a3a3a; word-break: break-word; }
+    .comment-time   { color: #aaa; font-size: 0.72rem; margin-left: auto; white-space: nowrap; }
+    .no-comments-hint { font-size: 0.82rem; color: var(--sage); text-align: center; padding: 0.4rem 0; }
+
+    /* Edit/delete controls */
+    .ic-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+    .inline-comment-item:hover .ic-actions { opacity: 1; }
+    .ic-action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.72rem;
+        padding: 2px 5px;
+        border-radius: 6px;
+        color: var(--sage);
+        transition: background 0.15s, color 0.15s;
+    }
+    .ic-action-btn:hover { background: rgba(0,0,0,0.06); }
+    .ic-action-btn.save  { color: var(--moss); }
+    .ic-action-btn.delete:hover { color: #e0245e; }
+    .ic-edit-row { display: flex; align-items: center; gap: 4px; width: 100%; }
+    .ic-edit-input {
+        flex: 1;
+        background: white;
+        border: 1.5px solid var(--sage);
+        border-radius: 8px;
+        padding: 4px 8px;
+        color: var(--ink);
+        font-size: 0.82rem;
+        font-family: 'DM Sans', sans-serif;
+        outline: none;
+    }
+
+    .inline-comment-form {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+    }
+    .inline-comment-input {
+        flex: 1;
+        padding: 0.55rem 1rem;
+        border-radius: 999px;
+        border: 1.5px solid var(--mist);
+        background: white;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.88rem;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .inline-comment-input:focus { border-color: var(--sage); }
+    .inline-comment-btn {
+        background: var(--moss);
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 0.45rem 1.1rem;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        white-space: nowrap;
+    }
+    .inline-comment-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .inline-comment-btn:not(:disabled):hover { opacity: 0.88; }
 </style>

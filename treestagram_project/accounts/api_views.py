@@ -45,12 +45,13 @@ def user_to_dict(user):
     }
 
 
-def send_confirmation_email(user, base_url="localhost:8000"):
+def send_confirmation_email(user):
     """Build and send a confirmation email using Django's signing framework.
     No dependency on the Sites framework or allauth's send_confirmation."""
     signer = TimestampSigner()
     token = signer.sign(user.pk)
 
+    base_url = os.environ.get("DJANGO_SITE_DOMAIN", "localhost")
     confirm_url = f"http://{base_url}/api/confirm-email/{token}/"
 
     subject = "Welcome to Treestagram — Confirm your email"
@@ -97,7 +98,7 @@ def api_signup(request):
         logger.info("User created: %s", user)
 
         try:
-            send_confirmation_email(user, base_url=request.get_host())
+            send_confirmation_email(user)
             logger.info("Confirmation email sent to %s", user.email)
         except Exception:
             logger.exception("Error sending confirmation email")
@@ -129,8 +130,8 @@ def api_confirm_email(request, token):
         user.save(update_fields=["is_active"])
         logger.info("Email confirmed for user %s", user.email)
 
-        # redirect directly to the relative path so it keeps the same host
-        return redirect("/login?confirmed=true")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+        return redirect(f"{frontend_url}/login?confirmed=true")
 
     except SignatureExpired:
         return JsonResponse(
@@ -242,7 +243,7 @@ def api_resend_verification(request):
 
     try:
         user = User.objects.get(email__iexact=email, is_active=False)
-        send_confirmation_email(user, base_url=request.get_host())
+        send_confirmation_email(user)
         return JsonResponse({"success": True, "message": "Verification email sent!"})
     except User.DoesNotExist:
         return JsonResponse(

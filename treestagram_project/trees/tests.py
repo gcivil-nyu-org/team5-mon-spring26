@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from trees.models import Tree
@@ -188,3 +188,111 @@ class TreeViewsTest(TestCase):
     def test_json_header(self):
         response = self.client.get(reverse("trees_api"), HTTP_ACCEPT="application/json")
         self.assertEqual(response.status_code, 200)
+
+
+# ---------------- Testing Tree Update ---------------- #
+class TreeUpdateApiTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username="admin", password="TestPass123!", email="admin@test.com"
+        )
+        self.admin.role = "admin"
+        self.admin.save()
+        self.regular = User.objects.create_user(
+            username="regular", password="TestPass123!", email="reg@test.com"
+        )
+        self.tree = Tree.objects.create(
+            tree_id=88888,
+            spc_common="Test Maple",
+            spc_latin="Acer testus",
+            created_at="2015",
+            tree_dbh=5,
+            stump_diam=0,
+            curb_loc="OnCurb",
+            status="Alive",
+            health="Good",
+            sidewalk="NoDamage",
+            root_stone=False,
+            root_grate=False,
+            root_other=False,
+            trunk_wire=False,
+            trnk_light=False,
+            trnk_other=False,
+            brch_light=False,
+            brch_shoe=False,
+            brch_other=False,
+            address="456 Test Ave",
+            zip_city="TestCity",
+            borough="Brooklyn",
+            latitude=40.6,
+            longitude=-73.9,
+        )
+
+    def test_admin_can_update_health(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"health": "Poor"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.tree.refresh_from_db()
+        self.assertEqual(self.tree.health, "Poor")
+
+    def test_admin_can_update_boolean_fields(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"root_stone": True},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.tree.refresh_from_db()
+        self.assertTrue(self.tree.root_stone)
+
+    def test_admin_can_update_problems(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"problems": ["Stones", "WiresRope"]},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.tree.refresh_from_db()
+        self.assertIn("Stones", self.tree.problems)
+
+    def test_invalid_health_value_rejected(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"health": "Excellent"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_non_admin_rejected(self):
+        self.client.force_login(self.regular)
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"health": "Poor"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 403)
+
+    def test_unauthenticated_rejected(self):
+        res = self.client.post(
+            f"/trees/api/{self.tree.tree_id}/update/",
+            data={"health": "Poor"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 403)
+
+    def test_nonexistent_tree_returns_404(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            "/trees/api/00000/update/",
+            data={"health": "Poor"},
+            content_type="application/json",
+        )
+        self.assertEqual(res.status_code, 404)

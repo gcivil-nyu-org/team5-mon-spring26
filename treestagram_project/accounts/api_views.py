@@ -40,6 +40,8 @@ def user_to_dict(user):
         "post_count": user.post_count,
         "total_likes_received": user.total_likes_received,
         "leaves": user.leaves,
+        "credible_post_threshold": user.CREDIBLE_POST_THRESHOLD,
+        "credible_like_threshold": user.CREDIBLE_LIKE_THRESHOLD,
     }
 
 
@@ -520,3 +522,53 @@ def api_delete_account(request):
 
 
 # ── Profile-specific endpoints ───────────────────────────────────────────────
+
+
+# becoming an admin
+@require_http_methods(["POST"])
+def api_become_admin(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Login required"}, status=401)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    if data.get("answer") == "yEs i LOV3 trees":
+        request.user.role = "admin"
+        request.user.save(update_fields=["role"])
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "error": "Incorrect answer."}, status=403)
+
+
+# becoming an admin
+
+
+# get trees user is taking care of
+def api_my_caretaker_trees(request):
+    """GET /api/my-caretaker-trees/ — trees the current user is assigned to care for."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Login required"}, status=401)
+
+    from caretaker.models import CaretakerAssignment
+    from trees.models import Tree
+
+    assignments = CaretakerAssignment.objects.filter(user=request.user)
+    trees = []
+    for a in assignments:
+        try:
+            t = Tree.objects.get(tree_id=a.tree_id)
+            trees.append(
+                {
+                    "tree_id": a.tree_id,
+                    "tree_name": t.spc_common or f"Tree #{a.tree_id}",
+                    "assigned_at": a.assigned_at.isoformat(),
+                }
+            )
+        except Tree.DoesNotExist:
+            pass
+
+    return JsonResponse({"success": True, "trees": trees})
+
+
+# get trees user is taking care of

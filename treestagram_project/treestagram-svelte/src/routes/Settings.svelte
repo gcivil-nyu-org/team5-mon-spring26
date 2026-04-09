@@ -17,7 +17,7 @@
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "security", label: "Security", icon: "🔐" },
         { id: "privacy", label: "Privacy", icon: "🛡️" },
-        { id: "notifications", label: "Notifications", icon: "🔔" },
+        { id: "admin", label: "Admin", icon: "👑" },
     ];
 
     // Form state
@@ -255,6 +255,41 @@
         }, 500); // 500ms debounce
     }
     import BackgroundRings from "../components/BackgroundRings.svelte";
+
+    // Admin Stuff
+    let adminAnswer = "";
+    let adminMessage = "";
+    let adminMessageType = "";
+
+    async function submitAdminAnswer() {
+        if (adminAnswer === "yEs i LOV3 trees") {
+            const formData = new FormData();
+            // We'll piggyback on the existing update-profile endpoint
+            // but we need a dedicated endpoint — so call the API directly
+            const res = await fetch("/api/become-admin/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "",
+                },
+                credentials: "include",
+                body: JSON.stringify({ answer: adminAnswer }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                user.update(u => ({ ...u, role: "admin" }));
+                adminMessage = "👑 Welcome, Admin. Your power is immense.";
+                adminMessageType = "success";
+            } else {
+                adminMessage = data.error || "Something went wrong.";
+                adminMessageType = "error";
+            }
+        } else {
+            adminMessage = "❌ Wrong answer. The trees do not recognize you.";
+            adminMessageType = "error";
+        }
+        adminAnswer = "";
+    }
 </script>
 
 <div class="page">
@@ -627,87 +662,29 @@
                         >
                     </div>
                 </div>
-            {:else if activeTab === "notifications"}
+            {:else if activeTab === "admin"}
                 <div class="content-section">
-                    <h3 class="section-title">Notifications</h3>
-                    <p class="section-desc">
-                        Choose what notifications you'd like to receive.
-                    </p>
+                    <h3 class="section-title">👑 Admin Access</h3>
+                    <p class="section-desc">Answer the sacred question to claim your throne.</p>
 
-                    <div class="notif-group">
-                        <h4>Activity</h4>
-                        <div class="toggle-card">
-                            <div class="toggle-info">
-                                <h4>Likes on your posts</h4>
-                                <p>
-                                    Get notified when someone likes your tree
-                                    observations.
-                                </p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-card">
-                            <div class="toggle-info">
-                                <h4>Comments on your posts</h4>
-                                <p>
-                                    Get notified when someone comments on your
-                                    observations.
-                                </p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-card">
-                            <div class="toggle-info">
-                                <h4>New followers</h4>
-                                <p>Get notified when someone follows you.</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
+                    <div class="form-group">
+                        <label for="admin-question">Are thou an admin?</label>
+                        <input
+                            id="admin-question"
+                            type="text"
+                            bind:value={adminAnswer}
+                            placeholder="Speak thy truth…"
+                        />
                     </div>
 
-                    <div class="notif-group">
-                        <h4>Email</h4>
-                        <div class="toggle-card">
-                            <div class="toggle-info">
-                                <h4>Weekly digest</h4>
-                                <p>
-                                    A summary of your tree network activity sent
-                                    every week.
-                                </p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-card">
-                            <div class="toggle-info">
-                                <h4>Tree health alerts</h4>
-                                <p>
-                                    Get emailed when trees you follow have
-                                    health status changes.
-                                </p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" checked />
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
+                    {#if adminMessage}
+                        <div class="alert alert-{adminMessageType}">{adminMessage}</div>
+                    {/if}
 
                     <div class="form-actions">
-                        <button class="btn-primary"
-                            >Save Notification Settings</button
-                        >
+                        <button class="btn-primary" on:click={submitAdminAnswer}>
+                            Submit
+                        </button>
                     </div>
                 </div>
             {/if}

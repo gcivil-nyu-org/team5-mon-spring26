@@ -5,6 +5,7 @@ from django.views.decorators.http import require_http_methods
 from accounts.models import User
 from accounts.api_views import user_to_dict
 from trees.models import Tree
+from caretaker.models import CaretakerAssignment
 from .models import Post, Like, Comment, Notification, TreeFollow
 from chat.models import ChatMessage
 
@@ -280,27 +281,41 @@ def api_create_post(request):
 
 @require_http_methods(["POST"])
 def api_delete_post(request, post_id):
-    """POST /api/posts/<id>/delete/ — delete a post (author only)."""
+    """POST /api/posts/<id>/delete/ — delete a post.
+    Allowed by: post author, admin, or caretaker of the post's tree."""
     if not request.user.is_authenticated:
         return JsonResponse({"success": False, "error": "Login required"}, status=401)
 
     try:
-        post = Post.objects.get(id=post_id)
+        post = Post.objects.select_related("tree").get(id=post_id)
     except Post.DoesNotExist:
         return JsonResponse({"success": False, "error": "Post not found"}, status=404)
 
-    if post.author_id != request.user.id:
-        return JsonResponse({"success": False, "error": "Not your post"}, status=403)
+    is_author = post.author_id == request.user.id
+    is_admin = request.user.role == "admin"
+    is_caretaker = (
+        post.tree
+        and CaretakerAssignment.objects.filter(
+            user=request.user, tree_id=post.tree.tree_id
+        ).exists()
+    )
 
+    if not (is_author or is_admin or is_caretaker):
+        return JsonResponse(
+            {"success": False, "error": "Permission denied"}, status=403
+        )
+
+    # Keep a reference to the original author for stat updates
+    post_author = post.author
     post.delete()
 
-    # Update post count and total likes received
-    request.user.post_count = Post.objects.filter(author=request.user).count()
-    request.user.total_likes_received = Like.objects.filter(
-        post__author=request.user
+    # Update the original author's post count and total likes received
+    post_author.post_count = Post.objects.filter(author=post_author).count()
+    post_author.total_likes_received = Like.objects.filter(
+        post__author=post_author
     ).count()
-    request.user.save(update_fields=["post_count", "total_likes_received"])
-    request.user.sync_role()
+    post_author.save(update_fields=["post_count", "total_likes_received"])
+    post_author.sync_role()
 
     return JsonResponse({"success": True})
 
@@ -459,22 +474,31 @@ def api_edit_comment(request, comment_id):
 
 @require_http_methods(["POST"])
 def api_delete_comment(request, comment_id):
-    """POST /api/comments/<id>/delete/ — delete a comment (author or post owner)."""
+    """POST /api/comments/<id>/delete/ — delete a comment.
+    Allowed by: comment author, post author, admin, or caretaker of the post's tree."""
     if not request.user.is_authenticated:
         return JsonResponse({"success": False, "error": "Login required"}, status=401)
 
     try:
-        comment = Comment.objects.select_related("post").get(id=comment_id)
+        comment = Comment.objects.select_related("post", "post__tree").get(
+            id=comment_id
+        )
     except Comment.DoesNotExist:
         return JsonResponse(
             {"success": False, "error": "Comment not found"}, status=404
         )
 
-    # Allow comment author or the post author to delete
-    if (
-        comment.author_id != request.user.id
-        and comment.post.author_id != request.user.id
-    ):
+    is_comment_author = comment.author_id == request.user.id
+    is_post_author = comment.post.author_id == request.user.id
+    is_admin = request.user.role == "admin"
+    is_caretaker = (
+        comment.post.tree
+        and CaretakerAssignment.objects.filter(
+            user=request.user, tree_id=comment.post.tree.tree_id
+        ).exists()
+    )
+
+    if not (is_comment_author or is_post_author or is_admin or is_caretaker):
         return JsonResponse(
             {"success": False, "error": "Permission denied"}, status=403
         )

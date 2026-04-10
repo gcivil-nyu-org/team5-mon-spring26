@@ -1,7 +1,7 @@
 <script>
     import LeftNav from "../components/LeftNav.svelte";
     import BackgroundRings from "../components/BackgroundRings.svelte";
-    import { apiToggleTreeFollow, apiToggleLike, apiAddComment, apiDeleteComment, apiEditComment, user } from "../lib/api.js";
+    import { apiToggleTreeFollow, apiToggleLike, apiAddComment, apiDeleteComment, apiEditComment, apiDeletePost, user } from "../lib/api.js";
     export let navigate;
     export let treeId;
 
@@ -14,8 +14,14 @@
     let postCount = 0;
     let followingTree = false;
     let followerCount = 0;
-    
+    let caretakerUsernames = [];
     let showLockModal = false;
+
+    // True when the current user is an admin or a caretaker of THIS tree
+    $: canModerate = $user && (
+        $user.role === 'admin' ||
+        caretakerUsernames.includes($user.username)
+    );
 
     // Tab State
     let activeTab = 'overview';
@@ -63,6 +69,16 @@
                 posts[idx].comments_count = Math.max(0, (posts[idx].comments_count || 1) - 1);
                 posts = [...posts];
             }
+        }
+    }
+
+    async function deletePost(postId) {
+        if (!confirm('Are you sure you want to delete this post?')) return;
+        const res = await apiDeletePost(postId);
+        if (res.success) {
+            posts = posts.filter(p => p.id !== postId);
+            postCount = posts.length;
+            if (selectedPost && selectedPost.id === postId) selectedPost = null;
         }
     }
 
@@ -172,6 +188,7 @@
             posts = data.posts || [];
             postCount = data.post_count || 0;
             followerCount = data.follower_count || 0;
+            caretakerUsernames = (data.caretakers || []).map(c => c.username);
         } catch (err) {
             console.error("Error fetching tree:", err);
         }
@@ -489,7 +506,16 @@
                                 <div class="post-body" style="padding: 1.2rem;">
                                     <div class="post-header-row">
                                         <strong class="post-author">{post.author_username}</strong>
-                                        <small class="post-time">{timeAgo(post.created_at)}</small>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <small class="post-time">{timeAgo(post.created_at)}</small>
+                                            {#if canModerate || ($user && post.author_username === $user.username)}
+                                                <button
+                                                    class="post-delete-btn"
+                                                    on:click={() => deletePost(post.id)}
+                                                    title="Delete post"
+                                                >🗑️</button>
+                                            {/if}
+                                        </div>
                                     </div>
                                     {#if post.content}
                                         <p class="post-content-text">{post.content}</p>
@@ -543,11 +569,13 @@
                                                                 {comment.text}
                                                             </span>
                                                             <small class="comment-time">{timeAgo(comment.created_at)}</small>
-                                                            {#if $user && comment.author_username === $user.username}
+                                                            {#if $user && (comment.author_username === $user.username || canModerate)}
                                                                 <span class="ic-actions">
-                                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
-                                                                    <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                                    {#if comment.author_username === $user.username}
+                                                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                                        <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                                    {/if}
                                                                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                                                                     <!-- svelte-ignore a11y-no-static-element-interactions -->
                                                                     <button class="ic-action-btn delete" on:click={() => deleteComment(post.id, comment.id)} title="Delete">🗑️</button>
@@ -628,7 +656,16 @@
             <div class="lightbox-details">
                 <div class="lb-header">
                     <strong>@{selectedPost.author_username}</strong>
-                    <small>{timeAgo(selectedPost.created_at)}</small>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <small>{timeAgo(selectedPost.created_at)}</small>
+                        {#if canModerate || ($user && selectedPost.author_username === $user.username)}
+                            <button
+                                class="post-delete-btn"
+                                on:click={() => deletePost(selectedPost.id)}
+                                title="Delete post"
+                            >🗑️</button>
+                        {/if}
+                    </div>
                 </div>
                 <div class="lb-content">
                     {selectedPost.content}
@@ -664,11 +701,13 @@
                                         <strong style="color: var(--moss);">@{comment.author_username}</strong>
                                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                                             <span style="color: #888; font-size: 0.75rem;">{timeAgo(comment.created_at)}</span>
-                                            {#if $user && comment.author_username === $user.username}
+                                            {#if $user && (comment.author_username === $user.username || canModerate)}
                                                 <span class="ic-actions" style="opacity: 1;">
-                                                    <!-- svelte-ignore a11y-click-events-have-key-events -->
-                                                    <!-- svelte-ignore a11y-no-static-element-interactions -->
-                                                    <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                    {#if comment.author_username === $user.username}
+                                                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                                        <!-- svelte-ignore a11y-no-static-element-interactions -->
+                                                        <button class="ic-action-btn" on:click={() => startEditComment(comment)} title="Edit">✏️</button>
+                                                    {/if}
                                                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                                                     <!-- svelte-ignore a11y-no-static-element-interactions -->
                                                     <button class="ic-action-btn delete" on:click={() => { deleteComment(selectedPost.id, comment.id); setTimeout(() => selectedPost = posts.find(p => p.id === selectedPost.id), 50); }} title="Delete">🗑️</button>
@@ -969,4 +1008,23 @@
     }
     .inline-comment-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .inline-comment-btn:not(:disabled):hover { opacity: 0.88; }
+
+    /* Post delete button (caretaker / admin) */
+    .post-delete-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.82rem;
+        padding: 3px 6px;
+        border-radius: 6px;
+        color: var(--sage);
+        transition: background 0.15s, color 0.15s, transform 0.15s;
+        opacity: 0.6;
+    }
+    .post-delete-btn:hover {
+        color: #e0245e;
+        background: rgba(224, 36, 94, 0.08);
+        opacity: 1;
+        transform: scale(1.1);
+    }
 </style>

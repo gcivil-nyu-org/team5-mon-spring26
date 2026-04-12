@@ -37,4 +37,6 @@ urlpatterns = [
         api_views.api_my_caretaker_trees,
         name="api-my-caretaker-trees",
     ),
+    path("relinquish-tree/<str:tree_id>/", api_views.api_relinquish_tree, name="api-relinquish-tree"),
+
 ]

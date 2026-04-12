@@ -572,3 +572,25 @@ def api_my_caretaker_trees(request):
 
 
 # get trees user is taking care of
+
+# --- for explicit relinquishment ---
+@require_http_methods(["POST"])
+def api_relinquish_tree(request, tree_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Login required"}, status=401)
+
+    from caretaker.models import CaretakerAssignment
+
+    deleted, _ = CaretakerAssignment.objects.filter(
+        user=request.user, tree_id=str(tree_id)
+    ).delete()
+
+    if deleted:
+        # If user has no more assignments, demote back to credible if eligible, else standard
+        if not CaretakerAssignment.objects.filter(user=request.user).exists():
+            request.user.role = "credible" if request.user.is_credible else "standard"
+            request.user.save(update_fields=["role"])
+        return JsonResponse({"success": True})
+
+    return JsonResponse({"success": False, "error": "Assignment not found."}, status=404)
+# --- for explicit relinquishment ---

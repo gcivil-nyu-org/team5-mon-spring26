@@ -537,6 +537,29 @@
       }
       return { h: 80, s: 30, l: 42 };
   }
+
+  let relinquishTarget = null; // tree object to confirm relinquish on
+  let relinquishing = false;
+
+  async function confirmRelinquish() {
+      if (!relinquishTarget) return;
+      relinquishing = true;
+      const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+      try {
+          const res = await fetch(`/api/relinquish-tree/${relinquishTarget.tree_id}/`, {
+              method: "POST",
+              credentials: "include",
+              headers: { "X-CSRFToken": csrfToken },
+          });
+          const data = await res.json();
+          if (data.success) {
+              myCaretakerTrees = myCaretakerTrees.filter(t => t.tree_id !== relinquishTarget.tree_id);
+              relinquishTarget = null;
+          }
+      } catch {}
+      relinquishing = false;
+  }
+
   </script>
 
 <div class="page" class:mounted>
@@ -969,7 +992,14 @@
                         🛡️ You are the caretaker
                       </p>
                     </div>
-                    <div class="ft-action">
+
+                    <div class="ft-action" style="justify-content: space-between;">
+                      <button
+                        class="ft-relinquish-btn"
+                        on:click|stopPropagation={() => (relinquishTarget = tree)}
+                      >
+                        🏳️ Relinquish
+                      </button>
                       <button class="ft-btn">View Dashboard →</button>
                     </div>
                     <div class="ft-glow"></div>
@@ -979,6 +1009,50 @@
             {/if}
           </div>
       {/if}
+
+      {#if relinquishTarget}
+      <div
+        class="modal-backdrop"
+        on:click={() => (relinquishTarget = null)}
+        on:keydown={(e) => e.key === "Escape" && (relinquishTarget = null)}
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="modal"
+          style="flex-direction: column; max-width: 420px; padding: 2rem; align-items: center; text-align: center; gap: 1rem;"
+          on:click|stopPropagation
+          on:keydown|stopPropagation
+          role="dialog"
+        >
+          <div style="font-size: 2.5rem;">🏳️</div>
+          <h3 style="font-family: var(--t-font-display); font-size: 1.4rem; color: var(--t-text-heading); margin: 0;">
+            Relinquish Tree?
+          </h3>
+          <p style="color: var(--t-text-muted); font-size: 0.9rem; margin: 0;">
+            Are you sure you want to give up caretaking <strong style="color: var(--t-text-heading);">{relinquishTarget.tree_name}</strong>?
+            This cannot be undone.
+          </p>
+          <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+            <button
+              class="carousel-nav-btn back"
+              on:click={() => (relinquishTarget = null)}
+              disabled={relinquishing}
+            >
+              No, Keep It
+            </button>
+            <button
+              class="btn-approve"
+              style="background: var(--t-status-poor); padding: 0.7rem 1.5rem; border-radius: var(--t-radius-pill);"
+              on:click={confirmRelinquish}
+              disabled={relinquishing}
+            >
+              {relinquishing ? "Removing…" : "Yes, Relinquish"}
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
     </div>
 
     <aside>
@@ -3669,5 +3743,21 @@
     gap: 0.5rem;
     align-items: center;
     margin-bottom: 0.4rem;
+  }
+
+  .ft-relinquish-btn {
+  background: none;
+  border: 1px solid var(--t-status-poor);
+  color: var(--t-status-poor);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--t-radius-pill);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--t-font-body);
+  }
+  .ft-relinquish-btn:hover {
+    background: rgba(248, 113, 113, 0.1);
   }
 </style>

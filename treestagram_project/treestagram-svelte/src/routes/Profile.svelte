@@ -154,8 +154,8 @@
     const file = event.target.files[0];
     imageUploadError = "";
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        imageUploadError = "Photo size cannot be more than 5 MB";
+      if (file.size > 1 * 1024 * 1024) {
+        imageUploadError = "Photo size cannot be more than 1 MB";
         event.target.value = "";
         newImage = null;
         newImagePreview = null;

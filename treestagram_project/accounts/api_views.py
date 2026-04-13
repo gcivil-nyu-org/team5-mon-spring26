@@ -573,6 +573,7 @@ def api_my_caretaker_trees(request):
 
 # get trees user is taking care of
 
+
 # --- for explicit relinquishment ---
 @require_http_methods(["POST"])
 def api_relinquish_tree(request, tree_id):
@@ -592,5 +593,9 @@ def api_relinquish_tree(request, tree_id):
             request.user.save(update_fields=["role"])
         return JsonResponse({"success": True})
 
-    return JsonResponse({"success": False, "error": "Assignment not found."}, status=404)
+    return JsonResponse(
+        {"success": False, "error": "Assignment not found."}, status=404
+    )
+
+
 # --- for explicit relinquishment ---

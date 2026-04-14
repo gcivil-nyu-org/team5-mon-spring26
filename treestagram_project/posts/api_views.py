@@ -1,5 +1,4 @@
 import json
-import base64
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from accounts.models import User
@@ -24,7 +23,7 @@ def _post_to_dict(post, request_user):
         "body": post.body,
         "health": post.health,
         "borough": post.borough,
-        "image": post.image if post.image else None,
+        "image": post.image.url if post.image else None,
         "author": {
             "id": post.author_id,
             "username": post.author.username,
@@ -218,14 +217,6 @@ def api_create_post(request):
     # Auto-fill tree_name from the matched tree
     tree_name = tree.spc_common or f"Tree #{tree.tree_id}"
 
-    # Convert uploaded image to base64 data URL
-    image_data = None
-    if image:
-        file_bytes = image.read()
-        content_type = image.content_type or "image/png"
-        b64 = base64.b64encode(file_bytes).decode("utf-8")
-        image_data = f"data:{content_type};base64,{b64}"
-
     post = Post.objects.create(
         author=request.user,
         tree=tree,
@@ -233,7 +224,7 @@ def api_create_post(request):
         body=data.get("body", ""),
         health=data.get("health", "Good"),
         borough=tree.borough or data.get("borough", ""),
-        image=image_data,
+        image=image if image else None,
     )
 
     # Handle tagged users

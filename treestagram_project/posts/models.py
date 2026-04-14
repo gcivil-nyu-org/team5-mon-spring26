@@ -23,7 +23,7 @@ class Post(models.Model):
         default="Good",
     )
     borough = models.CharField(max_length=50, blank=True)
-    image = models.TextField(blank=True, null=True)  # base64 encoded image data
+    image = models.ImageField(upload_to="posts/", blank=True, null=True)
     tagged_users = models.ManyToManyField(
         User,
         blank=True,

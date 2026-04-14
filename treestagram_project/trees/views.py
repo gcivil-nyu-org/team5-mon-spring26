@@ -154,11 +154,11 @@ def tree_dashboard_api(request, tree_id):
             "liked": liked,
             "comments_count": len(comments),
             "comments": comments,
-            "image_url": p.image if p.image else None,
+            "image_url": p.image.url if p.image else None,
         }
         posts_list.append(post_data)
         if p.image:
-            photos.append(p.image)
+            photos.append(p.image.url)
 
     data["posts"] = posts_list
     data["post_count"] = len(posts_list)

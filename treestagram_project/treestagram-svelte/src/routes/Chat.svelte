@@ -41,6 +41,7 @@
     }
 
     function selectTree(id) {
+        if (String(activeTreeId) === String(id)) return; // already viewing this chat
         activeTreeId = id;
         chatStatus = 'connecting';
         window.history.pushState({}, "", `/chat?tree=${id}`);

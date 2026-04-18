@@ -37,6 +37,9 @@
     let message = "";
     let messageType = ""; // success or error
 
+    // Validation errors for required fields
+    let fieldErrors = { firstName: "", lastName: "", username: "" };
+
     // Security tab state
     let currentPassword = "";
     let newPassword = "";
@@ -116,6 +119,29 @@
     }
 
     async function saveChanges() {
+        // Reset field errors
+        fieldErrors = { firstName: "", lastName: "", username: "" };
+
+        // Validate required fields
+        let hasError = false;
+        if (!firstName.trim()) {
+            fieldErrors.firstName = "First name is required.";
+            hasError = true;
+        }
+        if (!lastName.trim()) {
+            fieldErrors.lastName = "Last name is required.";
+            hasError = true;
+        }
+        if (!username.trim()) {
+            fieldErrors.username = "Username is required.";
+            hasError = true;
+        }
+        if (hasError) {
+            message = "Please fill in all required fields.";
+            messageType = "error";
+            return;
+        }
+
         isSaving = true;
         message = "";
 
@@ -369,34 +395,49 @@
                     </div>
 
                     <div class="form-row-2">
-                        <div class="form-group">
-                            <label for="first-name">First Name</label>
+                        <div class="form-group" class:has-error={fieldErrors.firstName}>
+                            <label for="first-name">First Name <span class="required">*</span></label>
                             <input
                                 id="first-name"
                                 type="text"
                                 bind:value={firstName}
                                 placeholder="Jane"
+                                class:input-error={fieldErrors.firstName}
+                                on:input={() => fieldErrors.firstName = ""}
                             />
+                            {#if fieldErrors.firstName}
+                                <p class="field-error">{fieldErrors.firstName}</p>
+                            {/if}
                         </div>
-                        <div class="form-group">
-                            <label for="last-name">Last Name</label>
+                        <div class="form-group" class:has-error={fieldErrors.lastName}>
+                            <label for="last-name">Last Name <span class="required">*</span></label>
                             <input
                                 id="last-name"
                                 type="text"
                                 bind:value={lastName}
                                 placeholder="Doe"
+                                class:input-error={fieldErrors.lastName}
+                                on:input={() => fieldErrors.lastName = ""}
                             />
+                            {#if fieldErrors.lastName}
+                                <p class="field-error">{fieldErrors.lastName}</p>
+                            {/if}
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="username">Username</label>
+                    <div class="form-group" class:has-error={fieldErrors.username}>
+                        <label for="username">Username <span class="required">*</span></label>
                         <input
                             id="username"
                             type="text"
                             bind:value={username}
                             placeholder="tree_guardian"
+                            class:input-error={fieldErrors.username}
+                            on:input={() => fieldErrors.username = ""}
                         />
+                        {#if fieldErrors.username}
+                            <p class="field-error">{fieldErrors.username}</p>
+                        {/if}
                     </div>
 
                     <div class="form-group">
@@ -427,7 +468,6 @@
                     <div class="form-group">
                         <label for="borough">Borough</label>
                         <select id="borough" bind:value={borough}>
-                            <option value="">Select borough</option>
                             <option value="Manhattan">Manhattan</option>
                             <option value="Brooklyn">Brooklyn</option>
                             <option value="Queens">Queens</option>
@@ -1073,6 +1113,17 @@
         color: #a44a3f;
         margin-top: 4px;
         font-weight: 500;
+    }
+    .input-error {
+        border-color: #b91c1c !important;
+        background: rgba(185, 28, 28, 0.03) !important;
+    }
+    .input-error:focus {
+        box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1) !important;
+    }
+    .required {
+        color: #b91c1c;
+        font-weight: 700;
     }
 
     .match-hint {

@@ -40,6 +40,7 @@ urlpatterns = [
     path("api/", include("caretaker.urls")),
     path("api/", include("accounts.api_urls")),
     path("api/", include("posts.urls")),
+    path("api/admin/", include("administration.urls")),
     path("api/confirm-email/<str:token>/", api_confirm_email, name="confirm_email"),
     path(
         "reset-password/<uidb64>/<token>/",

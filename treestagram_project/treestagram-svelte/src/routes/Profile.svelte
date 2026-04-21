@@ -62,10 +62,10 @@
   let caretakerApplications = [];
   let loadingApplications = false;
 
-  onMount(async () => {
+onMount(async () => {
     setTimeout(() => (mounted = true), 50);
-    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications(), loadMyCaretakerTrees()]);
-  });
+    await Promise.all([loadMyPosts(), loadFollowedTrees(), loadApplications(), loadMyCaretakerTrees(), loadChangeRequests()]);
+});
 
   async function loadApplications() {
     loadingApplications = true;
@@ -560,6 +560,121 @@
       relinquishing = false;
   }
 
+  // ── CT1: Caretaker Change Request ──
+let ctRequestTreeId = "";
+let ctRequestTreeData = null;
+let ctRequestLoading = false;
+let ctRequestError = "";
+let ctRequestSuccess = "";
+let ctRequestSubmitting = false;
+
+let ct_curb_loc = "";
+let ct_status = "";
+let ct_health = "";
+let ct_sidewalk = "";
+let ct_root_stone = "";
+let ct_root_grate = "";
+let ct_root_other = "";
+let ct_trunk_wire = "";
+let ct_trnk_light = "";
+let ct_trnk_other = "";
+let ct_brch_light = "";
+let ct_brch_shoe = "";
+let ct_brch_other = "";
+let ct_tree_dbh = "";
+let ct_stump_diam = "";
+let ct_notes = "";
+
+async function loadTreeForRequest() {
+    if (!ctRequestTreeId.trim()) return;
+    ctRequestLoading = true;
+    ctRequestError = "";
+    ctRequestTreeData = null;
+    try {
+        const res = await fetch(`/trees/api/${ctRequestTreeId.trim()}/dashboard/`, { credentials: "include" });
+        if (!res.ok) { ctRequestError = "Tree not found."; ctRequestLoading = false; return; }
+        ctRequestTreeData = await res.json();
+    } catch { ctRequestError = "Failed to load tree."; }
+    ctRequestLoading = false;
+}
+
+async function submitChangeRequest() {
+    if (!ctRequestTreeData) return;
+    ctRequestSubmitting = true;
+    ctRequestError = "";
+    ctRequestSuccess = "";
+    const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+    const payload = {
+        tree_id: ctRequestTreeData.tree_id,
+        ...(ct_curb_loc && { curb_loc: ct_curb_loc }),
+        ...(ct_status && { status: ct_status }),
+        ...(ct_health && { health: ct_health }),
+        ...(ct_sidewalk && { sidewalk: ct_sidewalk }),
+        ...(ct_root_stone && { root_stone: ct_root_stone }),
+        ...(ct_root_grate && { root_grate: ct_root_grate }),
+        ...(ct_root_other && { root_other: ct_root_other }),
+        ...(ct_trunk_wire && { trunk_wire: ct_trunk_wire }),
+        ...(ct_trnk_light && { trnk_light: ct_trnk_light }),
+        ...(ct_trnk_other && { trnk_other: ct_trnk_other }),
+        ...(ct_brch_light && { brch_light: ct_brch_light }),
+        ...(ct_brch_shoe && { brch_shoe: ct_brch_shoe }),
+        ...(ct_brch_other && { brch_other: ct_brch_other }),
+        ...(ct_tree_dbh && { tree_dbh: ct_tree_dbh }),
+        ...(ct_stump_diam && { stump_diam: ct_stump_diam }),
+        notes: ct_notes,
+    };
+    try {
+        const res = await fetch("/api/admin/submit-change-request/", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (data.success) {
+            ctRequestSuccess = "✅ Request submitted! Admins will review it shortly.";
+            // Reset form
+            ct_curb_loc = ""; ct_status = ""; ct_health = ""; ct_sidewalk = "";
+            ct_root_stone = ""; ct_root_grate = ""; ct_root_other = "";
+            ct_trunk_wire = ""; ct_trnk_light = ""; ct_trnk_other = "";
+            ct_brch_light = ""; ct_brch_shoe = ""; ct_brch_other = "";
+            ct_tree_dbh = ""; ct_stump_diam = ""; ct_notes = "";
+        } else {
+            ctRequestError = data.error || "Failed to submit request.";
+        }
+    } catch { ctRequestError = "Network error."; }
+    ctRequestSubmitting = false;
+}
+
+// ── Admin1: View Change Requests ──
+let changeRequests = [];
+let loadingChangeRequests = false;
+
+async function loadChangeRequests() {
+    loadingChangeRequests = true;
+    try {
+        const res = await fetch("/api/admin/change-requests/", { credentials: "include" });
+        const data = await res.json();
+        if (data.success) changeRequests = data.requests;
+    } catch {}
+    loadingChangeRequests = false;
+}
+
+async function dismissChangeRequest(reqId) {
+    const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+    try {
+        const res = await fetch(`/api/admin/dismiss-change-request/${reqId}/`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "X-CSRFToken": csrfToken },
+        });
+        const data = await res.json();
+        if (data.success) {
+            changeRequests = changeRequests.filter(r => r.id !== reqId);
+        }
+    } catch {}
+}
+
   </script>
 
 <div class="page" class:mounted>
@@ -789,11 +904,67 @@
             </div>
           {/if}
         </div>
-      {:else if activeTab === "admin1"}
-        <div class="admin-panel">
-          <h2 class="admin-panel-title">Admin1</h2>
-          <p style="color: var(--t-text-muted); font-size: 0.9rem;">Admin1 content coming soon.</p>
-        </div>
+{:else if activeTab === "admin1"}
+  <div class="admin-panel">
+    <h2 class="admin-panel-title">📬 Tree Change Requests</h2>
+
+    {#if loadingChangeRequests}
+      <div class="loading-area">
+        <div class="loading-spinner"></div>
+        <p>Loading requests…</p>
+      </div>
+    {:else if changeRequests.length === 0}
+      <div class="empty-state">
+        <span class="empty-icon">✅</span>
+        <h3>No Pending Requests</h3>
+        <p>Caretakers haven't submitted any change requests yet.</p>
+      </div>
+    {:else}
+      <div class="app-list">
+        {#each changeRequests as req}
+          <div class="app-card" style="flex-direction: column; align-items: flex-start; gap: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+              <div>
+                <strong style="color: var(--t-text-heading);">Tree #{req.tree_id}</strong>
+                <span style="color: var(--t-text-muted); font-size: 0.82rem; margin-left: 0.6rem;">
+                  by @{req.submitted_by} · {timeAgo(req.submitted_at)} ago
+                </span>
+              </div>
+              <button class="btn-reject" on:click={() => dismissChangeRequest(req.id)}>
+                Dismiss
+              </button>
+            </div>
+
+            {#if req.notes}
+              <p style="margin: 0; font-size: 0.85rem; color: var(--t-text-body); background: var(--t-bg-elevated); padding: 0.6rem 0.8rem; border-radius: var(--t-radius-sm); border: 1px solid var(--t-border-soft); width: 100%; box-sizing: border-box;">
+                💬 {req.notes}
+              </p>
+            {/if}
+
+            <!-- Show only the fields that were actually requested to change -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              {#if req.curb_loc}<span class="chip chip-health-good">Curb: {req.curb_loc}</span>{/if}
+              {#if req.status}<span class="chip chip-health-good">Status: {req.status}</span>{/if}
+              {#if req.health}<span class="chip chip-health-good">Health: {req.health}</span>{/if}
+              {#if req.sidewalk}<span class="chip chip-health-good">Sidewalk: {req.sidewalk}</span>{/if}
+              {#if req.tree_dbh}<span class="chip chip-health-good">DBH: {req.tree_dbh}"</span>{/if}
+              {#if req.stump_diam}<span class="chip chip-health-good">Stump: {req.stump_diam}"</span>{/if}
+              {#if req.root_stone}<span class="chip chip-borough">Root/Stones: {req.root_stone}</span>{/if}
+              {#if req.root_grate}<span class="chip chip-borough">Root/Grates: {req.root_grate}</span>{/if}
+              {#if req.root_other}<span class="chip chip-borough">Root/Other: {req.root_other}</span>{/if}
+              {#if req.trunk_wire}<span class="chip chip-borough">Trunk/Wire: {req.trunk_wire}</span>{/if}
+              {#if req.trnk_light}<span class="chip chip-borough">Trunk/Light: {req.trnk_light}</span>{/if}
+              {#if req.trnk_other}<span class="chip chip-borough">Trunk/Other: {req.trnk_other}</span>{/if}
+              {#if req.brch_light}<span class="chip chip-borough">Branch/Light: {req.brch_light}</span>{/if}
+              {#if req.brch_shoe}<span class="chip chip-borough">Branch/Shoe: {req.brch_shoe}</span>{/if}
+              {#if req.brch_other}<span class="chip chip-borough">Branch/Other: {req.brch_other}</span>{/if}
+              {#if req.problems}<span class="chip chip-borough">Problems: {req.problems}</span>{/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 
       {:else if activeTab === "admin2"}
         <div class="admin-panel">
@@ -948,11 +1119,169 @@
           {/if}
         </div>
 
-        {:else if activeTab === "ct1"}
-          <div class="admin-panel">
-            <h2 class="admin-panel-title">CT1</h2>
-            <p style="color: var(--t-text-muted); font-size: 0.9rem;">CT1 content coming soon.</p>
+{:else if activeTab === "ct1"}
+  <div class="admin-panel">
+    <h2 class="admin-panel-title">📋 Request Tree Info Change</h2>
+    <p style="color: var(--t-text-muted); font-size: 0.88rem; margin-bottom: 1.2rem;">
+      Fill out the fields you want changed and submit a request to the admin team.
+      They will review it and update the tree manually.
+    </p>
+
+    <!-- Tree ID lookup -->
+    <div class="tree-edit-lookup">
+      <input
+        type="text"
+        class="carousel-input"
+        placeholder="Enter Tree ID…"
+        bind:value={ctRequestTreeId}
+        on:keydown={(e) => e.key === "Enter" && loadTreeForRequest()}
+        style="max-width: 260px;"
+      />
+      <button class="btn-approve" on:click={loadTreeForRequest} disabled={ctRequestLoading}>
+        {ctRequestLoading ? "Loading…" : "Load Tree"}
+      </button>
+    </div>
+
+    {#if ctRequestError}
+      <p style="color: var(--t-status-poor); margin-top: 0.5rem;">{ctRequestError}</p>
+    {/if}
+    {#if ctRequestSuccess}
+      <p style="color: var(--t-status-good); margin-top: 0.5rem;">{ctRequestSuccess}</p>
+    {/if}
+
+    {#if ctRequestTreeData}
+      <div class="tree-edit-form">
+        <div class="tree-edit-info-card">
+          <strong>🌳 {ctRequestTreeData.spc_common}</strong>
+          <em>{ctRequestTreeData.spc_latin}</em>
+          <span>#{ctRequestTreeData.tree_id} · {ctRequestTreeData.address}, {ctRequestTreeData.borough}</span>
+        </div>
+
+        <!-- Same dropdowns as Tree Editor but bound to ct_ variables -->
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Curb Location</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.curb_loc || "—"}</strong></span>
           </div>
+          <select class="carousel-input edit-select" bind:value={ct_curb_loc}>
+            <option value="">— no change —</option>
+            <option value="OnCurb">OnCurb</option>
+            <option value="OffsetFromCurb">OffsetFromCurb</option>
+          </select>
+        </div>
+
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Status</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.status || "—"}</strong></span>
+          </div>
+          <select class="carousel-input edit-select" bind:value={ct_status}>
+            <option value="">— no change —</option>
+            <option value="Alive">Alive</option>
+            <option value="Dead">Dead</option>
+            <option value="Stump">Stump</option>
+          </select>
+        </div>
+
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Health</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.health || "—"}</strong></span>
+          </div>
+          <select class="carousel-input edit-select" bind:value={ct_health}>
+            <option value="">— no change —</option>
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+            <option value="Poor">Poor</option>
+          </select>
+        </div>
+
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Sidewalk</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.sidewalk || "—"}</strong></span>
+          </div>
+          <select class="carousel-input edit-select" bind:value={ct_sidewalk}>
+            <option value="">— no change —</option>
+            <option value="Damage">Damage</option>
+            <option value="NoDamage">NoDamage</option>
+          </select>
+        </div>
+
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Trunk Diameter (inches)</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.tree_dbh ?? "—"}</strong></span>
+          </div>
+          <input type="number" class="carousel-input edit-select" placeholder="no change" bind:value={ct_tree_dbh} />
+        </div>
+
+        <div class="edit-field-row">
+          <div class="edit-field-past">
+            <span class="edit-field-label">Stump Diameter (inches)</span>
+            <span class="edit-field-current">Current: <strong>{ctRequestTreeData.stump_diam ?? "—"}</strong></span>
+          </div>
+          <input type="number" class="carousel-input edit-select" placeholder="no change" bind:value={ct_stump_diam} />
+        </div>
+
+        <div class="edit-section-title">Root / Trunk / Branch Problems</div>
+        {#each [
+          ["root_stone", "Root: Stones",      "ct_root_stone",  ct_root_stone],
+          ["root_grate", "Root: Metal Grates","ct_root_grate",  ct_root_grate],
+          ["root_other", "Root: Other",       "ct_root_other",  ct_root_other],
+          ["trunk_wire", "Trunk: Wires/Rope", "ct_trunk_wire",  ct_trunk_wire],
+          ["trnk_light", "Trunk: Lights",     "ct_trnk_light",  ct_trnk_light],
+          ["trnk_other", "Trunk: Other",      "ct_trnk_other",  ct_trnk_other],
+          ["brch_light", "Branch: Lights",    "ct_brch_light",  ct_brch_light],
+          ["brch_shoe",  "Branch: Sneakers",  "ct_brch_shoe",   ct_brch_shoe],
+          ["brch_other", "Branch: Other",     "ct_brch_other",  ct_brch_other],
+        ] as [key, label, bindKey, bindVal]}
+          <div class="edit-field-row">
+            <div class="edit-field-past">
+              <span class="edit-field-label">{label}</span>
+              <span class="edit-field-current">Current: <strong>{ctRequestTreeData[key] ? "Yes" : "No"}</strong></span>
+            </div>
+            <select class="carousel-input edit-select"
+              value={bindVal}
+              on:change={(e) => {
+                if (bindKey === "ct_root_stone") ct_root_stone = e.target.value;
+                else if (bindKey === "ct_root_grate") ct_root_grate = e.target.value;
+                else if (bindKey === "ct_root_other") ct_root_other = e.target.value;
+                else if (bindKey === "ct_trunk_wire") ct_trunk_wire = e.target.value;
+                else if (bindKey === "ct_trnk_light") ct_trnk_light = e.target.value;
+                else if (bindKey === "ct_trnk_other") ct_trnk_other = e.target.value;
+                else if (bindKey === "ct_brch_light") ct_brch_light = e.target.value;
+                else if (bindKey === "ct_brch_shoe") ct_brch_shoe = e.target.value;
+                else if (bindKey === "ct_brch_other") ct_brch_other = e.target.value;
+              }}
+            >
+              <option value="">— no change —</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+        {/each}
+
+        <!-- Notes field -->
+        <div style="margin-top: 1rem;">
+          <span class="edit-field-label">Notes / Explanation for Admin</span>
+          <textarea
+            class="carousel-textarea"
+            rows="3"
+            placeholder="Explain what you observed and why this change is needed…"
+            bind:value={ct_notes}
+            style="margin-top: 0.4rem;"
+          ></textarea>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--t-border-soft);">
+          <button class="btn-approve" on:click={submitChangeRequest} disabled={ctRequestSubmitting} style="padding: 0.7rem 2rem;">
+            {ctRequestSubmitting ? "Sending…" : "📨 Send Request"}
+          </button>
+        </div>
+      </div>
+    {/if}
+  </div>
 
         {:else if activeTab === "myTrees"}
           <div class="admin-panel">

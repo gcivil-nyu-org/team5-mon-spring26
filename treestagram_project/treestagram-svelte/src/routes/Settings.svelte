@@ -16,7 +16,6 @@
     const tabs = [
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "security", label: "Security", icon: "🔐" },
-        { id: "privacy", label: "Privacy", icon: "🛡️" },
         { id: "admin", label: "Admin", icon: "👑" },
     ];
 

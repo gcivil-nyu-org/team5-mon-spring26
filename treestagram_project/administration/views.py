@@ -20,7 +20,9 @@ def api_submit_change_request(request):
 
     tree_id = str(data.get("tree_id", "")).strip()
     if not tree_id:
-        return JsonResponse({"success": False, "error": "Tree ID is required"}, status=400)
+        return JsonResponse(
+            {"success": False, "error": "Tree ID is required"}, status=400
+        )
 
     req = TreeChangeRequest.objects.create(
         submitted_by=request.user,
@@ -61,35 +63,37 @@ def api_get_change_requests(request):
         .order_by("-submitted_at")
     )
 
-    return JsonResponse({
-        "success": True,
-        "requests": [
-            {
-                "id": r.id,
-                "tree_id": r.tree_id,
-                "submitted_by": r.submitted_by.username,
-                "submitted_at": r.submitted_at.isoformat(),
-                "notes": r.notes,
-                "curb_loc": r.curb_loc,
-                "status": r.status,
-                "health": r.health,
-                "sidewalk": r.sidewalk,
-                "root_stone": r.root_stone,
-                "root_grate": r.root_grate,
-                "root_other": r.root_other,
-                "trunk_wire": r.trunk_wire,
-                "trnk_light": r.trnk_light,
-                "trnk_other": r.trnk_other,
-                "brch_light": r.brch_light,
-                "brch_shoe": r.brch_shoe,
-                "brch_other": r.brch_other,
-                "tree_dbh": r.tree_dbh,
-                "stump_diam": r.stump_diam,
-                "problems": r.problems,
-            }
-            for r in requests_qs
-        ]
-    })
+    return JsonResponse(
+        {
+            "success": True,
+            "requests": [
+                {
+                    "id": r.id,
+                    "tree_id": r.tree_id,
+                    "submitted_by": r.submitted_by.username,
+                    "submitted_at": r.submitted_at.isoformat(),
+                    "notes": r.notes,
+                    "curb_loc": r.curb_loc,
+                    "status": r.status,
+                    "health": r.health,
+                    "sidewalk": r.sidewalk,
+                    "root_stone": r.root_stone,
+                    "root_grate": r.root_grate,
+                    "root_other": r.root_other,
+                    "trunk_wire": r.trunk_wire,
+                    "trnk_light": r.trnk_light,
+                    "trnk_other": r.trnk_other,
+                    "brch_light": r.brch_light,
+                    "brch_shoe": r.brch_shoe,
+                    "brch_other": r.brch_other,
+                    "tree_dbh": r.tree_dbh,
+                    "stump_diam": r.stump_diam,
+                    "problems": r.problems,
+                }
+                for r in requests_qs
+            ],
+        }
+    )
 
 
 @require_http_methods(["POST"])
@@ -103,7 +107,9 @@ def api_dismiss_change_request(request, request_id):
     try:
         req = TreeChangeRequest.objects.get(id=request_id)
     except TreeChangeRequest.DoesNotExist:
-        return JsonResponse({"success": False, "error": "Request not found"}, status=404)
+        return JsonResponse(
+            {"success": False, "error": "Request not found"}, status=404
+        )
 
     req.status_field = "dismissed"
     req.dismissed_at = timezone.now()

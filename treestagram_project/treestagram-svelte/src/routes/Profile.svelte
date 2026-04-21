@@ -734,7 +734,7 @@ async function dismissChangeRequest(reqId) {
             class="profile-tab"
             class:active={activeTab === "ct1"}
             on:click={() => (activeTab = "ct1")}
-          >CT1</button>
+          >Change?</button>
           <button
             class="profile-tab"
             class:active={activeTab === "myTrees"}
@@ -763,7 +763,7 @@ async function dismissChangeRequest(reqId) {
             class="profile-tab"
             class:active={activeTab === "admin1"}
             on:click={() => (activeTab = "admin1")}
-          >Admin1</button>
+          >CT Reqs</button>
           <button
             class="profile-tab"
             class:active={activeTab === "admin2"}

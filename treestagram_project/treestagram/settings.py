@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "chat",
     "trees",
     "caretaker",
+    "administration",
 ]
 
 MIDDLEWARE = [

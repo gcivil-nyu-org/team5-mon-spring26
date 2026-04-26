@@ -16,7 +16,6 @@
     const tabs = [
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "security", label: "Security", icon: "🔐" },
-        { id: "privacy", label: "Privacy", icon: "🛡️" },
         { id: "admin", label: "Admin", icon: "👑" },
     ];
 
@@ -591,40 +590,6 @@
                         </button>
                     </div>
 
-                    <div class="security-card">
-                        <div class="security-card-header">
-                            <div>
-                                <h4>Two-Factor Authentication</h4>
-                                <p>
-                                    Add an extra layer of security to your
-                                    account.
-                                </p>
-                            </div>
-                            <span class="badge badge-off">Off</span>
-                        </div>
-                        <button class="btn-secondary">Enable 2FA</button>
-                    </div>
-
-                    <div class="security-card">
-                        <div class="security-card-header">
-                            <div>
-                                <h4>Active Sessions</h4>
-                                <p>
-                                    Manage devices where you're currently logged
-                                    in.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="session-item">
-                            <span class="session-icon">💻</span>
-                            <div class="session-info">
-                                <strong>This device</strong>
-                                <small>Last active: Now</small>
-                            </div>
-                            <span class="badge badge-active">Active</span>
-                        </div>
-                    </div>
-
                     <div class="danger-zone">
                         <h4>⚠️ Danger Zone</h4>
                         <p>
@@ -637,69 +602,6 @@
                         >
                             Delete Account
                         </button>
-                    </div>
-                </div>
-            {:else if activeTab === "privacy"}
-                <div class="content-section">
-                    <h3 class="section-title">Privacy</h3>
-                    <p class="section-desc">
-                        Control who can see your profile and activity.
-                    </p>
-
-                    <div class="toggle-card">
-                        <div class="toggle-info">
-                            <h4>Private Profile</h4>
-                            <p>
-                                When enabled, only approved followers can see
-                                your posts and tree observations.
-                            </p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" />
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-card">
-                        <div class="toggle-info">
-                            <h4>Show Activity Status</h4>
-                            <p>
-                                Let others see when you were last active on
-                                Treestagram.
-                            </p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" checked />
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-card">
-                        <div class="toggle-info">
-                            <h4>Show Borough</h4>
-                            <p>Display your borough on your public profile.</p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" checked />
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="toggle-card">
-                        <div class="toggle-info">
-                            <h4>Allow Group Chat Invites</h4>
-                            <p>Let other users add you to tree group chats.</p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" checked />
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn-primary"
-                            >Save Privacy Settings</button
-                        >
                     </div>
                 </div>
             {:else if activeTab === "admin"}
